@@ -5,13 +5,15 @@ import { AlertCircle, CheckSquare, Lightbulb } from "lucide-react";
 export default function TodayPage() {
   const { captures } = useBrain();
 
+  // Include items sent to today + tasks/reminders by default
   const actionable = captures
-    .filter((c) => c.ai_data?.category === "task" || c.ai_data?.category === "reminder")
+    .filter((c) => c.status !== "archived" && c.status !== "sent_to_ideas")
+    .filter((c) => c.status === "sent_to_today" || c.ai_data?.category === "task" || c.ai_data?.category === "reminder")
     .sort((a, b) => (b.ai_data?.priority_score ?? 0) - (a.ai_data?.priority_score ?? 0));
 
   const top3 = actionable.slice(0, 3);
   const rest = actionable.slice(3);
-  const topIdea = captures.find((c) => c.ai_data?.category === "idea");
+  const topIdea = captures.find((c) => c.ai_data?.category === "idea" && c.status !== "archived");
 
   return (
     <div className="space-y-8">
@@ -20,7 +22,6 @@ export default function TodayPage() {
         <p className="text-sm text-muted-foreground mt-1">Your top priorities, surfaced by AI.</p>
       </div>
 
-      {/* Top 3 priorities */}
       <section className="space-y-3">
         <div className="flex items-center gap-2">
           <CheckSquare className="h-4 w-4 text-brain-teal" />
@@ -32,9 +33,7 @@ export default function TodayPage() {
           <div className="space-y-2">
             {top3.map((c, i) => (
               <div key={c.id} className="relative">
-                <div className="absolute -left-6 top-4 text-xs font-bold text-muted-foreground/50">
-                  {i + 1}
-                </div>
+                <div className="absolute -left-6 top-4 text-xs font-bold text-muted-foreground/50">{i + 1}</div>
                 <CaptureCard capture={c} />
               </div>
             ))}
@@ -42,7 +41,6 @@ export default function TodayPage() {
         )}
       </section>
 
-      {/* Remaining actionable items */}
       {rest.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center gap-2">
@@ -55,15 +53,12 @@ export default function TodayPage() {
         </section>
       )}
 
-      {/* Idea to revisit */}
       <section className="space-y-3">
         <div className="flex items-center gap-2">
           <Lightbulb className="h-4 w-4 text-brain-amber" />
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Idea to Revisit</h2>
         </div>
-        {topIdea ? (
-          <CaptureCard capture={topIdea} />
-        ) : (
+        {topIdea ? <CaptureCard capture={topIdea} /> : (
           <p className="text-sm text-muted-foreground py-4 text-center">No ideas captured yet.</p>
         )}
       </section>

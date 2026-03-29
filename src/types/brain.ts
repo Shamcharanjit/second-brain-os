@@ -1,5 +1,7 @@
 export type CaptureCategory = "task" | "idea" | "reminder" | "project_note" | "follow_up" | "maybe_later";
 
+export type CaptureStatus = "unprocessed" | "processed" | "sent_to_today" | "sent_to_ideas" | "archived";
+
 export interface AIProcessedData {
   title: string;
   summary: string;
@@ -17,5 +19,6 @@ export interface Capture {
   input_type: "text" | "voice";
   created_at: string;
   processed: boolean;
+  status: CaptureStatus;
   ai_data: AIProcessedData | null;
 }
