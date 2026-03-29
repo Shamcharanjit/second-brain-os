@@ -5,7 +5,8 @@ export default function IdeasVaultPage() {
   const { captures } = useBrain();
 
   const ideas = captures.filter(
-    (c) => c.ai_data?.category === "idea" || c.ai_data?.category === "maybe_later"
+    (c) => c.status !== "archived" &&
+    (c.status === "sent_to_ideas" || c.ai_data?.category === "idea" || c.ai_data?.category === "maybe_later")
   );
 
   return (
@@ -16,14 +17,10 @@ export default function IdeasVaultPage() {
       </div>
 
       {ideas.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">
-          No ideas stored yet. Capture something creative!
-        </p>
+        <p className="text-sm text-muted-foreground py-8 text-center">No ideas stored yet. Capture something creative!</p>
       ) : (
         <div className="space-y-2">
-          {ideas.map((c) => (
-            <CaptureCard key={c.id} capture={c} />
-          ))}
+          {ideas.map((c) => <CaptureCard key={c.id} capture={c} />)}
         </div>
       )}
     </div>
