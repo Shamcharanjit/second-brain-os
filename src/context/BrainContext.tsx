@@ -62,6 +62,8 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
 
 export function useBrain() {
   const ctx = useContext(BrainContext);
-  if (!ctx) throw new Error("useBrain must be used within BrainProvider");
+  if (!ctx) {
+    throw new Error("useBrain must be used within BrainProvider");
+  }
   return ctx;
 }
