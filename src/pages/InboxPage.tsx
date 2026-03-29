@@ -42,11 +42,11 @@ export default function InboxPage() {
         ))}
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground py-8 text-center">No items in this category.</p>
         ) : (
-          filtered.map((c) => <CaptureCard key={c.id} capture={c} />)
+          filtered.map((c) => <CaptureCard key={c.id} capture={c} expanded />)
         )}
       </div>
     </div>
