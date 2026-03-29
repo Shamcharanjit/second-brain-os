@@ -1,0 +1,88 @@
+import { NavLink, useLocation } from "react-router-dom";
+import { Brain, Inbox, CalendarDays, Lightbulb, Menu, X } from "lucide-react";
+import { useState } from "react";
+
+const links = [
+  { to: "/", label: "Dashboard", icon: Brain },
+  { to: "/inbox", label: "Inbox", icon: Inbox },
+  { to: "/today", label: "Today", icon: CalendarDays },
+  { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
+];
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-60 flex-col bg-sidebar border-r border-sidebar-border">
+        <div className="flex items-center gap-2 px-5 py-5">
+          <Brain className="h-6 w-6 text-sidebar-primary" />
+          <span className="text-sm font-semibold tracking-tight text-sidebar-accent-foreground">Second Brain OS</span>
+        </div>
+        <nav className="flex-1 px-3 space-y-1">
+          {links.map((l) => (
+            <NavLink
+              key={l.to}
+              to={l.to}
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-primary"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                }`
+              }
+            >
+              <l.icon className="h-4 w-4" />
+              {l.label}
+            </NavLink>
+          ))}
+        </nav>
+        <div className="px-5 py-4 text-xs text-sidebar-foreground/50">MVP v1.0 · Mock AI</div>
+      </aside>
+
+      {/* Mobile header */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <header className="md:hidden flex items-center justify-between border-b px-4 py-3 bg-background">
+          <div className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-primary" />
+            <span className="text-sm font-semibold">Second Brain OS</span>
+          </div>
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="p-1">
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </header>
+
+        {/* Mobile nav overlay */}
+        {mobileOpen && (
+          <div className="md:hidden absolute inset-0 z-50 bg-background/95 backdrop-blur-sm pt-14 px-4">
+            <nav className="space-y-1">
+              {links.map((l) => (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  onClick={() => setMobileOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors ${
+                      isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                    }`
+                  }
+                >
+                  <l.icon className="h-4 w-4" />
+                  {l.label}
+                </NavLink>
+              ))}
+            </nav>
+          </div>
+        )}
+
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-3xl px-4 py-6 md:px-8 md:py-10">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
