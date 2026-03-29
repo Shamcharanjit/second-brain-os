@@ -1,6 +1,6 @@
 import { Capture, CaptureCategory } from "@/types/brain";
 import { Badge } from "@/components/ui/badge";
-import { Mic, Type } from "lucide-react";
+import { Mic, Type, ArrowRight, FolderOpen } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 const categoryColors: Record<CaptureCategory, string> = {
@@ -12,40 +12,95 @@ const categoryColors: Record<CaptureCategory, string> = {
   maybe_later: "bg-muted text-muted-foreground",
 };
 
-export default function CaptureCard({ capture }: { capture: Capture }) {
+const categoryLabels: Record<CaptureCategory, string> = {
+  task: "Task",
+  idea: "Idea",
+  reminder: "Reminder",
+  project_note: "Project Note",
+  follow_up: "Follow-up",
+  maybe_later: "Maybe Later",
+};
+
+interface CaptureCardProps {
+  capture: Capture;
+  expanded?: boolean;
+}
+
+export default function CaptureCard({ capture, expanded = false }: CaptureCardProps) {
   const ai = capture.ai_data;
   if (!ai) return null;
 
   return (
-    <div className="rounded-lg border bg-card p-4 space-y-2 transition-colors hover:border-primary/20">
+    <div className="rounded-lg border bg-card p-4 space-y-3 transition-colors hover:border-primary/20">
+      {/* Header: title + category + input type */}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-medium leading-snug">{ai.title}</h3>
+        <h3 className="text-sm font-semibold leading-snug">{ai.title}</h3>
         <div className="flex items-center gap-1.5 shrink-0">
           {capture.input_type === "voice" ? (
             <Mic className="h-3 w-3 text-muted-foreground" />
           ) : (
             <Type className="h-3 w-3 text-muted-foreground" />
           )}
-          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${categoryColors[ai.category]}`}>
-            {ai.category.replace("_", " ")}
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${categoryColors[ai.category]}`}>
+            {categoryLabels[ai.category]}
           </span>
         </div>
       </div>
+
+      {/* Raw input (shown in expanded / inbox mode) */}
+      {expanded && (
+        <div className="rounded-md bg-secondary/50 px-3 py-2">
+          <p className="text-xs text-muted-foreground italic">"{capture.raw_input}"</p>
+        </div>
+      )}
+
+      {/* Summary */}
       <p className="text-xs text-muted-foreground leading-relaxed">{ai.summary}</p>
-      <div className="flex items-center justify-between pt-1">
-        <div className="flex items-center gap-1.5">
-          {ai.tags.slice(0, 3).map((tag) => (
+
+      {/* Priority + Due date */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-muted-foreground font-medium uppercase">Priority</span>
+          <span className={`text-xs font-bold ${ai.priority_score >= 8 ? "text-brain-rose" : ai.priority_score >= 5 ? "text-brain-amber" : "text-muted-foreground"}`}>
+            {ai.priority_score}/10
+          </span>
+        </div>
+        {ai.due_date && (
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-muted-foreground font-medium uppercase">Due</span>
+            <span className="text-xs font-medium">{ai.due_date}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Suggested project */}
+      {ai.suggested_project && (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <FolderOpen className="h-3 w-3" />
+          <span>{ai.suggested_project}</span>
+        </div>
+      )}
+
+      {/* Tags */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {ai.tags.map((tag) => (
             <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">
               {tag}
             </Badge>
           ))}
         </div>
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-[10px] text-muted-foreground shrink-0">
           {formatDistanceToNow(new Date(capture.created_at), { addSuffix: true })}
         </span>
       </div>
+
+      {/* Next action */}
       {ai.next_action && (
-        <div className="text-xs text-primary font-medium pt-1">→ {ai.next_action}</div>
+        <div className="flex items-center gap-1.5 text-xs text-primary font-medium pt-1">
+          <ArrowRight className="h-3 w-3" />
+          {ai.next_action}
+        </div>
       )}
     </div>
   );
