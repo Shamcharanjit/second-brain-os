@@ -41,6 +41,31 @@ const SEED_DATA: Capture[] = [
     input_type: "text", created_at: new Date(Date.now() - 14400000).toISOString(), processed: true, status: "unprocessed",
     ai_data: { title: "Build landing page for SaaS launch", summary: "Build a landing page for the new SaaS product launch next month", category: "project_note", priority_score: 6, due_date: null, next_action: "Create a project brief and outline next steps", suggested_project: "Product Development", tags: ["project note", "creative"] },
   },
+  {
+    id: "seed-7", raw_input: "Need to ask accountant about GST issue before end of quarter",
+    input_type: "voice", created_at: new Date(Date.now() - 2400000).toISOString(), processed: true, status: "unprocessed",
+    ai_data: { title: "Ask accountant about GST", summary: "Clarify GST reporting requirements with accountant before quarter closes", category: "task", priority_score: 8, due_date: new Date(Date.now() + 604800000).toISOString().split("T")[0], next_action: "Email accountant with specific questions", suggested_project: "Finance", tags: ["task", "finance", "urgent"] },
+  },
+  {
+    id: "seed-8", raw_input: "Book flight for Toronto trip next month",
+    input_type: "text", created_at: new Date(Date.now() - 4200000).toISOString(), processed: true, status: "unprocessed",
+    ai_data: { title: "Book Toronto flight", summary: "Book flights for upcoming Toronto business trip next month", category: "task", priority_score: 6, due_date: null, next_action: "Compare flight options and book preferred time", suggested_project: "Travel", tags: ["task", "travel"] },
+  },
+  {
+    id: "seed-9", raw_input: "What if we offered a free tier with limited captures per month?",
+    input_type: "text", created_at: new Date(Date.now() - 9000000).toISOString(), processed: true, status: "sent_to_ideas",
+    ai_data: { title: "Free tier pricing model", summary: "Explore freemium model with limited monthly captures to drive adoption", category: "idea", priority_score: 6, due_date: null, next_action: "Draft pricing comparison table", suggested_project: "Business Strategy", tags: ["idea", "pricing", "growth"] },
+  },
+  {
+    id: "seed-10", raw_input: "Reply to investor email about Series A timeline",
+    input_type: "voice", created_at: new Date(Date.now() - 6000000).toISOString(), processed: true, status: "sent_to_today",
+    ai_data: { title: "Reply to investor re: Series A", summary: "Respond to investor inquiry about fundraising timeline and milestones", category: "follow_up", priority_score: 9, due_date: new Date().toISOString().split("T")[0], next_action: "Draft reply with updated timeline", suggested_project: "Fundraising", tags: ["follow up", "investor", "urgent"] },
+  },
+  {
+    id: "seed-11", raw_input: "Set up analytics tracking on the new landing page",
+    input_type: "text", created_at: new Date(Date.now() - 18000000).toISOString(), processed: true, status: "processed",
+    ai_data: { title: "Add analytics to landing page", summary: "Implement event tracking and conversion analytics on the new marketing page", category: "project_note", priority_score: 5, due_date: null, next_action: "Choose analytics tool and add tracking snippet", suggested_project: "Product Development", tags: ["project note", "analytics"] },
+  },
 ];
 
 export function BrainProvider({ children }: { children: React.ReactNode }) {
