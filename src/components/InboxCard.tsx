@@ -3,8 +3,8 @@ import { useBrain } from "@/context/BrainContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Mic, Type, ArrowRight, FolderOpen, Check, Pencil,
-  CalendarCheck, Lightbulb, Archive, Clock,
+  Mic, Type, ArrowRight, FolderOpen, Check,
+  CalendarCheck, Lightbulb, Archive, Clock, Sparkles,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -67,7 +67,7 @@ export default function InboxCard({ capture }: { capture: Capture }) {
   };
 
   return (
-    <div className={`rounded-xl border bg-card shadow-sm transition-all hover:shadow-md ${hasAction ? "opacity-70" : ""}`}>
+    <div className={`rounded-xl border bg-card shadow-sm transition-all hover:shadow-md ${hasAction ? "opacity-60" : ""}`}>
       {/* Status ribbon */}
       {hasAction && (
         <div className="flex items-center gap-1.5 px-5 pt-3 pb-0">
@@ -81,7 +81,7 @@ export default function InboxCard({ capture }: { capture: Capture }) {
       )}
 
       <div className="p-5 space-y-4">
-        {/* Row 1: Type badge + Priority + Timestamp */}
+        {/* Row 1: Meta */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${categoryColors[ai.category]}`}>
@@ -98,50 +98,51 @@ export default function InboxCard({ capture }: { capture: Capture }) {
           </div>
         </div>
 
-        {/* Row 2: AI Title */}
-        <h3 className="text-base font-semibold leading-snug tracking-tight">{ai.title}</h3>
-
-        {/* Row 3: Raw input */}
-        <div className="rounded-lg bg-secondary/60 border border-border/50 px-4 py-3">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Raw Input</p>
+        {/* Raw → AI interpretation */}
+        <div className="rounded-lg bg-secondary/60 border border-border/50 px-4 py-3 space-y-2">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+            <Type className="h-3 w-3" /> Raw Capture
+          </p>
           <p className="text-sm text-foreground/80 italic leading-relaxed">"{capture.raw_input}"</p>
         </div>
 
-        {/* Row 4: AI Summary */}
-        <div>
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">AI Summary</p>
-          <p className="text-sm text-foreground/90 leading-relaxed">{ai.summary}</p>
-        </div>
+        <div className="rounded-lg bg-primary/5 border border-primary/10 px-4 py-3 space-y-3">
+          <p className="text-[10px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1">
+            <Sparkles className="h-3 w-3" /> AI Organized Into
+          </p>
+          <h3 className="text-base font-semibold leading-snug tracking-tight">{ai.title}</h3>
+          <p className="text-sm text-foreground/80 leading-relaxed">{ai.summary}</p>
 
-        {/* Row 5: Details grid */}
-        <div className="grid grid-cols-2 gap-3">
-          {ai.due_date && (
-            <div className="rounded-lg bg-brain-rose/5 border border-brain-rose/10 px-3 py-2">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Due Date</p>
-              <p className="text-sm font-semibold text-brain-rose">{ai.due_date}</p>
-            </div>
-          )}
-          {ai.suggested_project && (
-            <div className="rounded-lg bg-brain-blue/5 border border-brain-blue/10 px-3 py-2">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Project</p>
-              <p className="text-sm font-medium flex items-center gap-1">
-                <FolderOpen className="h-3 w-3 text-brain-blue" />
-                {ai.suggested_project}
-              </p>
-            </div>
-          )}
-        </div>
+          {/* Details grid */}
+          <div className="grid grid-cols-2 gap-2">
+            {ai.due_date && (
+              <div className="rounded-md bg-brain-rose/5 border border-brain-rose/10 px-3 py-2">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Due</p>
+                <p className="text-sm font-semibold text-brain-rose">{ai.due_date}</p>
+              </div>
+            )}
+            {ai.suggested_project && (
+              <div className="rounded-md bg-brain-blue/5 border border-brain-blue/10 px-3 py-2">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Project</p>
+                <p className="text-sm font-medium flex items-center gap-1">
+                  <FolderOpen className="h-3 w-3 text-brain-blue" />
+                  {ai.suggested_project}
+                </p>
+              </div>
+            )}
+          </div>
 
-        {/* Row 6: Next action */}
-        <div className="flex items-start gap-2 rounded-lg bg-primary/5 border border-primary/10 px-4 py-3">
-          <ArrowRight className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-          <div>
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Next Action</p>
-            <p className="text-sm font-medium text-primary">{ai.next_action}</p>
+          {/* Next action */}
+          <div className="flex items-start gap-2">
+            <ArrowRight className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <div>
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Next Action</p>
+              <p className="text-sm font-medium text-primary">{ai.next_action}</p>
+            </div>
           </div>
         </div>
 
-        {/* Row 7: Tags */}
+        {/* Tags */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {ai.tags.map((tag) => (
             <Badge key={tag} variant="secondary" className="text-[10px] px-2 py-0.5 font-medium">
@@ -150,9 +151,9 @@ export default function InboxCard({ capture }: { capture: Capture }) {
           ))}
         </div>
 
-        {/* Row 8: Action buttons */}
+        {/* Actions */}
         {!hasAction && (
-          <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+          <div className="flex items-center gap-2 pt-2 border-t border-border/50">
             <Button size="sm" variant="default" className="h-8 text-xs gap-1.5" onClick={handleApprove}>
               <Check className="h-3 w-3" /> Approve
             </Button>
