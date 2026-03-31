@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Brain, Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw } from "lucide-react";
+import { Brain, Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw, Search } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import QuickCaptureModal from "@/components/QuickCaptureModal";
@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { to: "/voice", label: "Voice Capture", icon: Mic },
   { to: "/capture-gateway", label: "Capture Gateway", icon: Radio },
   { to: "/review", label: "Review Rituals", icon: RotateCcw },
+  { to: "/memory", label: "Memory", icon: Search },
   { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
 ];
 
