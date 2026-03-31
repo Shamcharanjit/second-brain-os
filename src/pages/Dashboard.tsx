@@ -196,6 +196,23 @@ export default function Dashboard() {
         </section>
       )}
 
+      {/* External Captures */}
+      <div
+        onClick={() => navigate("/capture-gateway")}
+        className="rounded-xl border bg-card p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all hover:border-primary/20"
+      >
+        <div className="h-10 w-10 rounded-lg bg-[hsl(var(--brain-blue))/0.12] flex items-center justify-center shrink-0">
+          <Radio className="h-5 w-5 text-[hsl(var(--brain-blue))]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold">External Captures</h3>
+          <p className="text-[10px] text-muted-foreground">WhatsApp · Telegram · Email</p>
+        </div>
+        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">
+          Open Gateway <ArrowRight className="h-3 w-3" />
+        </Button>
+      </div>
+
       {/* Ideas Worth Revisiting */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
