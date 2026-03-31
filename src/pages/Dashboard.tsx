@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, Inbox, CalendarCheck, Lightbulb, ArrowRight, BrainCircuit, Sparkles, ShieldQuestion, Mic } from "lucide-react";
+import { Brain, Inbox, CalendarCheck, Lightbulb, ArrowRight, BrainCircuit, Sparkles, ShieldQuestion, Mic, Radio } from "lucide-react";
 import CaptureInput from "@/components/CaptureInput";
 import CaptureCard from "@/components/CaptureCard";
 import { useBrain } from "@/context/BrainContext";
