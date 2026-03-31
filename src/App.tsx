@@ -13,6 +13,7 @@ import AIReviewPage from "@/pages/AIReviewPage";
 import VoiceCapturePage from "@/pages/VoiceCapturePage";
 import IdeasVaultPage from "@/pages/IdeasVaultPage";
 import CaptureGatewayPage from "@/pages/CaptureGatewayPage";
+import ReviewRitualsPage from "@/pages/ReviewRitualsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
