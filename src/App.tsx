@@ -12,6 +12,7 @@ import ProjectsPage from "@/pages/ProjectsPage";
 import AIReviewPage from "@/pages/AIReviewPage";
 import VoiceCapturePage from "@/pages/VoiceCapturePage";
 import IdeasVaultPage from "@/pages/IdeasVaultPage";
+import CaptureGatewayPage from "@/pages/CaptureGatewayPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
