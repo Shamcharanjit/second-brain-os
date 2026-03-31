@@ -8,6 +8,7 @@ const links = [
   { to: "/", label: "Dashboard", icon: Brain },
   { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/today", label: "Today", icon: CalendarDays },
+  { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
 ];
 
