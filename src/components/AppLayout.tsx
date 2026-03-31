@@ -11,6 +11,7 @@ const links = [
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/ai-review", label: "AI Review", icon: BrainCircuit },
   { to: "/voice", label: "Voice Capture", icon: Mic },
+  { to: "/capture-gateway", label: "Capture Gateway", icon: Radio },
   { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
 ];
 
