@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Brain, Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio } from "lucide-react";
+import { Brain, Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import QuickCaptureModal from "@/components/QuickCaptureModal";
