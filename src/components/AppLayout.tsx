@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Brain, Inbox, CalendarDays, Lightbulb, Menu, X, Plus } from "lucide-react";
+import { Brain, Inbox, CalendarDays, FolderKanban, Lightbulb, Menu, X, Plus } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import QuickCaptureModal from "@/components/QuickCaptureModal";
@@ -8,6 +8,7 @@ const links = [
   { to: "/", label: "Dashboard", icon: Brain },
   { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/today", label: "Today", icon: CalendarDays },
+  { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
 ];
 
