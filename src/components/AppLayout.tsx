@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import QuickCaptureModal from "@/components/QuickCaptureModal";
 
-const links = [
+const NAV_LINKS = [
   { to: "/", label: "Dashboard", icon: Brain },
   { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/today", label: "Today", icon: CalendarDays },
@@ -39,8 +39,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Button>
         </div>
 
-        <nav className="flex-1 px-3 space-y-1">
-          {links.map((l) => (
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+          {NAV_LINKS.map((l) => (
             <NavLink
               key={l.to}
               to={l.to}
@@ -76,7 +76,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {mobileOpen && (
           <div className="md:hidden absolute inset-0 z-50 bg-background/95 backdrop-blur-sm pt-14 px-4">
             <nav className="space-y-1">
-              {links.map((l) => (
+              {NAV_LINKS.map((l) => (
                 <NavLink
                   key={l.to}
                   to={l.to}
