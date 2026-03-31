@@ -18,14 +18,7 @@ const categoryLabel: Record<CaptureCategory, string> = {
 const priorityColor = (s: number) =>
   s >= 8 ? "text-brain-rose" : s >= 5 ? "text-brain-amber" : "text-muted-foreground";
 
-const aiReasoning = (c: Capture) => {
-  const ai = c.ai_data;
-  if (!ai) return "";
-  if (ai.priority_score >= 8) return "High impact — directly affects a deadline or commitment.";
-  if (ai.category === "follow_up") return "Depends on an external response — nudge to keep momentum.";
-  if (ai.priority_score >= 5) return "Important for progress — schedule time today.";
-  return "Low friction — can be resolved quickly.";
-};
+const aiReasoning = (c: Capture) => c.ai_data?.why_it_matters ?? "";
 
 /* ── mock "waiting" items ── */
 const WAITING_ITEMS = [

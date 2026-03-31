@@ -243,8 +243,8 @@ export default function IdeasVaultPage() {
 function IdeaHeroCard({ capture, onPromote, onArchive }: { capture: Capture; onPromote: (id: string) => void; onArchive: (id: string) => void }) {
   const ai = capture.ai_data;
   if (!ai) return null;
-  const effort = effortLevel(10 - ai.priority_score); // invert: high-prio ideas are low effort to decide on
-  const reasoning = potentialReasoning(capture);
+  const effort = { label: effortLabels[ai.effort], color: effortColors[ai.effort] };
+  const reasoning = ai.why_it_matters;
 
   return (
     <div className="rounded-xl border bg-card p-5 space-y-4 hover:shadow-md hover:border-primary/20 transition-all">
