@@ -1,6 +1,6 @@
 import { Capture, CaptureCategory } from "@/types/brain";
 import { Badge } from "@/components/ui/badge";
-import { Mic, Type, ArrowRight, FolderOpen, Gauge } from "lucide-react";
+import { Mic, Type, ArrowRight, FolderOpen, Gauge, ShieldCheck, ShieldQuestion } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 const categoryColors: Record<CaptureCategory, string> = {
