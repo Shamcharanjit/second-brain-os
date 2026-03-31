@@ -9,6 +9,7 @@ const links = [
   { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/today", label: "Today", icon: CalendarDays },
   { to: "/projects", label: "Projects", icon: FolderKanban },
+  { to: "/ai-review", label: "AI Review", icon: BrainCircuit },
   { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
 ];
 
