@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { to: "/ai-review", label: "AI Review", icon: BrainCircuit },
   { to: "/voice", label: "Voice Capture", icon: Mic },
   { to: "/capture-gateway", label: "Capture Gateway", icon: Radio },
+  { to: "/review", label: "Review Rituals", icon: RotateCcw },
   { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
 ];
 
