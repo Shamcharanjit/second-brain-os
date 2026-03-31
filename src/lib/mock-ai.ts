@@ -223,15 +223,57 @@ function generateTags(text: string, category: CaptureCategory, urgency: UrgencyL
   return [...new Set(tags)];
 }
 
+/* ── Review reason ── */
+function inferReviewReason(
+  category: CaptureCategory,
+  confidence: ConfidenceLevel,
+  urgency: UrgencyLevel,
+  priority: number,
+  text: string,
+  dueContext: DueContext
+): string | null {
+  if (confidence === "needs_review") {
+    const lower = text.toLowerCase();
+    if (lower.length < 30) return "Insufficient detail to classify accurately";
+    if (matchCount(lower, TASK_SIGNALS) > 0 && matchCount(lower, IDEA_SIGNALS) > 0) return "Intent could be task or idea";
+    if (matchCount(lower, TASK_SIGNALS) > 0 && matchCount(lower, FOLLOW_UP_SIGNALS) > 0) return "Intent could be task or follow-up";
+    if (urgency === "high" && dueContext === "none") return "Missing deadline for urgent item";
+    if (priority >= 7) return "High impact but insufficient detail";
+    return "Ambiguous intent — needs clarification";
+  }
+  if (confidence === "medium") {
+    if (urgency === "high" && dueContext === "none") return "Missing deadline for urgent item";
+    if (priority >= 8) return "High-impact item — confirm routing";
+    if (category === "project_note") return "Possible project milestone detected";
+    return "Moderate confidence — quick confirmation recommended";
+  }
+  return null;
+}
+
+/* ── Review status ── */
+function inferReviewStatus(confidence: ConfidenceLevel, priority: number, urgency: UrgencyLevel, dueContext: DueContext): "auto_approved" | "needs_review" {
+  // Auto-approve: high confidence, not too critical, or clear simple items
+  if (confidence === "high" && priority <= 8) return "auto_approved";
+  if (confidence === "high" && urgency !== "high") return "auto_approved";
+  // Needs review: low confidence, high-impact ambiguous, or missing info
+  if (confidence === "needs_review") return "needs_review";
+  if (confidence === "medium" && priority >= 8) return "needs_review";
+  if (urgency === "high" && dueContext === "none") return "needs_review";
+  // Medium confidence simple items can be auto-approved
+  if (confidence === "medium" && priority <= 5) return "auto_approved";
+  return "needs_review";
+}
+
 /* ── Main export ── */
-export function mockAIProcess(rawInput: string): AIProcessedData {
+export function mockAIProcess(rawInput: string): { aiData: AIProcessedData; reviewStatus: "auto_approved" | "needs_review" } {
   const { category, confidence } = inferCategory(rawInput);
   const priority = inferPriority(rawInput, category);
   const urgency = inferUrgency(rawInput, priority);
   const effort = inferEffort(rawInput, category);
   const dueContext = inferDueContext(rawInput);
+  const reviewStatus = inferReviewStatus(confidence, priority, urgency, dueContext);
 
-  return {
+  const aiData: AIProcessedData = {
     title: generateTitle(rawInput),
     summary: generateSummary(rawInput, category),
     category,
@@ -246,5 +288,8 @@ export function mockAIProcess(rawInput: string): AIProcessedData {
     due_context: dueContext,
     destination_suggestion: inferDestination(category, urgency, confidence),
     why_it_matters: generateWhyItMatters(category, priority, urgency, rawInput),
+    review_reason: inferReviewReason(category, confidence, urgency, priority, rawInput, dueContext),
   };
+
+  return { aiData, reviewStatus };
 }
