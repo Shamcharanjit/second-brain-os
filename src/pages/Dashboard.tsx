@@ -55,6 +55,10 @@ export default function Dashboard() {
     return captures.filter((c) => c.review_status === "needs_review" && c.status === "unprocessed");
   }, [captures]);
 
+  const voiceToday = useMemo(() => {
+    return captures.filter((c) => c.input_type === "voice" && (Date.now() - new Date(c.created_at).getTime()) < 86400000).length;
+  }, [captures]);
+
   const statCards = [
     { label: "Total Captures", value: stats.total, icon: Brain, color: "text-primary" },
     { label: "Unprocessed", value: stats.unprocessed, icon: Inbox, color: "text-[hsl(var(--brain-amber))]" },
