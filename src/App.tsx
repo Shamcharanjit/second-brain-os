@@ -8,6 +8,7 @@ import AppLayout from "@/components/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import InboxPage from "@/pages/InboxPage";
 import TodayPage from "@/pages/TodayPage";
+import ProjectsPage from "@/pages/ProjectsPage";
 import IdeasVaultPage from "@/pages/IdeasVaultPage";
 import NotFound from "@/pages/NotFound";
 
