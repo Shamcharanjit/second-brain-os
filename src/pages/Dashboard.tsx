@@ -51,6 +51,10 @@ export default function Dashboard() {
       .slice(0, 3);
   }, [captures]);
 
+  const pendingReview = useMemo(() => {
+    return captures.filter((c) => c.review_status === "needs_review" && c.status === "unprocessed");
+  }, [captures]);
+
   const statCards = [
     { label: "Total Captures", value: stats.total, icon: Brain, color: "text-primary" },
     { label: "Unprocessed", value: stats.unprocessed, icon: Inbox, color: "text-[hsl(var(--brain-amber))]" },
