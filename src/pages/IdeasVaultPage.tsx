@@ -30,20 +30,8 @@ const sortOptions: { label: string; value: SortValue }[] = [
   { label: "Recently Reviewed", value: "reviewed" },
 ];
 
-function effortLevel(score: number): { label: string; color: string } {
-  if (score >= 8) return { label: "Low Effort", color: "text-brain-teal" };
-  if (score >= 5) return { label: "Medium Effort", color: "text-brain-amber" };
-  return { label: "High Effort", color: "text-brain-rose" };
-}
-
-function potentialReasoning(capture: Capture): string {
-  const ai = capture.ai_data;
-  if (!ai) return "";
-  if (ai.priority_score >= 8) return "High strategic value — could drive significant impact if acted on soon.";
-  if (ai.priority_score >= 6) return "Solid opportunity — worth exploring further in your next planning session.";
-  if (ai.priority_score >= 4) return "Interesting concept — park it and revisit when bandwidth opens up.";
-  return "Low urgency — keep it stored for future inspiration.";
-}
+const effortLabels = { low: "Low Effort", medium: "Medium Effort", high: "High Effort" };
+const effortColors = { low: "text-brain-teal", medium: "text-brain-amber", high: "text-brain-rose" };
 
 export default function IdeasVaultPage() {
   const { captures, updateCaptureStatus } = useBrain();
@@ -255,8 +243,8 @@ export default function IdeasVaultPage() {
 function IdeaHeroCard({ capture, onPromote, onArchive }: { capture: Capture; onPromote: (id: string) => void; onArchive: (id: string) => void }) {
   const ai = capture.ai_data;
   if (!ai) return null;
-  const effort = effortLevel(10 - ai.priority_score); // invert: high-prio ideas are low effort to decide on
-  const reasoning = potentialReasoning(capture);
+  const effort = { label: effortLabels[ai.effort], color: effortColors[ai.effort] };
+  const reasoning = ai.why_it_matters;
 
   return (
     <div className="rounded-xl border bg-card p-5 space-y-4 hover:shadow-md hover:border-primary/20 transition-all">

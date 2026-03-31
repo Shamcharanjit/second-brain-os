@@ -1,10 +1,11 @@
-import { Capture, CaptureCategory } from "@/types/brain";
+import { Capture, CaptureCategory, ConfidenceLevel } from "@/types/brain";
 import { useBrain } from "@/context/BrainContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Mic, Type, ArrowRight, FolderOpen, Check,
   CalendarCheck, Lightbulb, Archive, Clock, Sparkles,
+  ShieldCheck, ShieldAlert, ShieldQuestion, Gauge,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -19,12 +20,8 @@ const categoryColors: Record<CaptureCategory, string> = {
 };
 
 const categoryLabels: Record<CaptureCategory, string> = {
-  task: "Task",
-  idea: "Idea",
-  reminder: "Reminder",
-  project_note: "Project Note",
-  follow_up: "Follow-up",
-  maybe_later: "Maybe Later",
+  task: "Task", idea: "Idea", reminder: "Reminder",
+  project_note: "Project Note", follow_up: "Follow-up", maybe_later: "Maybe Later",
 };
 
 const priorityColor = (score: number) => {
@@ -39,6 +36,15 @@ const priorityBg = (score: number) => {
   return "bg-muted border-border";
 };
 
+const confidenceConfig: Record<ConfidenceLevel, { icon: typeof ShieldCheck; label: string; color: string }> = {
+  high: { icon: ShieldCheck, label: "High confidence", color: "text-brain-teal" },
+  medium: { icon: ShieldAlert, label: "Medium confidence", color: "text-brain-amber" },
+  needs_review: { icon: ShieldQuestion, label: "Needs review", color: "text-brain-rose" },
+};
+
+const urgencyColors = { high: "text-brain-rose", medium: "text-brain-amber", low: "text-muted-foreground" };
+const effortLabels = { low: "Quick", medium: "Moderate", high: "Deep work" };
+
 export default function InboxCard({ capture }: { capture: Capture }) {
   const ai = capture.ai_data;
   const { updateCaptureStatus } = useBrain();
@@ -49,41 +55,29 @@ export default function InboxCard({ capture }: { capture: Capture }) {
   const isSentIdeas = capture.status === "sent_to_ideas";
   const hasAction = isProcessed || isSentToday || isSentIdeas;
 
-  const handleApprove = () => {
-    updateCaptureStatus(capture.id, "processed");
-    toast.success("Marked as processed");
-  };
-  const handleSendToday = () => {
-    updateCaptureStatus(capture.id, "sent_to_today");
-    toast.success("Sent to Today");
-  };
-  const handleSendIdeas = () => {
-    updateCaptureStatus(capture.id, "sent_to_ideas");
-    toast.success("Sent to Ideas Vault");
-  };
-  const handleArchive = () => {
-    updateCaptureStatus(capture.id, "archived");
-    toast("Archived");
-  };
+  const conf = confidenceConfig[ai.confidence];
+  const ConfIcon = conf.icon;
+
+  const handleApprove = () => { updateCaptureStatus(capture.id, "processed"); toast.success("Marked as processed"); };
+  const handleSendToday = () => { updateCaptureStatus(capture.id, "sent_to_today"); toast.success("Sent to Today"); };
+  const handleSendIdeas = () => { updateCaptureStatus(capture.id, "sent_to_ideas"); toast.success("Sent to Ideas Vault"); };
+  const handleArchive = () => { updateCaptureStatus(capture.id, "archived"); toast("Archived"); };
 
   return (
     <div className={`rounded-xl border bg-card shadow-sm transition-all hover:shadow-md ${hasAction ? "opacity-60" : ""}`}>
-      {/* Status ribbon */}
       {hasAction && (
         <div className="flex items-center gap-1.5 px-5 pt-3 pb-0">
           <Check className="h-3 w-3 text-primary" />
           <span className="text-[11px] font-medium text-primary">
-            {isProcessed && "Processed"}
-            {isSentToday && "Sent to Today"}
-            {isSentIdeas && "Sent to Ideas Vault"}
+            {isProcessed && "Processed"}{isSentToday && "Sent to Today"}{isSentIdeas && "Sent to Ideas Vault"}
           </span>
         </div>
       )}
 
       <div className="p-5 space-y-4">
-        {/* Row 1: Meta */}
+        {/* Meta row */}
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${categoryColors[ai.category]}`}>
               {capture.input_type === "voice" ? <Mic className="h-3 w-3" /> : <Type className="h-3 w-3" />}
               {categoryLabels[ai.category]}
@@ -91,14 +85,19 @@ export default function InboxCard({ capture }: { capture: Capture }) {
             <div className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] ${priorityBg(ai.priority_score)}`}>
               <span className={priorityColor(ai.priority_score)}>{ai.priority_score}/10</span>
             </div>
+            {/* Confidence badge */}
+            <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${conf.color}`}>
+              <ConfIcon className="h-3 w-3" />
+              {conf.label}
+            </span>
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
             <Clock className="h-3 w-3" />
             {formatDistanceToNow(new Date(capture.created_at), { addSuffix: true })}
           </div>
         </div>
 
-        {/* Raw → AI interpretation */}
+        {/* Raw capture */}
         <div className="rounded-lg bg-secondary/60 border border-border/50 px-4 py-3 space-y-2">
           <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
             <Type className="h-3 w-3" /> Raw Capture
@@ -106,12 +105,34 @@ export default function InboxCard({ capture }: { capture: Capture }) {
           <p className="text-sm text-foreground/80 italic leading-relaxed">"{capture.raw_input}"</p>
         </div>
 
+        {/* AI interpretation */}
         <div className="rounded-lg bg-primary/5 border border-primary/10 px-4 py-3 space-y-3">
           <p className="text-[10px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1">
             <Sparkles className="h-3 w-3" /> AI Organized Into
           </p>
           <h3 className="text-base font-semibold leading-snug tracking-tight">{ai.title}</h3>
           <p className="text-sm text-foreground/80 leading-relaxed">{ai.summary}</p>
+
+          {/* Why it matters */}
+          <p className="text-xs text-muted-foreground italic leading-relaxed">
+            💡 {ai.why_it_matters}
+          </p>
+
+          {/* Urgency + Effort indicators */}
+          <div className="flex items-center gap-4 text-[11px]">
+            <span className={`font-medium ${urgencyColors[ai.urgency]}`}>
+              <Gauge className="h-3 w-3 inline mr-1" />
+              {ai.urgency.charAt(0).toUpperCase() + ai.urgency.slice(1)} urgency
+            </span>
+            <span className="text-muted-foreground">
+              Effort: {effortLabels[ai.effort]}
+            </span>
+            {ai.due_context !== "none" && (
+              <span className="text-muted-foreground">
+                Due: {ai.due_context.replace("_", " ")}
+              </span>
+            )}
+          </div>
 
           {/* Details grid */}
           <div className="grid grid-cols-2 gap-2">
@@ -145,9 +166,7 @@ export default function InboxCard({ capture }: { capture: Capture }) {
         {/* Tags */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {ai.tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-[10px] px-2 py-0.5 font-medium">
-              {tag}
-            </Badge>
+            <Badge key={tag} variant="secondary" className="text-[10px] px-2 py-0.5 font-medium">{tag}</Badge>
           ))}
         </div>
 
