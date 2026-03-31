@@ -10,6 +10,7 @@ import InboxPage from "@/pages/InboxPage";
 import TodayPage from "@/pages/TodayPage";
 import ProjectsPage from "@/pages/ProjectsPage";
 import AIReviewPage from "@/pages/AIReviewPage";
+import VoiceCapturePage from "@/pages/VoiceCapturePage";
 import IdeasVaultPage from "@/pages/IdeasVaultPage";
 import NotFound from "@/pages/NotFound";
 
