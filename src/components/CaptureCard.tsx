@@ -1,6 +1,6 @@
 import { Capture, CaptureCategory } from "@/types/brain";
 import { Badge } from "@/components/ui/badge";
-import { Mic, Type, ArrowRight, FolderOpen, Gauge } from "lucide-react";
+import { Mic, Type, ArrowRight, FolderOpen, Gauge, ShieldCheck, ShieldQuestion } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 const categoryColors: Record<CaptureCategory, string> = {
@@ -78,6 +78,26 @@ export default function CaptureCard({ capture, expanded = false }: CaptureCardPr
           <span>{ai.suggested_project}</span>
         </div>
       )}
+
+      {/* Routing label */}
+      <div className="flex items-center gap-2 text-[10px]">
+        {capture.review_status === "auto_approved" && (
+          <span className="flex items-center gap-1 text-[hsl(var(--brain-teal))] font-medium">
+            <ShieldCheck className="h-3 w-3" /> Auto-Approved
+          </span>
+        )}
+        {capture.review_status === "needs_review" && capture.status === "unprocessed" && (
+          <span className="flex items-center gap-1 text-[hsl(var(--brain-amber))] font-medium">
+            <ShieldQuestion className="h-3 w-3" /> Needs Review
+          </span>
+        )}
+        {capture.status === "sent_to_today" && (
+          <span className="text-[hsl(var(--brain-teal))] font-medium">→ Routed to Today</span>
+        )}
+        {capture.status === "sent_to_ideas" && (
+          <span className="text-[hsl(var(--brain-purple))] font-medium">→ Routed to Ideas Vault</span>
+        )}
+      </div>
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 flex-wrap">

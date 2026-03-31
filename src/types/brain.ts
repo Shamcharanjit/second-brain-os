@@ -2,6 +2,8 @@ export type CaptureCategory = "task" | "idea" | "reminder" | "project_note" | "f
 
 export type CaptureStatus = "unprocessed" | "processed" | "sent_to_today" | "sent_to_ideas" | "archived";
 
+export type ReviewStatus = "auto_approved" | "needs_review" | "reviewed";
+
 export type UrgencyLevel = "low" | "medium" | "high";
 export type EffortLevel = "low" | "medium" | "high";
 export type ConfidenceLevel = "high" | "medium" | "needs_review";
@@ -17,13 +19,13 @@ export interface AIProcessedData {
   next_action: string;
   suggested_project: string | null;
   tags: string[];
-  // Enhanced AI fields
   urgency: UrgencyLevel;
   effort: EffortLevel;
   confidence: ConfidenceLevel;
   due_context: DueContext;
   destination_suggestion: DestinationSuggestion;
   why_it_matters: string;
+  review_reason: string | null;
 }
 
 export interface Capture {
@@ -33,5 +35,6 @@ export interface Capture {
   created_at: string;
   processed: boolean;
   status: CaptureStatus;
+  review_status: ReviewStatus;
   ai_data: AIProcessedData | null;
 }

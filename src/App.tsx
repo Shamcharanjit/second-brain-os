@@ -9,6 +9,7 @@ import Dashboard from "@/pages/Dashboard";
 import InboxPage from "@/pages/InboxPage";
 import TodayPage from "@/pages/TodayPage";
 import ProjectsPage from "@/pages/ProjectsPage";
+import AIReviewPage from "@/pages/AIReviewPage";
 import IdeasVaultPage from "@/pages/IdeasVaultPage";
 import NotFound from "@/pages/NotFound";
 
@@ -27,6 +28,7 @@ const App = () => (
               <Route path="/inbox" element={<InboxPage />} />
               <Route path="/today" element={<TodayPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/ai-review" element={<AIReviewPage />} />
               <Route path="/ideas" element={<IdeasVaultPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

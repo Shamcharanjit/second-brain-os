@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, Inbox, CalendarCheck, Lightbulb, ArrowRight, Mic, Sparkles } from "lucide-react";
+import { Brain, Inbox, CalendarCheck, Lightbulb, ArrowRight, BrainCircuit, Sparkles, ShieldQuestion } from "lucide-react";
 import CaptureInput from "@/components/CaptureInput";
 import CaptureCard from "@/components/CaptureCard";
 import { useBrain } from "@/context/BrainContext";
@@ -49,6 +49,10 @@ export default function Dashboard() {
           (c.ai_data?.category === "idea" || c.ai_data?.category === "maybe_later")
       )
       .slice(0, 3);
+  }, [captures]);
+
+  const pendingReview = useMemo(() => {
+    return captures.filter((c) => c.review_status === "needs_review" && c.status === "unprocessed");
   }, [captures]);
 
   const statCards = [
@@ -139,6 +143,37 @@ export default function Dashboard() {
           </div>
         )}
       </section>
+
+      {/* AI Review Pending */}
+      {pendingReview.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BrainCircuit className="h-4 w-4 text-[hsl(var(--brain-amber))]" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                AI Review Pending
+                <span className="ml-2 inline-flex items-center justify-center rounded-full bg-[hsl(var(--brain-amber))/0.15] text-[hsl(var(--brain-amber))] text-[10px] font-bold px-1.5 py-0.5">
+                  {pendingReview.length}
+                </span>
+              </h2>
+            </div>
+            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate("/ai-review")}>
+              Open AI Review <ArrowRight className="h-3 w-3" />
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {pendingReview.slice(0, 3).map((c) => (
+              <div key={c.id} className="rounded-lg border bg-card p-3 flex items-center gap-3">
+                <ShieldQuestion className="h-4 w-4 text-[hsl(var(--brain-amber))] shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{c.ai_data?.title}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{c.ai_data?.review_reason}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Ideas Worth Revisiting */}
       <section className="space-y-3">
