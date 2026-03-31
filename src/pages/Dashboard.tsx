@@ -97,6 +97,23 @@ export default function Dashboard() {
         <CaptureInput />
       </section>
 
+      {/* Voice Capture Card */}
+      <div
+        onClick={() => navigate("/voice")}
+        className="rounded-xl border bg-card p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all hover:border-primary/20"
+      >
+        <div className="h-10 w-10 rounded-lg bg-[hsl(var(--brain-purple))/0.12] flex items-center justify-center shrink-0">
+          <Mic className="h-5 w-5 text-[hsl(var(--brain-purple))]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold">Voice Capture</h3>
+          <p className="text-[10px] text-muted-foreground">{voiceToday} voice capture{voiceToday !== 1 ? "s" : ""} today</p>
+        </div>
+        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">
+          <Mic className="h-3 w-3" /> Launch
+        </Button>
+      </div>
+
       {/* Today Focus */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
