@@ -13,6 +13,7 @@ import AIReviewPage from "@/pages/AIReviewPage";
 import VoiceCapturePage from "@/pages/VoiceCapturePage";
 import IdeasVaultPage from "@/pages/IdeasVaultPage";
 import CaptureGatewayPage from "@/pages/CaptureGatewayPage";
+import ReviewRitualsPage from "@/pages/ReviewRitualsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/ai-review" element={<AIReviewPage />} />
               <Route path="/voice" element={<VoiceCapturePage />} />
               <Route path="/capture-gateway" element={<CaptureGatewayPage />} />
+              <Route path="/review" element={<ReviewRitualsPage />} />
               <Route path="/ideas" element={<IdeasVaultPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

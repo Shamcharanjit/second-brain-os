@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, Inbox, CalendarCheck, Lightbulb, ArrowRight, BrainCircuit, Sparkles, ShieldQuestion, Mic, Radio } from "lucide-react";
+import { Brain, Inbox, CalendarCheck, Lightbulb, ArrowRight, BrainCircuit, Sparkles, ShieldQuestion, Mic, Radio, RotateCcw } from "lucide-react";
 import CaptureInput from "@/components/CaptureInput";
 import CaptureCard from "@/components/CaptureCard";
 import { useBrain } from "@/context/BrainContext";
@@ -210,6 +210,23 @@ export default function Dashboard() {
         </div>
         <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">
           Open Gateway <ArrowRight className="h-3 w-3" />
+        </Button>
+      </div>
+
+      {/* Review Ritual */}
+      <div
+        onClick={() => navigate("/review")}
+        className="rounded-xl border bg-card p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all hover:border-primary/20"
+      >
+        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <RotateCcw className="h-5 w-5 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold">Review Ritual Ready</h3>
+          <p className="text-[10px] text-muted-foreground">Daily & weekly review — regain clarity</p>
+        </div>
+        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">
+          Start Review <ArrowRight className="h-3 w-3" />
         </Button>
       </div>
 
