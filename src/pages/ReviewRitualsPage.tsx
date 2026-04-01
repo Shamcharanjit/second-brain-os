@@ -22,7 +22,7 @@ import ReviewStepSummary from "@/components/review/ReviewStepSummary";
 
 type ReviewTab = "daily" | "weekly";
 
-const MOCK_STREAK = { dailyStreak: 5, lastWeekly: "3 days ago", monthTotal: 18 };
+const MOCK_STREAK = { dailyStreak: 5, lastWeekly: "3 days ago", monthTotal: 18 }; // fallback only
 
 const WEEKLY_STEPS = [
   { key: "inbox", label: "Inbox", icon: Inbox },
