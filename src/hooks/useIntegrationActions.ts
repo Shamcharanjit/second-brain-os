@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useBrain } from "@/context/BrainContext";
 import { useMemory } from "@/context/MemoryContext";
+import { useProjects } from "@/context/ProjectContext";
 import { Capture } from "@/types/brain";
 import { MemoryType } from "@/types/memory";
 
@@ -14,15 +15,14 @@ function captureToMemoryType(capture: Capture): MemoryType {
 
 /**
  * Provides integrated actions that span multiple contexts.
- * Use this instead of calling routeCapture + createMemory separately.
  */
 export function useIntegrationActions() {
-  const { routeCapture } = useBrain();
+  const { routeCapture, captures } = useBrain();
   const { createMemory, memories } = useMemory();
+  const { completeNextAction } = useProjects();
 
   /** Route a capture to Memory, creating a real MemoryEntry */
   const routeToMemory = useCallback((capture: Capture) => {
-    // Avoid duplicates from same source capture
     const alreadyExists = memories.some((m) => m.source_capture_id === capture.id);
     if (alreadyExists) {
       routeCapture(capture.id, "sent_to_memory");
@@ -42,5 +42,11 @@ export function useIntegrationActions() {
     routeCapture(capture.id, "sent_to_memory");
   }, [routeCapture, createMemory, memories]);
 
-  return { routeToMemory };
+  /** Sync Today completion back to project next action */
+  const syncCompletionToProject = useCallback((capture: Capture) => {
+    if (!capture.source_project_id || !capture.source_action_id) return;
+    completeNextAction(capture.source_project_id, capture.source_action_id);
+  }, [completeNextAction]);
+
+  return { routeToMemory, syncCompletionToProject };
 }
