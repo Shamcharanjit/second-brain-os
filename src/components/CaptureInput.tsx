@@ -4,6 +4,8 @@ import { useBrain } from "@/context/BrainContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { Capture } from "@/types/brain";
+import AIResultCard from "@/components/AIResultCard";
 
 const VOICE_TRANSCRIPTS = [
   "Remind me to send the project update to the team by tomorrow",
@@ -33,6 +35,7 @@ interface CaptureInputProps {
 export default function CaptureInput({ variant = "inline", onComplete }: CaptureInputProps) {
   const [text, setText] = useState("");
   const [phase, setPhase] = useState<CapturePhase>("idle");
+  const [lastResult, setLastResult] = useState<Capture | null>(null);
   const { addCapture } = useBrain();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -56,17 +59,26 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     if (!trimmed || phase !== "idle") return;
 
     setPhase("processing");
+    setLastResult(null);
     setTimeout(() => {
-      addCapture(trimmed, "text");
+      const capture = addCapture(trimmed, "text");
       setText("");
+      setLastResult(capture);
       setPhase("done");
-      toast.success("Saved to Inbox", { description: "AI organized your thought." });
+
+      const dest = capture.ai_data?.destination_suggestion;
+      const destLabel = dest === "today" ? "Today" : dest === "ideas" ? "Ideas Vault" : dest === "projects" ? "Projects" : dest === "someday" ? "Someday" : "Inbox";
+
+      toast.success("InsightHalo organized your thought.", {
+        description: `Routed to ${destLabel} as ${capture.ai_data?.category?.replace("_", " ")}`,
+      });
+
       setTimeout(() => {
         setPhase("idle");
         onComplete?.();
         textareaRef.current?.focus();
-      }, 800);
-    }, 1200);
+      }, 3000);
+    }, 1400);
   }, [text, phase, addCapture, onComplete]);
 
   const handleVoice = () => {
@@ -76,6 +88,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     } else if (phase === "idle") {
       setPhase("recording");
       setText("");
+      setLastResult(null);
       timerRef.current = setTimeout(() => finishRecording(), 2500);
     }
   };
@@ -90,7 +103,6 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
         current += (i === 0 ? "" : " ") + word;
         setText(current);
         if (i === words.length - 1) {
-          // Let user edit before submitting — go back to idle
           setTimeout(() => setPhase("idle"), 400);
         }
       }, i * 80);
@@ -164,13 +176,16 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       {phase === "processing" && (
         <div className="flex items-center gap-2 px-2 animate-pulse">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs text-primary font-medium">AI is organizing your thought…</span>
+          <span className="text-xs text-primary font-medium">AI is thinking…</span>
         </div>
       )}
-      {phase === "done" && (
-        <div className="flex items-center gap-2 px-2">
-          <Check className="h-3.5 w-3.5 text-[hsl(var(--brain-teal))]" />
-          <span className="text-xs text-[hsl(var(--brain-teal))] font-medium">Saved to Inbox</span>
+      {phase === "done" && lastResult && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 px-2">
+            <Check className="h-3.5 w-3.5 text-[hsl(var(--brain-teal))]" />
+            <span className="text-xs text-[hsl(var(--brain-teal))] font-medium">InsightHalo organized your thought</span>
+          </div>
+          <AIResultCard capture={lastResult} />
         </div>
       )}
     </div>

@@ -6,8 +6,10 @@ import {
 /* ── Signal dictionaries ── */
 const TASK_SIGNALS = ["call", "send", "book", "pay", "buy", "follow up", "check", "confirm", "ask", "reply", "schedule", "submit", "complete", "return", "cancel", "order", "pick up", "drop off", "fix", "finish", "email", "write", "prepare", "review", "update", "set up", "arrange", "organize", "clean", "file", "register", "renew", "sign"];
 const REMINDER_SIGNALS = ["remind me", "don't forget", "dont forget", "remember to", "tomorrow", "today", "next week", "by friday", "by monday", "meeting", "appointment", "deadline", "due", "at noon", "at 3", "this afternoon", "this evening", "this morning", "end of day", "eod", "before"];
-const IDEA_SIGNALS = ["what if", "idea:", "maybe build", "launch", "product", "business", "app", "tool", "service", "could we", "imagine", "explore", "brainstorm", "pivot", "experiment", "concept", "strategy", "we should try", "how about", "wouldn't it be", "vision for"];
-const PROJECT_SIGNALS = ["create system", "build workflow", "setup process", "improve pipeline", "automate", "dashboard", "crm", "reporting", "migrate", "refactor", "implement", "redesign", "overhaul", "roadmap"];
+const IDEA_SIGNALS = ["what if", "idea:", "maybe build", "launch", "product", "business idea", "app idea", "tool idea", "service idea", "could we", "imagine", "explore", "brainstorm", "pivot", "experiment", "concept", "strategy", "we should try", "how about", "wouldn't it be", "vision for", "startup idea"];
+const PROJECT_SIGNALS = ["create system", "build workflow", "setup process", "improve pipeline", "automate", "dashboard", "crm", "reporting", "migrate", "refactor", "implement", "redesign", "overhaul", "roadmap", "multi-step", "phase 1", "phase 2", "initiative", "build out"];
+const GOAL_SIGNALS = ["goal", "this year", "this quarter", "q1", "q2", "q3", "q4", "long term", "long-term", "milestone", "achieve", "target", "objective", "kpi", "grow to", "reach", "scale to", "become", "master", "learn to"];
+const NOTE_SIGNALS = ["note:", "note to self", "just noting", "fyi", "for reference", "interesting", "read later", "article", "link", "bookmark", "saw this", "heard that", "fun fact"];
 const MAYBE_LATER_SIGNALS = ["someday", "later", "eventually", "not now", "park this", "low priority", "when i have time", "would be nice", "not urgent", "back burner", "no rush"];
 const FOLLOW_UP_SIGNALS = ["follow up", "check in", "waiting on", "pending", "get back", "circle back", "touch base", "hear back", "waiting for", "chase", "ping", "nudge"];
 
@@ -29,12 +31,14 @@ function inferCategory(text: string): { category: CaptureCategory; confidence: C
     task: matchCount(lower, TASK_SIGNALS),
     reminder: matchCount(lower, REMINDER_SIGNALS),
     idea: matchCount(lower, IDEA_SIGNALS),
-    project_note: matchCount(lower, PROJECT_SIGNALS),
+    project: matchCount(lower, PROJECT_SIGNALS),
+    goal: matchCount(lower, GOAL_SIGNALS),
+    note: matchCount(lower, NOTE_SIGNALS),
     follow_up: matchCount(lower, FOLLOW_UP_SIGNALS),
     maybe_later: matchCount(lower, MAYBE_LATER_SIGNALS),
   };
 
-  // Boost reminder if temporal signals present
+  // Boost reminder if temporal signals present alongside tasks
   if (scores.reminder > 0 && scores.task > 0) scores.reminder += 1;
 
   const entries = Object.entries(scores) as [CaptureCategory, number][];
@@ -44,48 +48,47 @@ function inferCategory(text: string): { category: CaptureCategory; confidence: C
   const secondScore = entries[1][1];
 
   if (topScore === 0) {
-    // No signal matched — use fallbacks
     if (lower.includes("?")) return { category: "idea", confidence: "needs_review" };
     if (lower.length < 25) return { category: "task", confidence: "needs_review" };
-    return { category: "project_note", confidence: "needs_review" };
+    return { category: "note", confidence: "needs_review" };
   }
 
-  // If the gap is clear, high confidence
   if (topScore >= 2 && topScore - secondScore >= 2) return { category: topCat, confidence: "high" };
   if (topScore >= 2) return { category: topCat, confidence: "medium" };
   if (topScore === 1 && secondScore === 0) return { category: topCat, confidence: "medium" };
   return { category: topCat, confidence: "needs_review" };
 }
 
-/* ── Priority ── */
+/* ── Priority (1–100 scale) ── */
 function inferPriority(text: string, category: CaptureCategory): number {
-  let score = 5;
+  let score = 40;
   const lower = text.toLowerCase();
-  if (matchCount(lower, URGENCY_HIGH) > 0) score += 3;
-  if (matchCount(lower, URGENCY_MED) > 0) score += 1;
-  if (lower.includes("important") || lower.includes("must")) score += 2;
-  if (category === "task") score += 1;
-  if (category === "reminder") score += 2;
-  if (category === "follow_up") score += 1;
-  if (category === "maybe_later") score -= 3;
-  if (category === "idea") score -= 1;
-  // Length heuristic: longer = more thought = slightly higher
-  if (lower.length > 80) score += 1;
-  return Math.min(10, Math.max(1, score));
+  if (matchCount(lower, URGENCY_HIGH) > 0) score += 30;
+  if (matchCount(lower, URGENCY_MED) > 0) score += 15;
+  if (lower.includes("important") || lower.includes("must")) score += 15;
+  if (category === "task") score += 10;
+  if (category === "reminder") score += 15;
+  if (category === "follow_up") score += 10;
+  if (category === "goal") score += 5;
+  if (category === "maybe_later") score -= 25;
+  if (category === "note") score -= 15;
+  if (category === "idea") score -= 5;
+  if (lower.length > 80) score += 5;
+  return Math.min(100, Math.max(1, score));
 }
 
 /* ── Urgency ── */
 function inferUrgency(text: string, priority: number): UrgencyLevel {
   const lower = text.toLowerCase();
-  if (matchCount(lower, URGENCY_HIGH) > 0 || priority >= 8) return "high";
-  if (matchCount(lower, URGENCY_MED) > 0 || priority >= 6) return "medium";
+  if (matchCount(lower, URGENCY_HIGH) > 0 || priority >= 80) return "high";
+  if (matchCount(lower, URGENCY_MED) > 0 || priority >= 55) return "medium";
   return "low";
 }
 
 /* ── Effort ── */
 function inferEffort(text: string, category: CaptureCategory): EffortLevel {
   const lower = text.toLowerCase();
-  if (category === "idea" || category === "project_note") return "high";
+  if (category === "project" || category === "goal") return "high";
   if (lower.includes("quick") || lower.includes("just") || lower.includes("simple")) return "low";
   if (["call", "reply", "confirm", "send", "email"].some((w) => lower.includes(w))) return "low";
   if (["build", "create", "design", "implement", "plan", "research", "prepare"].some((w) => lower.includes(w))) return "high";
@@ -117,24 +120,27 @@ function inferDueDate(text: string): string | null {
 /* ── Destination ── */
 function inferDestination(category: CaptureCategory, urgency: UrgencyLevel, confidence: ConfidenceLevel): DestinationSuggestion {
   if (confidence === "needs_review") return "inbox";
-  if (category === "maybe_later") return "maybe_later";
+  if (category === "maybe_later") return "someday";
   if (category === "idea") return "ideas";
+  if (category === "project") return "projects";
+  if (category === "goal") return "projects";
   if (urgency === "high") return "today";
   if (category === "task" && urgency === "medium") return "today";
   if (category === "reminder") return "today";
   if (category === "follow_up" && urgency !== "low") return "today";
+  if (category === "note") return "inbox";
   return "inbox";
 }
 
 /* ── Title ── */
 function generateTitle(text: string): string {
-  const cleaned = text.replace(/^(i need to|i want to|i should|please|hey|remind me to|remember to|idea:|note:|todo:)\s+/i, "");
+  const cleaned = text.replace(/^(i need to|i want to|i should|please|hey|remind me to|remember to|idea:|note:|note to self:|todo:)\s+/i, "");
   const words = cleaned.split(" ").slice(0, 8).join(" ");
   return (words.length < cleaned.length ? words + "…" : words).replace(/^./, (c) => c.toUpperCase());
 }
 
 /* ── Summary ── */
-function generateSummary(text: string, category: CaptureCategory): string {
+function generateSummary(text: string, _category: CaptureCategory): string {
   if (text.length <= 100) return text;
   return text.slice(0, 100) + "…";
 }
@@ -159,7 +165,11 @@ function generateNextAction(category: CaptureCategory, text: string, urgency: Ur
       if (lower.includes("meeting")) return "Prepare agenda and set calendar alert";
       if (lower.includes("appointment")) return "Confirm the appointment and set a reminder";
       return "Set a notification so you don't miss it";
-    case "project_note":
+    case "goal":
+      return "Break this goal into 3 measurable milestones";
+    case "note":
+      return "File for reference — review during next weekly session";
+    case "project":
       return "Create a brief and break it into actionable milestones";
     case "follow_up":
       if (urgency === "high") return "Send a follow-up message today";
@@ -170,25 +180,24 @@ function generateNextAction(category: CaptureCategory, text: string, urgency: Ur
 }
 
 /* ── Why it matters ── */
-function generateWhyItMatters(category: CaptureCategory, priority: number, urgency: UrgencyLevel, text: string): string {
-  const lower = text.toLowerCase();
-
-  if (urgency === "high" && priority >= 8) return "Time-sensitive and high impact — delaying could cause issues.";
+function generateWhyItMatters(category: CaptureCategory, priority: number, urgency: UrgencyLevel, _text: string): string {
+  if (urgency === "high" && priority >= 75) return "Time-sensitive and high impact — delaying could cause issues.";
   if (urgency === "high") return "This looks time-sensitive, so it was prioritized for Today.";
 
   if (category === "follow_up") return "Depends on an external response — following up keeps momentum alive.";
-  if (category === "reminder" && priority >= 7) return "Missing this could affect your schedule or commitments.";
+  if (category === "reminder" && priority >= 60) return "Missing this could affect your schedule or commitments.";
   if (category === "reminder") return "A timely reminder to keep your commitments on track.";
 
-  if (category === "idea" && priority >= 7) return "This appears to be a high-potential opportunity worth exploring soon.";
+  if (category === "idea" && priority >= 60) return "This appears to be a high-potential opportunity worth exploring soon.";
   if (category === "idea") return "An interesting opportunity — routed to Ideas Vault for future review.";
 
+  if (category === "goal") return "Long-term objective — breaking it into milestones will keep progress visible.";
+  if (category === "note") return "Captured for reference — it may connect to other thoughts later.";
   if (category === "maybe_later") return "Low urgency — stored for when you have bandwidth to revisit.";
+  if (category === "project") return "This looks like a bigger initiative — break it into steps when ready.";
 
-  if (category === "project_note") return "This looks like a bigger initiative — break it into steps when ready.";
-
-  if (priority >= 7) return "Important for progress — schedule time to handle this soon.";
-  if (priority >= 5) return "Worth addressing to keep things moving forward.";
+  if (priority >= 65) return "Important for progress — schedule time to handle this soon.";
+  if (priority >= 45) return "Worth addressing to keep things moving forward.";
   return "Low-friction item — resolve it when convenient.";
 }
 
@@ -197,7 +206,7 @@ function inferProject(text: string, category: CaptureCategory): string | null {
   const lower = text.toLowerCase();
   if (lower.includes("client") || lower.includes("proposal") || lower.includes("contract")) return "Client Work";
   if (lower.includes("investor") || lower.includes("fundrais") || lower.includes("series")) return "Fundraising";
-  if (lower.includes("website") || lower.includes("app") || lower.includes("landing") || lower.includes("product")) return "Product Development";
+  if (lower.includes("website") || lower.includes("landing") || lower.includes("product")) return "Product Development";
   if (lower.includes("marketing") || lower.includes("campaign") || lower.includes("social") || lower.includes("content")) return "Marketing";
   if (lower.includes("budget") || lower.includes("invoice") || lower.includes("tax") || lower.includes("gst") || lower.includes("accountant")) return "Finance";
   if (lower.includes("hire") || lower.includes("interview") || lower.includes("team")) return "Hiring";
@@ -205,7 +214,7 @@ function inferProject(text: string, category: CaptureCategory): string | null {
   if (lower.includes("health") || lower.includes("doctor") || lower.includes("dentist") || lower.includes("gym")) return "Personal Health";
   if (lower.includes("automat") || lower.includes("workflow") || lower.includes("system")) return "Operations";
   if (lower.includes("report") || lower.includes("analytics") || lower.includes("data")) return "Business Intelligence";
-  if (category === "project_note") return "General Projects";
+  if (category === "project") return "General Projects";
   return null;
 }
 
@@ -220,7 +229,8 @@ function generateTags(text: string, category: CaptureCategory, urgency: UrgencyL
   if (urgency === "high") tags.push("urgent");
   if (lower.includes("creative") || lower.includes("design") || lower.includes("idea")) tags.push("creative");
   if (lower.includes("travel") || lower.includes("trip") || lower.includes("flight")) tags.push("travel");
-  return [...new Set(tags)];
+  if (lower.includes("learn") || lower.includes("course") || lower.includes("study")) tags.push("learning");
+  return [...new Set(tags)].slice(0, 5);
 }
 
 /* ── Review reason ── */
@@ -238,13 +248,13 @@ function inferReviewReason(
     if (matchCount(lower, TASK_SIGNALS) > 0 && matchCount(lower, IDEA_SIGNALS) > 0) return "Intent could be task or idea";
     if (matchCount(lower, TASK_SIGNALS) > 0 && matchCount(lower, FOLLOW_UP_SIGNALS) > 0) return "Intent could be task or follow-up";
     if (urgency === "high" && dueContext === "none") return "Missing deadline for urgent item";
-    if (priority >= 7) return "High impact but insufficient detail";
+    if (priority >= 65) return "High impact but insufficient detail";
     return "Ambiguous intent — needs clarification";
   }
   if (confidence === "medium") {
     if (urgency === "high" && dueContext === "none") return "Missing deadline for urgent item";
-    if (priority >= 8) return "High-impact item — confirm routing";
-    if (category === "project_note") return "Possible project milestone detected";
+    if (priority >= 75) return "High-impact item — confirm routing";
+    if (category === "project") return "Possible project milestone detected";
     return "Moderate confidence — quick confirmation recommended";
   }
   return null;
@@ -252,15 +262,12 @@ function inferReviewReason(
 
 /* ── Review status ── */
 function inferReviewStatus(confidence: ConfidenceLevel, priority: number, urgency: UrgencyLevel, dueContext: DueContext): "auto_approved" | "needs_review" {
-  // Auto-approve: high confidence, not too critical, or clear simple items
-  if (confidence === "high" && priority <= 8) return "auto_approved";
+  if (confidence === "high" && priority <= 75) return "auto_approved";
   if (confidence === "high" && urgency !== "high") return "auto_approved";
-  // Needs review: low confidence, high-impact ambiguous, or missing info
   if (confidence === "needs_review") return "needs_review";
-  if (confidence === "medium" && priority >= 8) return "needs_review";
+  if (confidence === "medium" && priority >= 75) return "needs_review";
   if (urgency === "high" && dueContext === "none") return "needs_review";
-  // Medium confidence simple items can be auto-approved
-  if (confidence === "medium" && priority <= 5) return "auto_approved";
+  if (confidence === "medium" && priority <= 45) return "auto_approved";
   return "needs_review";
 }
 

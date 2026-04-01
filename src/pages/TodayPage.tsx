@@ -11,12 +11,12 @@ import type { Capture, CaptureCategory } from "@/types/brain";
 
 /* ── helpers ── */
 const categoryLabel: Record<CaptureCategory, string> = {
-  task: "Task", idea: "Idea", reminder: "Reminder",
-  project_note: "Project", follow_up: "Follow-up", maybe_later: "Someday",
+  task: "Task", idea: "Idea", reminder: "Reminder", goal: "Goal", note: "Note",
+  project: "Project", follow_up: "Follow-up", maybe_later: "Someday",
 };
 
 const priorityColor = (s: number) =>
-  s >= 8 ? "text-brain-rose" : s >= 5 ? "text-brain-amber" : "text-muted-foreground";
+  s >= 70 ? "text-brain-rose" : s >= 45 ? "text-brain-amber" : "text-muted-foreground";
 
 const aiReasoning = (c: Capture) => c.ai_data?.why_it_matters ?? "";
 
@@ -117,7 +117,7 @@ export default function TodayPage() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge variant="secondary" className="text-[10px]">{categoryLabel[ai.category]}</Badge>
-                      <span className={`text-xs font-bold ${priorityColor(ai.priority_score)}`}>{ai.priority_score}/10</span>
+                      <span className={`text-xs font-bold ${priorityColor(ai.priority_score)}`}>{ai.priority_score}/100</span>
                     </div>
                   </div>
                   {ai.due_date && (

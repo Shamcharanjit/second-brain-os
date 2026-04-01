@@ -15,13 +15,15 @@ const categoryColors: Record<CaptureCategory, string> = {
   task: "bg-[hsl(var(--brain-teal))/0.12] text-[hsl(var(--brain-teal))]",
   idea: "bg-[hsl(var(--brain-amber))/0.12] text-[hsl(var(--brain-amber))]",
   reminder: "bg-[hsl(var(--brain-rose))/0.12] text-[hsl(var(--brain-rose))]",
-  project_note: "bg-[hsl(var(--brain-blue))/0.12] text-[hsl(var(--brain-blue))]",
+  goal: "bg-[hsl(var(--brain-purple))/0.12] text-[hsl(var(--brain-purple))]",
+  note: "bg-[hsl(var(--brain-blue))/0.12] text-[hsl(var(--brain-blue))]",
+  project: "bg-[hsl(var(--brain-blue))/0.12] text-[hsl(var(--brain-blue))]",
   follow_up: "bg-[hsl(var(--brain-purple))/0.12] text-[hsl(var(--brain-purple))]",
   maybe_later: "bg-muted text-muted-foreground",
 };
 const categoryLabels: Record<CaptureCategory, string> = {
-  task: "Task", idea: "Idea", reminder: "Reminder",
-  project_note: "Project Note", follow_up: "Follow-up", maybe_later: "Maybe Later",
+  task: "Task", idea: "Idea", reminder: "Reminder", goal: "Goal", note: "Note",
+  project: "Project", follow_up: "Follow-up", maybe_later: "Someday",
 };
 
 const DEST_LABELS: Record<string, { label: string; color: string }> = {
@@ -233,8 +235,8 @@ function ReviewCard({
                 <Mic className="h-2.5 w-2.5" /> Voice
               </Badge>
             )}
-            <span className={`text-[10px] font-bold ${ai.priority_score >= 8 ? "text-[hsl(var(--brain-rose))]" : ai.priority_score >= 5 ? "text-[hsl(var(--brain-amber))]" : "text-muted-foreground"}`}>
-              {ai.priority_score}/10
+            <span className={`text-[10px] font-bold ${ai.priority_score >= 70 ? "text-[hsl(var(--brain-rose))]" : ai.priority_score >= 45 ? "text-[hsl(var(--brain-amber))]" : "text-muted-foreground"}`}>
+              {ai.priority_score}/100
             </span>
           </div>
           <div className="flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">

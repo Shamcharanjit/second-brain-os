@@ -14,25 +14,27 @@ const categoryColors: Record<CaptureCategory, string> = {
   task: "bg-brain-teal/15 text-brain-teal border-brain-teal/20",
   idea: "bg-brain-amber/15 text-brain-amber border-brain-amber/20",
   reminder: "bg-brain-rose/15 text-brain-rose border-brain-rose/20",
-  project_note: "bg-brain-blue/15 text-brain-blue border-brain-blue/20",
+  goal: "bg-brain-purple/15 text-brain-purple border-brain-purple/20",
+  note: "bg-brain-blue/15 text-brain-blue border-brain-blue/20",
+  project: "bg-brain-blue/15 text-brain-blue border-brain-blue/20",
   follow_up: "bg-brain-purple/15 text-brain-purple border-brain-purple/20",
   maybe_later: "bg-muted text-muted-foreground border-border",
 };
 
 const categoryLabels: Record<CaptureCategory, string> = {
-  task: "Task", idea: "Idea", reminder: "Reminder",
-  project_note: "Project Note", follow_up: "Follow-up", maybe_later: "Maybe Later",
+  task: "Task", idea: "Idea", reminder: "Reminder", goal: "Goal", note: "Note",
+  project: "Project", follow_up: "Follow-up", maybe_later: "Someday",
 };
 
 const priorityColor = (score: number) => {
-  if (score >= 8) return "text-brain-rose font-bold";
-  if (score >= 5) return "text-brain-amber font-semibold";
+  if (score >= 70) return "text-brain-rose font-bold";
+  if (score >= 45) return "text-brain-amber font-semibold";
   return "text-muted-foreground font-medium";
 };
 
 const priorityBg = (score: number) => {
-  if (score >= 8) return "bg-brain-rose/10 border-brain-rose/20";
-  if (score >= 5) return "bg-brain-amber/10 border-brain-amber/20";
+  if (score >= 70) return "bg-brain-rose/10 border-brain-rose/20";
+  if (score >= 45) return "bg-brain-amber/10 border-brain-amber/20";
   return "bg-muted border-border";
 };
 
@@ -83,7 +85,7 @@ export default function InboxCard({ capture }: { capture: Capture }) {
               {categoryLabels[ai.category]}
             </span>
             <div className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] ${priorityBg(ai.priority_score)}`}>
-              <span className={priorityColor(ai.priority_score)}>{ai.priority_score}/10</span>
+              <span className={priorityColor(ai.priority_score)}>{ai.priority_score}/100</span>
             </div>
             {/* Confidence badge */}
             <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${conf.color}`}>

@@ -255,8 +255,8 @@ function IdeaHeroCard({ capture, onPromote, onArchive }: { capture: Capture; onP
           <p className="text-xs text-muted-foreground leading-relaxed">{ai.summary}</p>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
-          <span className={`text-lg font-bold ${ai.priority_score >= 7 ? "text-brain-teal" : ai.priority_score >= 5 ? "text-brain-amber" : "text-muted-foreground"}`}>
-            {ai.priority_score}/10
+          <span className={`text-lg font-bold ${ai.priority_score >= 65 ? "text-brain-teal" : ai.priority_score >= 45 ? "text-brain-amber" : "text-muted-foreground"}`}>
+            {ai.priority_score}/100
           </span>
           <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Potential</span>
         </div>
@@ -330,8 +330,8 @@ function IdeaCompactCard({ capture, onPromote, onArchive }: { capture: Capture; 
     <div className="rounded-lg border bg-card p-4 space-y-2.5 hover:border-primary/20 transition-colors group">
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-sm font-medium leading-snug truncate">{ai.title}</h3>
-        <span className={`text-xs font-bold shrink-0 ${ai.priority_score >= 7 ? "text-brain-teal" : "text-muted-foreground"}`}>
-          {ai.priority_score}/10
+        <span className={`text-xs font-bold shrink-0 ${ai.priority_score >= 65 ? "text-brain-teal" : "text-muted-foreground"}`}>
+          {ai.priority_score}/100
         </span>
       </div>
       <p className="text-xs text-muted-foreground line-clamp-2">{ai.summary}</p>

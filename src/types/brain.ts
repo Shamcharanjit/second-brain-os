@@ -1,6 +1,6 @@
-export type CaptureCategory = "task" | "idea" | "reminder" | "project_note" | "follow_up" | "maybe_later";
+export type CaptureCategory = "task" | "idea" | "reminder" | "goal" | "note" | "project" | "follow_up" | "maybe_later";
 
-export type CaptureStatus = "unprocessed" | "processed" | "sent_to_today" | "sent_to_ideas" | "archived";
+export type CaptureStatus = "unprocessed" | "processed" | "sent_to_today" | "sent_to_ideas" | "sent_to_projects" | "sent_to_someday" | "archived";
 
 export type ReviewStatus = "auto_approved" | "needs_review" | "reviewed";
 
@@ -8,13 +8,13 @@ export type UrgencyLevel = "low" | "medium" | "high";
 export type EffortLevel = "low" | "medium" | "high";
 export type ConfidenceLevel = "high" | "medium" | "needs_review";
 export type DueContext = "today" | "tomorrow" | "this_week" | "later" | "none";
-export type DestinationSuggestion = "today" | "inbox" | "ideas" | "maybe_later";
+export type DestinationSuggestion = "today" | "inbox" | "ideas" | "projects" | "someday" | "maybe_later";
 
 export interface AIProcessedData {
   title: string;
   summary: string;
   category: CaptureCategory;
-  priority_score: number;
+  priority_score: number; // 1–100
   due_date: string | null;
   next_action: string;
   suggested_project: string | null;

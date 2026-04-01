@@ -21,7 +21,9 @@ const filters: { label: string; value: FilterValue; icon?: React.ReactNode }[] =
   { label: "Ideas", value: "idea" },
   { label: "High Priority", value: "high_priority" },
   { label: "Follow-ups", value: "follow_up" },
-  { label: "Notes", value: "project_note" },
+  { label: "Notes", value: "note" },
+  { label: "Goals", value: "goal" },
+  { label: "Projects", value: "project" },
   { label: "Maybe Later", value: "maybe_later" },
   { label: "Processed", value: "processed_filter" },
 ];
