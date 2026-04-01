@@ -17,6 +17,7 @@ const NAV_LINKS = [
   { to: "/memory", label: "Memory", icon: Search },
   { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
   { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/upgrade", label: "Upgrade", icon: Crown },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
