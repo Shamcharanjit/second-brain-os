@@ -65,9 +65,11 @@ interface InboxCardProps {
 export default function InboxCard({ capture }: InboxCardProps) {
   const ai = capture.ai_data;
   const { approveCapture, editAndApproveCapture, archiveCapture, routeCapture } = useBrain();
+  const { linkCapture } = useProjects();
   const { routeToMemory } = useIntegrationActions();
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [showCreateProject, setShowCreateProject] = useState(false);
 
   // Edit state
   const [editTitle, setEditTitle] = useState(ai?.title ?? "");
