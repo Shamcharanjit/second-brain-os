@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { MemoryEntry, MemoryType } from "@/types/memory";
 import { saveState, loadState } from "@/lib/persistence";
-import { fetchMemories, upsertMemories } from "@/lib/supabase/data-layer";
+import { fetchMemories, upsertMemories, syncMemories } from "@/lib/supabase/data-layer";
 import { useCloudSync, useCloudHydration } from "@/hooks/useCloudSync";
 
 const STORAGE_KEY = "insighthalo_memory";
