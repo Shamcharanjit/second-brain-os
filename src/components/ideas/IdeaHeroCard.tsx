@@ -92,6 +92,25 @@ export default function IdeaHeroCard({ capture, onPromote, onArchive, onExplore,
         </span>
       </div>
 
+      {/* Linked Memories */}
+      {linkedMemories.length > 0 && (
+        <div className="rounded-lg border border-primary/10 bg-primary/5 p-3 space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <Brain className="h-3 w-3 text-primary" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">Linked Knowledge</span>
+          </div>
+          {linkedMemories.slice(0, 3).map((m) => (
+            <div key={m.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground truncate">{m.title}</span>
+              <Badge variant="secondary" className="text-[9px] px-1 py-0 shrink-0">{m.memory_type}</Badge>
+            </div>
+          ))}
+          {linkedMemories.length > 3 && (
+            <p className="text-[10px] text-muted-foreground">+{linkedMemories.length - 3} more</p>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center gap-2 pt-1 flex-wrap">
         <Button size="sm" className="h-7 text-xs gap-1" onClick={() => onPromote(capture.id)}>
           <Rocket className="h-3 w-3" /> Today
