@@ -41,7 +41,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = useCallback(async (email: string, password: string) => {
     if (!isSupabaseEnabled) return { error: new Error("Cloud not configured") };
-    const { supabase } = await import("@/integrations/supabase/client");
     const { error } = await supabase.auth.signUp({
       email, password,
       options: { emailRedirectTo: window.location.origin },
