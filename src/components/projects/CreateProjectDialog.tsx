@@ -15,18 +15,31 @@ interface Props {
   defaultName?: string;
   defaultDescription?: string;
   sourceIdeaId?: string;
+  /** AI-suggested first next action — auto-added on creation */
+  initialNextAction?: string;
 }
 
-export default function CreateProjectDialog({ open, onClose, defaultName = "", defaultDescription = "", sourceIdeaId }: Props) {
-  const { createProject } = useProjects();
+export default function CreateProjectDialog({ open, onClose, defaultName = "", defaultDescription = "", sourceIdeaId, initialNextAction }: Props) {
+  const { createProject, addNextAction, linkCapture } = useProjects();
   const [name, setName] = useState(defaultName);
   const [description, setDescription] = useState(defaultDescription);
   const [priority, setPriority] = useState<ProjectPriority>("medium");
 
   const handleCreate = () => {
     if (!name.trim()) return;
-    createProject(name.trim(), description.trim(), priority, sourceIdeaId);
-    toast.success("Project created");
+    const proj = createProject(name.trim(), description.trim(), priority, sourceIdeaId);
+
+    // Auto-add AI suggested next action if available and meaningful
+    if (initialNextAction?.trim() && initialNextAction.trim().toLowerCase() !== name.trim().toLowerCase()) {
+      addNextAction(proj.id, initialNextAction.trim(), true);
+    }
+
+    // Link source capture if provided
+    if (sourceIdeaId) {
+      linkCapture(proj.id, sourceIdeaId);
+    }
+
+    toast.success(initialNextAction?.trim() ? "Project created with first action" : "Project created");
     setName(""); setDescription(""); setPriority("medium");
     onClose();
   };
@@ -46,6 +59,12 @@ export default function CreateProjectDialog({ open, onClose, defaultName = "", d
             <label className="text-xs font-medium text-muted-foreground">Description</label>
             <Textarea placeholder="What is this project about?" value={description} onChange={(e) => setDescription(e.target.value)} className="min-h-[60px]" />
           </div>
+          {initialNextAction?.trim() && (
+            <div className="rounded-lg bg-primary/5 border border-primary/15 p-3 space-y-1">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">AI-Suggested First Action</p>
+              <p className="text-xs text-foreground">{initialNextAction}</p>
+            </div>
+          )}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Priority</label>
             <Select value={priority} onValueChange={(v) => setPriority(v as ProjectPriority)}>
