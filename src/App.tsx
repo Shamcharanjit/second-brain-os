@@ -28,6 +28,7 @@ const App = () => (
       <Sonner />
       <BrainProvider>
         <ProjectProvider>
+          <MemoryProvider>
           <BrowserRouter>
             <AppLayout>
               <Routes>

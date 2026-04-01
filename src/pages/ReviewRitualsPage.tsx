@@ -290,9 +290,7 @@ export default function ReviewRitualsPage() {
             {weeklyStep === "ideas" && (
               <ReviewStepIdeas newIdeas={newIdeas} highPotential={highPotentialIdeas} parked={parkedIdeas} onExplore={handleExplore} onConvert={handleConvert} onPromote={handleRouteToday} onArchive={handleArchive} />
             )}
-            {weeklyStep === "memory" && (
-              <ReviewStepMemory items={memoryItems} onRouteToday={handleRouteToday} onRouteIdeas={handleRouteIdeas} />
-            )}
+            {weeklyStep === "memory" && <ReviewStepMemory />}
             {weeklyStep === "summary" && (
               <ReviewStepSummary
                 health={{ inboxCount: unprocessed.length, unfinishedToday: todayActive.length, atRiskProjects, newIdeas: newIdeas.length, notesCount: memoryItems.length, completedThisWeek: todayCompleted.length }}
