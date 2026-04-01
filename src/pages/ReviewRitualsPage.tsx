@@ -22,7 +22,7 @@ import ReviewStepSummary from "@/components/review/ReviewStepSummary";
 
 type ReviewTab = "daily" | "weekly";
 
-const MOCK_STREAK = { dailyStreak: 5, lastWeekly: "3 days ago", monthTotal: 18 };
+const MOCK_STREAK = { dailyStreak: 5, lastWeekly: "3 days ago", monthTotal: 18 }; // fallback only
 
 const WEEKLY_STEPS = [
   { key: "inbox", label: "Inbox", icon: Inbox },
@@ -41,7 +41,7 @@ export default function ReviewRitualsPage() {
     completeCapture, updateIdeaStatus, convertIdeaToProject,
   } = useBrain();
   const { routeToMemory } = useIntegrationActions();
-  const { markDailyComplete: persistDaily, markWeeklyComplete: persistWeekly } = useReviewMeta();
+  const { markDailyComplete: persistDaily, markWeeklyComplete: persistWeekly, dailyStreak, lastWeeklyLabel, monthTotal } = useReviewMeta();
   const { projects, getProjectHealth } = useProjects();
   const navigate = useNavigate();
   const [tab, setTab] = useState<ReviewTab>("weekly");
@@ -247,8 +247,8 @@ export default function ReviewRitualsPage() {
             ))}
           </div>
 
-          <Button className="w-full h-12 text-base font-semibold gap-2" onClick={() => { setDailyComplete(true); persistDaily(); }}>
-            <Sun className="h-5 w-5" /> Start My Day
+          <Button className="w-full h-12 text-base font-semibold gap-2" onClick={() => { setDailyComplete(true); persistDaily(); toast.success("Daily review complete — clarity restored."); }}>
+            <Sun className="h-5 w-5" /> Complete Daily Review
           </Button>
         </div>
       )}
@@ -256,9 +256,15 @@ export default function ReviewRitualsPage() {
       {tab === "daily" && dailyComplete && (
         <div className="rounded-xl border bg-card p-8 text-center space-y-3">
           <CheckCircle2 className="h-12 w-12 text-primary mx-auto" />
-          <h3 className="text-lg font-bold">Daily Review Complete</h3>
-          <p className="text-sm text-muted-foreground">You're focused and ready. Clarity compounds.</p>
-          <Button variant="outline" size="sm" onClick={() => setDailyComplete(false)}>Review Again</Button>
+          <h3 className="text-lg font-bold">Clarity Restored</h3>
+          <p className="text-sm text-muted-foreground">Your system is back in sync. You're set for today.</p>
+          {dailyStreak > 1 && (
+            <p className="text-xs font-medium text-primary">{dailyStreak}-day review streak 🔥</p>
+          )}
+          <div className="flex items-center justify-center gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={() => setDailyComplete(false)}>Review Again</Button>
+            <Button size="sm" onClick={() => navigate("/")}>Back to Dashboard</Button>
+          </div>
         </div>
       )}
 
@@ -302,7 +308,7 @@ export default function ReviewRitualsPage() {
             {weeklyStep === "summary" && (
               <ReviewStepSummary
                 health={{ inboxCount: unprocessed.length, unfinishedToday: todayActive.length, atRiskProjects, newIdeas: newIdeas.length, notesCount: 0, completedThisWeek: todayCompleted.length }}
-                stepsCompleted={completedSteps.size} totalSteps={WEEKLY_STEPS.length} onComplete={() => { setWeeklyComplete(true); persistWeekly(); }}
+                stepsCompleted={completedSteps.size} totalSteps={WEEKLY_STEPS.length} onComplete={() => { setWeeklyComplete(true); persistWeekly(); toast.success("Weekly review complete — your system is reset."); }}
               />
             )}
           </div>
@@ -324,8 +330,11 @@ export default function ReviewRitualsPage() {
         <div className="rounded-xl border bg-card p-8 text-center space-y-3">
           <Trophy className="h-12 w-12 text-primary mx-auto" />
           <h3 className="text-lg font-bold">Weekly Review Complete</h3>
-          <p className="text-sm text-muted-foreground">You've reset and planned. Clarity compounds.</p>
-          <Button variant="outline" size="sm" onClick={() => { setWeeklyComplete(false); setCompletedSteps(new Set()); setWeeklyStep("inbox"); }}>Review Again</Button>
+          <p className="text-sm text-muted-foreground">You've reset and planned. Your second brain is in sync.</p>
+          <div className="flex items-center justify-center gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={() => { setWeeklyComplete(false); setCompletedSteps(new Set()); setWeeklyStep("inbox"); }}>Review Again</Button>
+            <Button size="sm" onClick={() => navigate("/")}>Back to Dashboard</Button>
+          </div>
         </div>
       )}
 
@@ -336,15 +345,15 @@ export default function ReviewRitualsPage() {
         </div>
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-xl border bg-card p-4 text-center space-y-1">
-            <p className="text-2xl font-bold text-primary">{MOCK_STREAK.dailyStreak}</p>
+            <p className="text-2xl font-bold text-primary">{dailyStreak}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Day Streak</p>
           </div>
           <div className="rounded-xl border bg-card p-4 text-center space-y-1">
-            <p className="text-sm font-bold">{MOCK_STREAK.lastWeekly}</p>
+            <p className="text-sm font-bold">{lastWeeklyLabel}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Last Weekly</p>
           </div>
           <div className="rounded-xl border bg-card p-4 text-center space-y-1">
-            <p className="text-2xl font-bold">{MOCK_STREAK.monthTotal}</p>
+            <p className="text-2xl font-bold">{monthTotal}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">This Month</p>
           </div>
         </div>
