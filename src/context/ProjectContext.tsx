@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Project, ProjectStatus, ProjectPriority, ProjectHealth, NextAction, ProjectNote, ProjectEvent } from "@/types/project";
 import { saveState, loadState } from "@/lib/persistence";
+import { fetchProjects, upsertProjects } from "@/lib/supabase/data-layer";
+import { useCloudSync, useCloudHydration } from "@/hooks/useCloudSync";
 
 const STORAGE_KEY = "insighthalo_projects";
 
@@ -128,6 +130,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>(() => loadState(STORAGE_KEY, SEED_PROJECTS));
 
   useEffect(() => { saveState(STORAGE_KEY, projects); }, [projects]);
+
+  useCloudHydration(projects, setProjects, fetchProjects, upsertProjects, (d) => d.length === 0);
+  useCloudSync(projects, upsertProjects);
 
   const getProject = useCallback((id: string) => projects.find((p) => p.id === id), [projects]);
   const getProjectHealth = useCallback((p: Project) => computeHealth(p), []);

@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { MemoryEntry, MemoryType } from "@/types/memory";
 import { saveState, loadState } from "@/lib/persistence";
+import { fetchMemories, upsertMemories } from "@/lib/supabase/data-layer";
+import { useCloudSync, useCloudHydration } from "@/hooks/useCloudSync";
 
 const STORAGE_KEY = "insighthalo_memory";
 
@@ -108,6 +110,9 @@ export function MemoryProvider({ children }: { children: React.ReactNode }) {
   const [memories, setMemories] = useState<MemoryEntry[]>(() => loadState(STORAGE_KEY, SEED_MEMORIES));
 
   useEffect(() => { saveState(STORAGE_KEY, memories); }, [memories]);
+
+  useCloudHydration(memories, setMemories, fetchMemories, upsertMemories, (d) => d.length === 0);
+  useCloudSync(memories, upsertMemories);
 
   const getMemory = useCallback((id: string) => memories.find((m) => m.id === id), [memories]);
 

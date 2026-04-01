@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { Capture, CaptureStatus, ReviewStatus, AIProcessedData, IdeaStatus } from "@/types/brain";
 import { mockAIProcess } from "@/lib/mock-ai";
 import { saveState, loadState } from "@/lib/persistence";
+import { fetchCaptures, upsertCaptures } from "@/lib/supabase/data-layer";
+import { useCloudSync, useCloudHydration } from "@/hooks/useCloudSync";
 
 const STORAGE_KEY = "insighthalo_brain";
 
@@ -84,6 +86,10 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
   const [captures, setCaptures] = useState<Capture[]>(() => loadState(STORAGE_KEY, SEED_DATA));
 
   useEffect(() => { saveState(STORAGE_KEY, captures); }, [captures]);
+
+  // Cloud sync
+  useCloudHydration(captures, setCaptures, fetchCaptures, upsertCaptures, (d) => d.length === 0);
+  useCloudSync(captures, upsertCaptures);
 
   const addCapture = useCallback((text: string, type: "text" | "voice"): Capture => {
     const { aiData, reviewStatus } = mockAIProcess(text);
