@@ -255,8 +255,8 @@ function IdeaHeroCard({ capture, onPromote, onArchive }: { capture: Capture; onP
           <p className="text-xs text-muted-foreground leading-relaxed">{ai.summary}</p>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
-          <span className={`text-lg font-bold ${ai.priority_score >= 7 ? "text-brain-teal" : ai.priority_score >= 5 ? "text-brain-amber" : "text-muted-foreground"}`}>
-            {ai.priority_score}/10
+          <span className={`text-lg font-bold ${ai.priority_score >= 65 ? "text-brain-teal" : ai.priority_score >= 45 ? "text-brain-amber" : "text-muted-foreground"}`}>
+            {ai.priority_score}/100
           </span>
           <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Potential</span>
         </div>
