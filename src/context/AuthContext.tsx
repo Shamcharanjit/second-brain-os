@@ -56,7 +56,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!isSupabaseEnabled) return;
-    const { supabase } = await import("@/integrations/supabase/client");
     await supabase.auth.signOut();
   }, []);
 
