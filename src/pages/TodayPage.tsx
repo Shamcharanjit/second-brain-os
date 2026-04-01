@@ -88,7 +88,9 @@ export default function TodayPage() {
   }, [todayItems, active, completed, highPriorityRemaining]);
 
   const handleComplete = (id: string) => {
+    const capture = captures.find((c) => c.id === id);
     completeCapture(id);
+    if (capture) syncCompletionToProject(capture);
     toast.success("Marked complete ✓");
   };
 
