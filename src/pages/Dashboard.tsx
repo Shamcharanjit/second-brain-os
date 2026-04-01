@@ -35,11 +35,7 @@ export default function Dashboard() {
 
   const ideasToRevisit = useMemo(() => {
     return captures
-      .filter(
-        (c) =>
-          c.status !== "archived" &&
-          (c.ai_data?.category === "idea" || c.ai_data?.category === "maybe_later")
-      )
+      .filter((c) => c.status === "sent_to_ideas")
       .slice(0, 3);
   }, [captures]);
 
