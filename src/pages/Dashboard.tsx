@@ -1,63 +1,57 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, Inbox, CalendarCheck, Lightbulb, ArrowRight, BrainCircuit, Sparkles, ShieldQuestion, Mic, Radio, RotateCcw, Search } from "lucide-react";
+import { Brain, Inbox, CalendarCheck, Lightbulb, ArrowRight, BrainCircuit, Sparkles, ShieldQuestion, Mic, Radio, RotateCcw, Search, FolderKanban, AlertTriangle } from "lucide-react";
 import CaptureInput from "@/components/CaptureInput";
 import CaptureCard from "@/components/CaptureCard";
 import { useBrain } from "@/context/BrainContext";
+import { useProjects } from "@/context/ProjectContext";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
   const { captures } = useBrain();
+  const { projects, getProjectHealth } = useProjects();
   const navigate = useNavigate();
 
   const stats = useMemo(() => {
     const pendingReview = captures.filter((c) => c.status !== "archived" && c.review_status !== "reviewed");
     const todayTasks = captures.filter((c) => c.status === "sent_to_today" && !c.is_completed);
     const ideas = captures.filter((c) => c.status === "sent_to_ideas" && c.idea_status !== "archived" && c.idea_status !== "converted_to_project");
-    return { total: captures.length, pendingReview: pendingReview.length, todayTasks: todayTasks.length, ideas: ideas.length };
-  }, [captures]);
+    const activeProjects = projects.filter((p) => p.status === "active" || p.status === "planning").length;
+    const stalledProjects = projects.filter((p) => p.status !== "completed" && p.status !== "archived" && (getProjectHealth(p) === "stalled" || getProjectHealth(p) === "at_risk")).length;
+    return { total: captures.length, pendingReview: pendingReview.length, todayTasks: todayTasks.length, ideas: ideas.length, activeProjects, stalledProjects };
+  }, [captures, projects, getProjectHealth]);
 
-  const topPriorities = useMemo(() => {
-    return captures
-      .filter((c) => c.status === "sent_to_today" && !c.is_completed)
-      .sort((a, b) => (b.ai_data?.priority_score ?? 0) - (a.ai_data?.priority_score ?? 0))
-      .slice(0, 3);
-  }, [captures]);
+  const topPriorities = useMemo(() =>
+    captures.filter((c) => c.status === "sent_to_today" && !c.is_completed)
+      .sort((a, b) => (b.ai_data?.priority_score ?? 0) - (a.ai_data?.priority_score ?? 0)).slice(0, 3),
+    [captures]);
 
-  const unprocessedRecent = useMemo(() => {
-    return captures.filter((c) => c.review_status !== "reviewed" && c.status !== "archived").slice(0, 3);
-  }, [captures]);
+  const unprocessedRecent = useMemo(() =>
+    captures.filter((c) => c.review_status !== "reviewed" && c.status !== "archived").slice(0, 3),
+    [captures]);
 
-  const ideasToRevisit = useMemo(() => {
-    return captures
-      .filter((c) => c.status === "sent_to_ideas")
-      .slice(0, 3);
-  }, [captures]);
+  const ideasToRevisit = useMemo(() => captures.filter((c) => c.status === "sent_to_ideas").slice(0, 3), [captures]);
 
-  const pendingReview = useMemo(() => {
-    return captures.filter((c) => c.review_status === "needs_review" && c.status === "unprocessed");
-  }, [captures]);
+  const pendingReview = useMemo(() => captures.filter((c) => c.review_status === "needs_review" && c.status === "unprocessed"), [captures]);
 
-  const voiceToday = useMemo(() => {
-    return captures.filter((c) => c.input_type === "voice" && (Date.now() - new Date(c.created_at).getTime()) < 86400000).length;
-  }, [captures]);
+  const voiceToday = useMemo(() =>
+    captures.filter((c) => c.input_type === "voice" && (Date.now() - new Date(c.created_at).getTime()) < 86400000).length,
+    [captures]);
 
   const statCards = [
     { label: "Total Captures", value: stats.total, icon: Brain, color: "text-primary" },
     { label: "Pending Review", value: stats.pendingReview, icon: Inbox, color: "text-[hsl(var(--brain-amber))]" },
     { label: "Today Tasks", value: stats.todayTasks, icon: CalendarCheck, color: "text-[hsl(var(--brain-teal))]" },
-    { label: "Ideas Stored", value: stats.ideas, icon: Lightbulb, color: "text-[hsl(var(--brain-purple))]" },
+    { label: "Active Projects", value: stats.activeProjects, icon: FolderKanban, color: "text-[hsl(var(--brain-blue))]" },
   ];
 
   return (
     <div className="space-y-10">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">Capture fast, see what matters, never lose ideas.</p>
       </div>
 
-      {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {statCards.map((s) => (
           <div key={s.label} className="rounded-xl border bg-card p-4 space-y-2">
@@ -70,7 +64,18 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Capture Thought */}
+      {/* Stalled projects alert */}
+      {stats.stalledProjects > 0 && (
+        <div className="rounded-xl border border-[hsl(var(--brain-rose))/0.2] bg-[hsl(var(--brain-rose))/0.05] p-4 flex items-center gap-3 cursor-pointer hover:shadow-sm transition-shadow" onClick={() => navigate("/projects")}>
+          <AlertTriangle className="h-5 w-5 text-[hsl(var(--brain-rose))] shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">{stats.stalledProjects} project{stats.stalledProjects > 1 ? "s" : ""} need attention</p>
+            <p className="text-[10px] text-muted-foreground">Stalled or at-risk — review to maintain momentum</p>
+          </div>
+          <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">Review <ArrowRight className="h-3 w-3" /></Button>
+        </div>
+      )}
+
       <section className="space-y-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
@@ -80,11 +85,7 @@ export default function Dashboard() {
         <CaptureInput />
       </section>
 
-      {/* Voice Capture Card */}
-      <div
-        onClick={() => navigate("/voice")}
-        className="rounded-xl border bg-card p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all hover:border-primary/20"
-      >
+      <div onClick={() => navigate("/voice")} className="rounded-xl border bg-card p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all hover:border-primary/20">
         <div className="h-10 w-10 rounded-lg bg-[hsl(var(--brain-purple))/0.12] flex items-center justify-center shrink-0">
           <Mic className="h-5 w-5 text-[hsl(var(--brain-purple))]" />
         </div>
@@ -92,34 +93,24 @@ export default function Dashboard() {
           <h3 className="text-sm font-semibold">Voice Capture</h3>
           <p className="text-[10px] text-muted-foreground">{voiceToday} voice capture{voiceToday !== 1 ? "s" : ""} today</p>
         </div>
-        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">
-          <Mic className="h-3 w-3" /> Launch
-        </Button>
+        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0"><Mic className="h-3 w-3" /> Launch</Button>
       </div>
 
-      {/* Today Focus */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CalendarCheck className="h-4 w-4 text-[hsl(var(--brain-teal))]" />
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Today Focus</h2>
           </div>
-          <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate("/today")}>
-            Open Today <ArrowRight className="h-3 w-3" />
-          </Button>
+          <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate("/today")}>Open Today <ArrowRight className="h-3 w-3" /></Button>
         </div>
         {topPriorities.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">No priorities yet.</p>
         ) : (
-          <div className="space-y-2">
-            {topPriorities.map((c) => (
-              <CaptureCard key={c.id} capture={c} />
-            ))}
-          </div>
+          <div className="space-y-2">{topPriorities.map((c) => <CaptureCard key={c.id} capture={c} />)}</div>
         )}
       </section>
 
-      {/* Inbox Needs Review */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -127,28 +118,19 @@ export default function Dashboard() {
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Inbox Needs Review
               {stats.pendingReview > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center rounded-full bg-[hsl(var(--brain-amber))/0.15] text-[hsl(var(--brain-amber))] text-[10px] font-bold px-1.5 py-0.5">
-                  {stats.pendingReview}
-                </span>
+                <span className="ml-2 inline-flex items-center justify-center rounded-full bg-[hsl(var(--brain-amber))/0.15] text-[hsl(var(--brain-amber))] text-[10px] font-bold px-1.5 py-0.5">{stats.pendingReview}</span>
               )}
             </h2>
           </div>
-          <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate("/inbox")}>
-            Review Inbox <ArrowRight className="h-3 w-3" />
-          </Button>
+          <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate("/inbox")}>Review Inbox <ArrowRight className="h-3 w-3" /></Button>
         </div>
         {unprocessedRecent.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">All caught up!</p>
         ) : (
-          <div className="space-y-2">
-            {unprocessedRecent.map((c) => (
-              <CaptureCard key={c.id} capture={c} />
-            ))}
-          </div>
+          <div className="space-y-2">{unprocessedRecent.map((c) => <CaptureCard key={c.id} capture={c} />)}</div>
         )}
       </section>
 
-      {/* AI Review Pending */}
       {pendingReview.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
@@ -156,14 +138,10 @@ export default function Dashboard() {
               <BrainCircuit className="h-4 w-4 text-[hsl(var(--brain-amber))]" />
               <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 AI Review Pending
-                <span className="ml-2 inline-flex items-center justify-center rounded-full bg-[hsl(var(--brain-amber))/0.15] text-[hsl(var(--brain-amber))] text-[10px] font-bold px-1.5 py-0.5">
-                  {pendingReview.length}
-                </span>
+                <span className="ml-2 inline-flex items-center justify-center rounded-full bg-[hsl(var(--brain-amber))/0.15] text-[hsl(var(--brain-amber))] text-[10px] font-bold px-1.5 py-0.5">{pendingReview.length}</span>
               </h2>
             </div>
-            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate("/ai-review")}>
-              Open AI Review <ArrowRight className="h-3 w-3" />
-            </Button>
+            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate("/ai-review")}>Open AI Review <ArrowRight className="h-3 w-3" /></Button>
           </div>
           <div className="space-y-2">
             {pendingReview.slice(0, 3).map((c) => (
@@ -179,11 +157,7 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* External Captures */}
-      <div
-        onClick={() => navigate("/capture-gateway")}
-        className="rounded-xl border bg-card p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all hover:border-primary/20"
-      >
+      <div onClick={() => navigate("/capture-gateway")} className="rounded-xl border bg-card p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all hover:border-primary/20">
         <div className="h-10 w-10 rounded-lg bg-[hsl(var(--brain-blue))/0.12] flex items-center justify-center shrink-0">
           <Radio className="h-5 w-5 text-[hsl(var(--brain-blue))]" />
         </div>
@@ -191,16 +165,10 @@ export default function Dashboard() {
           <h3 className="text-sm font-semibold">External Captures</h3>
           <p className="text-[10px] text-muted-foreground">WhatsApp · Telegram · Email</p>
         </div>
-        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">
-          Open Gateway <ArrowRight className="h-3 w-3" />
-        </Button>
+        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">Open Gateway <ArrowRight className="h-3 w-3" /></Button>
       </div>
 
-      {/* Review Ritual */}
-      <div
-        onClick={() => navigate("/review")}
-        className="rounded-xl border bg-card p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all hover:border-primary/20"
-      >
+      <div onClick={() => navigate("/review")} className="rounded-xl border bg-card p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all hover:border-primary/20">
         <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
           <RotateCcw className="h-5 w-5 text-primary" />
         </div>
@@ -208,16 +176,10 @@ export default function Dashboard() {
           <h3 className="text-sm font-semibold">Review Ritual Ready</h3>
           <p className="text-[10px] text-muted-foreground">Daily & weekly review — regain clarity</p>
         </div>
-        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">
-          Start Review <ArrowRight className="h-3 w-3" />
-        </Button>
+        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">Start Review <ArrowRight className="h-3 w-3" /></Button>
       </div>
 
-      {/* Memory Recall */}
-      <div
-        onClick={() => navigate("/memory")}
-        className="rounded-xl border bg-card p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all hover:border-primary/20"
-      >
+      <div onClick={() => navigate("/memory")} className="rounded-xl border bg-card p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all hover:border-primary/20">
         <div className="h-10 w-10 rounded-lg bg-[hsl(var(--brain-purple))/0.12] flex items-center justify-center shrink-0">
           <Search className="h-5 w-5 text-[hsl(var(--brain-purple))]" />
         </div>
@@ -225,30 +187,21 @@ export default function Dashboard() {
           <h3 className="text-sm font-semibold">Memory Recall</h3>
           <p className="text-[10px] text-muted-foreground">The right thought, at the right time.</p>
         </div>
-        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">
-          Open Memory <ArrowRight className="h-3 w-3" />
-        </Button>
+        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">Open Memory <ArrowRight className="h-3 w-3" /></Button>
       </div>
 
-      {/* Ideas Worth Revisiting */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Lightbulb className="h-4 w-4 text-[hsl(var(--brain-purple))]" />
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Ideas Worth Revisiting</h2>
           </div>
-          <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate("/ideas")}>
-            Open Ideas Vault <ArrowRight className="h-3 w-3" />
-          </Button>
+          <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate("/ideas")}>Open Ideas Vault <ArrowRight className="h-3 w-3" /></Button>
         </div>
         {ideasToRevisit.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">No ideas captured yet.</p>
         ) : (
-          <div className="space-y-2">
-            {ideasToRevisit.map((c) => (
-              <CaptureCard key={c.id} capture={c} />
-            ))}
-          </div>
+          <div className="space-y-2">{ideasToRevisit.map((c) => <CaptureCard key={c.id} capture={c} />)}</div>
         )}
       </section>
     </div>
