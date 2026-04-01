@@ -354,6 +354,14 @@ function TodayCard({
           </div>
         )}
 
+        {/* Source project indicator */}
+        {!isEditing && capture.source_project_id && (
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <FolderKanban className="h-3 w-3" />
+            <span>From project: <span className="font-medium text-foreground">{ai.suggested_project || "Linked project"}</span></span>
+          </div>
+        )}
+
         {/* Next action */}
         {!isEditing && ai.next_action && (
           <div className="flex items-center gap-1.5 text-xs text-primary font-medium">
