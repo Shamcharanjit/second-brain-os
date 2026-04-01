@@ -102,7 +102,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Create a capture directly routed to Today, e.g. from a project next action
-  const addCaptureFromAction = useCallback((data: { text: string; projectId?: string; projectName?: string }): Capture => {
+  const addCaptureFromAction = useCallback((data: { text: string; projectId?: string; projectName?: string; actionId?: string }): Capture => {
     const { aiData } = mockAIProcess(data.text);
     const newCapture: Capture = {
       id: crypto.randomUUID(), raw_input: data.text, input_type: "text",
@@ -114,6 +114,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       is_completed: false, completed_at: null, is_pinned_today: false,
       idea_status: "new", converted_to_project_at: null,
       source_project_id: data.projectId ?? null,
+      source_action_id: data.actionId ?? null,
     };
     setCaptures((prev) => [newCapture, ...prev]);
     return newCapture;
