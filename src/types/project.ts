@@ -1,9 +1,28 @@
-export type ProjectStatus = "on_track" | "at_risk" | "planning" | "blocked" | "completed";
+export type ProjectStatus = "active" | "on_hold" | "planning" | "completed" | "archived";
 export type ProjectPriority = "critical" | "high" | "medium" | "low";
+export type ProjectHealth = "healthy" | "at_risk" | "stalled";
 
-export interface ProjectMilestone {
-  label: string;
-  done: boolean;
+export interface NextAction {
+  id: string;
+  text: string;
+  is_primary: boolean;
+  is_completed: boolean;
+  completed_at: string | null;
+  created_at: string;
+  sent_to_today: boolean;
+}
+
+export interface ProjectNote {
+  id: string;
+  text: string;
+  created_at: string;
+}
+
+export interface ProjectEvent {
+  id: string;
+  type: "created" | "status_changed" | "priority_changed" | "action_completed" | "action_added" | "idea_linked" | "task_linked" | "note_added" | "paused" | "resumed";
+  description: string;
+  timestamp: string;
 }
 
 export interface Project {
@@ -12,11 +31,16 @@ export interface Project {
   description: string;
   status: ProjectStatus;
   priority: ProjectPriority;
-  progress: number; // 0-100
-  milestones: ProjectMilestone[];
-  nextMilestone: string;
-  lastUpdated: string;
-  color: string; // CSS variable name e.g. "--brain-teal"
+  progress: number;
+  next_actions: NextAction[];
+  notes: ProjectNote[];
+  timeline: ProjectEvent[];
+  linked_capture_ids: string[];
+  source_idea_id: string | null;
+  created_at: string;
+  last_updated: string;
+  due_date: string | null;
+  color: string;
 }
 
 export const PROJECT_NAMES = [
