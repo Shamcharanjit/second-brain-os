@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useIntegrationActions } from "@/hooks/useIntegrationActions";
+import { useReviewMeta } from "@/context/ReviewMetaContext";
 import { toast } from "sonner";
 import ReviewStepInbox from "@/components/review/ReviewStepInbox";
 import ReviewStepToday from "@/components/review/ReviewStepToday";
@@ -40,6 +41,7 @@ export default function ReviewRitualsPage() {
     completeCapture, updateIdeaStatus, convertIdeaToProject,
   } = useBrain();
   const { routeToMemory } = useIntegrationActions();
+  const { markDailyComplete: persistDaily, markWeeklyComplete: persistWeekly } = useReviewMeta();
   const { projects, getProjectHealth } = useProjects();
   const navigate = useNavigate();
   const [tab, setTab] = useState<ReviewTab>("weekly");
@@ -245,7 +247,7 @@ export default function ReviewRitualsPage() {
             ))}
           </div>
 
-          <Button className="w-full h-12 text-base font-semibold gap-2" onClick={() => setDailyComplete(true)}>
+          <Button className="w-full h-12 text-base font-semibold gap-2" onClick={() => { setDailyComplete(true); persistDaily(); }}>
             <Sun className="h-5 w-5" /> Start My Day
           </Button>
         </div>
@@ -300,7 +302,7 @@ export default function ReviewRitualsPage() {
             {weeklyStep === "summary" && (
               <ReviewStepSummary
                 health={{ inboxCount: unprocessed.length, unfinishedToday: todayActive.length, atRiskProjects, newIdeas: newIdeas.length, notesCount: 0, completedThisWeek: todayCompleted.length }}
-                stepsCompleted={completedSteps.size} totalSteps={WEEKLY_STEPS.length} onComplete={() => setWeeklyComplete(true)}
+                stepsCompleted={completedSteps.size} totalSteps={WEEKLY_STEPS.length} onComplete={() => { setWeeklyComplete(true); persistWeekly(); }}
               />
             )}
           </div>

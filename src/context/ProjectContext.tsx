@@ -1,5 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Project, ProjectStatus, ProjectPriority, ProjectHealth, NextAction, ProjectNote, ProjectEvent } from "@/types/project";
+import { saveState, loadState } from "@/lib/persistence";
+
+const STORAGE_KEY = "insighthalo_projects";
 
 function makeEvent(type: ProjectEvent["type"], description: string): ProjectEvent {
   return { id: crypto.randomUUID(), type, description, timestamp: new Date().toISOString() };
@@ -122,7 +125,9 @@ interface ProjectContextType {
 const ProjectContext = createContext<ProjectContextType | null>(null);
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
-  const [projects, setProjects] = useState<Project[]>(SEED_PROJECTS);
+  const [projects, setProjects] = useState<Project[]>(() => loadState(STORAGE_KEY, SEED_PROJECTS));
+
+  useEffect(() => { saveState(STORAGE_KEY, projects); }, [projects]);
 
   const getProject = useCallback((id: string) => projects.find((p) => p.id === id), [projects]);
   const getProjectHealth = useCallback((p: Project) => computeHealth(p), []);

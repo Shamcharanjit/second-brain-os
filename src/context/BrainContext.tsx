@@ -1,6 +1,9 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { Capture, CaptureStatus, ReviewStatus, AIProcessedData, IdeaStatus } from "@/types/brain";
 import { mockAIProcess } from "@/lib/mock-ai";
+import { saveState, loadState } from "@/lib/persistence";
+
+const STORAGE_KEY = "insighthalo_brain";
 
 interface BrainContextType {
   captures: Capture[];
@@ -78,7 +81,9 @@ const SEED_DATA: Capture[] = [
 ];
 
 export function BrainProvider({ children }: { children: React.ReactNode }) {
-  const [captures, setCaptures] = useState<Capture[]>(SEED_DATA);
+  const [captures, setCaptures] = useState<Capture[]>(() => loadState(STORAGE_KEY, SEED_DATA));
+
+  useEffect(() => { saveState(STORAGE_KEY, captures); }, [captures]);
 
   const addCapture = useCallback((text: string, type: "text" | "voice"): Capture => {
     const { aiData, reviewStatus } = mockAIProcess(text);

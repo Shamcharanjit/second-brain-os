@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrainProvider } from "@/context/BrainContext";
 import { ProjectProvider } from "@/context/ProjectContext";
 import { MemoryProvider } from "@/context/MemoryContext";
+import { ReviewMetaProvider } from "@/context/ReviewMetaContext";
 import AppLayout from "@/components/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import InboxPage from "@/pages/InboxPage";
@@ -29,6 +30,7 @@ const App = () => (
       <BrainProvider>
         <ProjectProvider>
           <MemoryProvider>
+          <ReviewMetaProvider>
           <BrowserRouter>
             <AppLayout>
               <Routes>
@@ -46,6 +48,7 @@ const App = () => (
               </Routes>
             </AppLayout>
           </BrowserRouter>
+          </ReviewMetaProvider>
           </MemoryProvider>
         </ProjectProvider>
       </BrainProvider>

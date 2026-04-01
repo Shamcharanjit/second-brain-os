@@ -2,7 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useMemory } from "@/context/MemoryContext";
-import { AlertTriangle, ArrowRight, Inbox, FolderKanban, Brain, CalendarCheck, Lightbulb } from "lucide-react";
+import { useReviewMeta } from "@/context/ReviewMetaContext";
+import { AlertTriangle, ArrowRight, Inbox, FolderKanban, Brain, CalendarCheck, Lightbulb, CalendarRange } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMemo } from "react";
 
@@ -20,6 +21,7 @@ export default function DashboardAlerts() {
   const { captures } = useBrain();
   const { projects, getProjectHealth } = useProjects();
   const { memories } = useMemory();
+  const { last_weekly_review_at } = useReviewMeta();
   const navigate = useNavigate();
 
   const alerts = useMemo(() => {
@@ -63,8 +65,14 @@ export default function DashboardAlerts() {
       list.push({ id: "ideas-convert", label: `${unconverted} high-priority ideas waiting`, reason: "Consider converting to projects", icon: Lightbulb, color: "text-[hsl(var(--brain-purple))]", action: "Review", route: "/ideas" });
     }
 
+    // Weekly review overdue
+    const weeklyOverdue = !last_weekly_review_at || (Date.now() - new Date(last_weekly_review_at).getTime()) > 7 * 86400000;
+    if (weeklyOverdue) {
+      list.push({ id: "weekly-review", label: "Weekly Review recommended", reason: last_weekly_review_at ? `Last completed ${new Date(last_weekly_review_at).toLocaleDateString()}` : "You haven't done one yet", icon: CalendarRange, color: "text-primary", action: "Start", route: "/review" });
+    }
+
     return list.slice(0, 5);
-  }, [captures, projects, memories, getProjectHealth]);
+  }, [captures, projects, memories, getProjectHealth, last_weekly_review_at]);
 
   if (alerts.length === 0) return null;
 

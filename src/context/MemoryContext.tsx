@@ -1,5 +1,8 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { MemoryEntry, MemoryType } from "@/types/memory";
+import { saveState, loadState } from "@/lib/persistence";
+
+const STORAGE_KEY = "insighthalo_memory";
 
 interface MemoryContextType {
   memories: MemoryEntry[];
@@ -102,7 +105,9 @@ const SEED_MEMORIES: MemoryEntry[] = [
 ];
 
 export function MemoryProvider({ children }: { children: React.ReactNode }) {
-  const [memories, setMemories] = useState<MemoryEntry[]>(SEED_MEMORIES);
+  const [memories, setMemories] = useState<MemoryEntry[]>(() => loadState(STORAGE_KEY, SEED_MEMORIES));
+
+  useEffect(() => { saveState(STORAGE_KEY, memories); }, [memories]);
 
   const getMemory = useCallback((id: string) => memories.find((m) => m.id === id), [memories]);
 
