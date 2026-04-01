@@ -45,6 +45,7 @@ const ROUTE_ACTIONS: { label: string; icon: typeof CalendarCheck; status: Captur
   { label: "Today", icon: CalendarCheck, status: "sent_to_today", toastMsg: "Moved to Today", color: "text-[hsl(var(--brain-teal))]" },
   { label: "Projects", icon: FolderKanban, status: "sent_to_projects", toastMsg: "Moved to Projects", color: "text-[hsl(var(--brain-blue))]" },
   { label: "Ideas", icon: Lightbulb, status: "sent_to_ideas", toastMsg: "Moved to Ideas Vault", color: "text-[hsl(var(--brain-amber))]" },
+  { label: "Memory", icon: Brain, status: "sent_to_memory", toastMsg: "Saved to Memory", color: "text-primary" },
   { label: "Someday", icon: Hourglass, status: "sent_to_someday", toastMsg: "Moved to Someday", color: "text-muted-foreground" },
   { label: "Keep in Inbox", icon: Inbox, status: "processed", toastMsg: "Kept in Inbox as processed", color: "text-primary" },
 ];
