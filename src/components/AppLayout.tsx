@@ -62,7 +62,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </NavLink>
           ))}
         </nav>
-        <div className="px-5 py-4 text-xs text-sidebar-foreground/50">MVP v1.0 · Mock AI</div>
+        {/* Sync status + auth */}
+        <div className="px-4 py-3 space-y-2 border-t border-sidebar-border">
+          <div className="flex items-center gap-1.5 text-[10px] text-sidebar-foreground/50">
+            {user ? (
+              <><Cloud className="h-3 w-3" /> Synced to cloud</>
+            ) : (
+              <><HardDrive className="h-3 w-3" /> Local only</>
+            )}
+          </div>
+          {user ? (
+            <button onClick={() => signOut()} className="flex items-center gap-1.5 text-[10px] text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors">
+              <LogOut className="h-3 w-3" /> Sign out
+            </button>
+          ) : (
+            <button onClick={() => navigate("/auth")} className="flex items-center gap-1.5 text-[10px] text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors">
+              <LogIn className="h-3 w-3" /> Sign in to sync
+            </button>
+          )}
+        </div>
       </aside>
 
       {/* Mobile header */}
