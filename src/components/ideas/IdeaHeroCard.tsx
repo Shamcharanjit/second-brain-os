@@ -32,6 +32,8 @@ interface Props {
 export default function IdeaHeroCard({ capture, onPromote, onArchive, onExplore, onPark, onConvert, onEdit }: Props) {
   const ai = capture.ai_data;
   if (!ai) return null;
+  const { memories } = useMemory();
+  const linkedMemories = memories.filter((m) => m.linked_idea_ids.includes(capture.id));
   const effort = { label: effortLabels[ai.effort], color: effortColors[ai.effort] };
   const badge = statusBadge[capture.idea_status] ?? statusBadge.new;
 
