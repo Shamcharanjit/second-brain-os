@@ -57,7 +57,7 @@ function makeSeed(id: string, raw: string, type: "text" | "voice", hoursAgo: num
     reviewed_at: null, manually_adjusted: false,
     is_completed: false, completed_at: null, is_pinned_today: false,
     idea_status: "new", converted_to_project_at: null,
-    source_project_id: null,
+    source_project_id: null, source_action_id: null,
   };
 }
 
