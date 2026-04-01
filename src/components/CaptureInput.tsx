@@ -94,6 +94,14 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     const trimmed = text.trim();
     if (!trimmed || phase !== "idle") return;
 
+    if (!canUseAITriage) {
+      toast.error("AI organize limit reached for today.", {
+        description: "Upgrade to Pro for more AI-powered organization.",
+        action: { label: "Upgrade", onClick: () => window.location.href = "/upgrade" },
+      });
+      return;
+    }
+
     setCapturedText(trimmed);
     setPhase("triaging");
     setTriageResult(null);
@@ -101,10 +109,10 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
 
     try {
       const result = await runAITriage(trimmed);
+      recordAITriageUse();
       setTriageResult({ triage: result.triage, source: result.source });
       setPhase("triage_result");
     } catch {
-      // Fallback: just do a normal capture
       const capture = addCapture(trimmed, "text");
       setText("");
       setLastResult(capture);
@@ -112,7 +120,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       toast.info("AI unavailable — captured with smart sort.");
       setTimeout(() => { setPhase("idle"); onComplete?.(); }, 3000);
     }
-  }, [text, phase, addCapture, onComplete]);
+  }, [text, phase, addCapture, onComplete, canUseAITriage, recordAITriageUse]);
 
   // Apply triage result
   const handleApplyTriage = useCallback(() => {
