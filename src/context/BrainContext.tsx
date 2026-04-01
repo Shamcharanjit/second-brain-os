@@ -215,7 +215,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <BrainContext.Provider value={{
-      captures, addCapture, addCaptureFromAction, updateCaptureStatus, updateReviewStatus,
+      captures, addCapture, addCaptureWithAI, addCaptureFromAction, updateCaptureStatus, updateReviewStatus,
       approveCapture, editAndApproveCapture, archiveCapture, routeCapture,
       completeCapture, uncompleteCapture, togglePinToday, editCaptureAI,
       updateIdeaStatus, convertIdeaToProject,
