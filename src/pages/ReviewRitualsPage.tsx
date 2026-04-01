@@ -57,7 +57,7 @@ export default function ReviewRitualsPage() {
   const newIdeas = useMemo(() => ideas.filter((c) => c.idea_status === "new"), [ideas]);
   const highPotentialIdeas = useMemo(() => ideas.filter((c) => (c.ai_data?.priority_score ?? 0) >= 65), [ideas]);
   const parkedIdeas = useMemo(() => ideas.filter((c) => c.idea_status === "parked"), [ideas]);
-  const memoryItems = useMemo(() => captures.filter((c) => c.ai_data?.category === "note" && c.status !== "archived").slice(0, 5), [captures]);
+  
   const urgentItems = useMemo(() => captures.filter((c) =>
     c.status !== "archived" && c.ai_data?.urgency === "high"
   ).sort((a, b) => (b.ai_data?.priority_score ?? 0) - (a.ai_data?.priority_score ?? 0)).slice(0, 5), [captures]);
