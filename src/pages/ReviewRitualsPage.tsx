@@ -293,7 +293,7 @@ export default function ReviewRitualsPage() {
             {weeklyStep === "memory" && <ReviewStepMemory />}
             {weeklyStep === "summary" && (
               <ReviewStepSummary
-                health={{ inboxCount: unprocessed.length, unfinishedToday: todayActive.length, atRiskProjects, newIdeas: newIdeas.length, notesCount: memoryItems.length, completedThisWeek: todayCompleted.length }}
+                health={{ inboxCount: unprocessed.length, unfinishedToday: todayActive.length, atRiskProjects, newIdeas: newIdeas.length, notesCount: 0, completedThisWeek: todayCompleted.length }}
                 stepsCompleted={completedSteps.size} totalSteps={WEEKLY_STEPS.length} onComplete={() => setWeeklyComplete(true)}
               />
             )}
