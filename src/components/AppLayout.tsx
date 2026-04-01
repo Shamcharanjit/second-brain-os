@@ -28,7 +28,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <aside className="hidden md:flex w-60 flex-col bg-sidebar border-r border-sidebar-border">
         <div className="flex items-center gap-2 px-5 py-5">
           <Brain className="h-6 w-6 text-sidebar-primary" />
-          <span className="text-sm font-semibold tracking-tight text-sidebar-accent-foreground">Second Brain OS</span>
+          <span className="text-sm font-semibold tracking-tight text-sidebar-accent-foreground">InsightHalo</span>
         </div>
 
         <div className="px-3 mb-3">
@@ -67,7 +67,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="md:hidden flex items-center justify-between border-b px-4 py-3 bg-background">
           <div className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />
-            <span className="text-sm font-semibold">Second Brain OS</span>
+            <span className="text-sm font-semibold">InsightHalo</span>
           </div>
           <button onClick={() => setMobileOpen(!mobileOpen)} className="p-1">
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
