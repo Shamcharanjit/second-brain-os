@@ -31,6 +31,7 @@ interface AITriageCardProps {
   source: "ai" | "local";
   onApply: () => void;
   onDismiss: () => void;
+  onCreateProject?: () => void;
 }
 
 export default function AITriageCard({ triage, source, onApply, onDismiss }: AITriageCardProps) {
