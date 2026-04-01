@@ -34,7 +34,7 @@ interface AITriageCardProps {
   onCreateProject?: () => void;
 }
 
-export default function AITriageCard({ triage, source, onApply, onDismiss }: AITriageCardProps) {
+export default function AITriageCard({ triage, source, onApply, onDismiss, onCreateProject }: AITriageCardProps) {
   const t = typeConfig[triage.type] || typeConfig.note;
   const Icon = t.icon;
 
