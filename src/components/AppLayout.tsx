@@ -67,7 +67,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="md:hidden flex items-center justify-between border-b px-4 py-3 bg-background">
           <div className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />
-            <span className="text-sm font-semibold">Second Brain OS</span>
+            <span className="text-sm font-semibold">InsightHalo</span>
           </div>
           <button onClick={() => setMobileOpen(!mobileOpen)} className="p-1">
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

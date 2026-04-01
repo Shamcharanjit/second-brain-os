@@ -45,7 +45,7 @@ const CHANNELS = [
     color: "hsl(var(--brain-amber))",
     bgColor: "hsl(var(--brain-amber) / 0.12)",
     status: "Active" as const,
-    description: "Email tasks, notes, and important thoughts into your second brain.",
+    description: "Email tasks, notes, and important thoughts into InsightHalo.",
     example: "Subject: Task — Prepare proposal draft for clinic client",
     captures: "Client work, proposals, admin tasks, follow-ups",
     lastActivity: "35 min ago",
