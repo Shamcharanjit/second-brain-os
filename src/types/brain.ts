@@ -39,4 +39,8 @@ export interface Capture {
   ai_data: AIProcessedData | null;
   reviewed_at: string | null;
   manually_adjusted: boolean;
+  // Today focus fields
+  is_completed: boolean;
+  completed_at: string | null;
+  is_pinned_today: boolean;
 }

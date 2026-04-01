@@ -11,6 +11,10 @@ interface BrainContextType {
   editAndApproveCapture: (id: string, updates: Partial<AIProcessedData>, targetStatus: CaptureStatus) => void;
   archiveCapture: (id: string) => void;
   routeCapture: (id: string, destination: CaptureStatus) => void;
+  completeCapture: (id: string) => void;
+  uncompleteCapture: (id: string) => void;
+  togglePinToday: (id: string) => void;
+  editCaptureAI: (id: string, updates: Partial<AIProcessedData>) => void;
 }
 
 const BrainContext = createContext<BrainContextType | null>(null);
@@ -37,40 +41,35 @@ function destinationToStatus(dest: string): CaptureStatus {
   }
 }
 
-function seed(id: string, raw: string, type: "text" | "voice", hoursAgo: number, statusOverride?: CaptureStatus): Capture {
+function makeSeed(id: string, raw: string, type: "text" | "voice", hoursAgo: number, statusOverride?: CaptureStatus): Capture {
   const { aiData, reviewStatus } = mockAIProcess(raw);
   const status = statusOverride ?? autoRouteStatus(aiData.destination_suggestion);
   return {
-    id,
-    raw_input: raw,
-    input_type: type,
+    id, raw_input: raw, input_type: type,
     created_at: new Date(Date.now() - hoursAgo * 3600000).toISOString(),
-    processed: true,
-    status,
-    review_status: reviewStatus,
-    ai_data: aiData,
-    reviewed_at: null,
-    manually_adjusted: false,
+    processed: true, status, review_status: reviewStatus, ai_data: aiData,
+    reviewed_at: null, manually_adjusted: false,
+    is_completed: false, completed_at: null, is_pinned_today: false,
   };
 }
 
 const SEED_DATA: Capture[] = [
-  seed("seed-1", "Call the dentist to reschedule appointment for next week", "text", 1),
-  seed("seed-2", "What if we built a mobile app that tracks water intake with smart bottle integration?", "text", 2),
-  seed("seed-3", "Remind me to send the Q4 report to Sarah by tomorrow", "voice", 0.5),
-  seed("seed-4", "Maybe later: learn Rust programming language for systems work", "text", 3),
-  seed("seed-5", "Follow up with Mike about the partnership proposal he mentioned last Friday", "text", 1.5),
-  seed("seed-6", "Build a landing page for the new SaaS product launch next month", "text", 4),
-  seed("seed-7", "Need to ask accountant about GST issue before end of quarter — urgent", "voice", 0.7),
-  seed("seed-8", "Book flight for Toronto trip next month", "text", 1.2),
-  seed("seed-9", "What if we offered a free tier with limited captures per month?", "text", 2.5),
-  seed("seed-10", "Reply to investor email about Series A timeline today", "voice", 1.7),
-  seed("seed-11", "Set up analytics tracking on the new landing page", "text", 5),
-  seed("seed-12", "Need to handle that issue with the vendor", "text", 0.3),
-  seed("seed-13", "Client proposal maybe next week or the week after", "text", 0.8),
-  seed("seed-14", "Need to do something for tax before deadline", "voice", 0.4),
-  seed("seed-15", "Goal: grow monthly active users to 10,000 by Q3 this year", "text", 6),
-  seed("seed-16", "Note to self: the API rate limit is 1000 requests per minute for the free tier", "text", 3.5),
+  makeSeed("seed-1", "Call the dentist to reschedule appointment for next week", "text", 1),
+  makeSeed("seed-2", "What if we built a mobile app that tracks water intake with smart bottle integration?", "text", 2),
+  makeSeed("seed-3", "Remind me to send the Q4 report to Sarah by tomorrow", "voice", 0.5),
+  makeSeed("seed-4", "Maybe later: learn Rust programming language for systems work", "text", 3),
+  makeSeed("seed-5", "Follow up with Mike about the partnership proposal he mentioned last Friday", "text", 1.5),
+  makeSeed("seed-6", "Build a landing page for the new SaaS product launch next month", "text", 4),
+  makeSeed("seed-7", "Need to ask accountant about GST issue before end of quarter — urgent", "voice", 0.7),
+  makeSeed("seed-8", "Book flight for Toronto trip next month", "text", 1.2),
+  makeSeed("seed-9", "What if we offered a free tier with limited captures per month?", "text", 2.5),
+  makeSeed("seed-10", "Reply to investor email about Series A timeline today", "voice", 1.7),
+  makeSeed("seed-11", "Set up analytics tracking on the new landing page", "text", 5),
+  makeSeed("seed-12", "Need to handle that issue with the vendor", "text", 0.3),
+  makeSeed("seed-13", "Client proposal maybe next week or the week after", "text", 0.8),
+  makeSeed("seed-14", "Need to do something for tax before deadline", "voice", 0.4),
+  makeSeed("seed-15", "Goal: grow monthly active users to 10,000 by Q3 this year", "text", 6),
+  makeSeed("seed-16", "Note to self: the API rate limit is 1000 requests per minute for the free tier", "text", 3.5),
 ];
 
 export function BrainProvider({ children }: { children: React.ReactNode }) {
@@ -80,90 +79,77 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
     const { aiData, reviewStatus } = mockAIProcess(text);
     const status = reviewStatus === "needs_review" ? "unprocessed" : autoRouteStatus(aiData.destination_suggestion);
     const newCapture: Capture = {
-      id: crypto.randomUUID(),
-      raw_input: text,
-      input_type: type,
-      created_at: new Date().toISOString(),
-      processed: true,
-      status,
-      review_status: reviewStatus,
-      ai_data: aiData,
-      reviewed_at: null,
-      manually_adjusted: false,
+      id: crypto.randomUUID(), raw_input: text, input_type: type,
+      created_at: new Date().toISOString(), processed: true, status,
+      review_status: reviewStatus, ai_data: aiData,
+      reviewed_at: null, manually_adjusted: false,
+      is_completed: false, completed_at: null, is_pinned_today: false,
     };
     setCaptures((prev) => [newCapture, ...prev]);
     return newCapture;
   }, []);
 
   const updateCaptureStatus = useCallback((id: string, status: CaptureStatus) => {
-    setCaptures((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status } : c))
-    );
+    setCaptures((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
   }, []);
 
   const updateReviewStatus = useCallback((id: string, reviewStatus: ReviewStatus) => {
-    setCaptures((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, review_status: reviewStatus } : c))
-    );
+    setCaptures((prev) => prev.map((c) => (c.id === id ? { ...c, review_status: reviewStatus } : c)));
   }, []);
 
   const approveCapture = useCallback((id: string, targetStatus?: CaptureStatus) => {
-    setCaptures((prev) =>
-      prev.map((c) => {
-        if (c.id !== id) return c;
-        const dest = targetStatus ?? destinationToStatus(c.ai_data?.destination_suggestion ?? "inbox");
-        return {
-          ...c,
-          status: dest,
-          review_status: "reviewed" as ReviewStatus,
-          reviewed_at: new Date().toISOString(),
-        };
-      })
-    );
+    setCaptures((prev) => prev.map((c) => {
+      if (c.id !== id) return c;
+      const dest = targetStatus ?? destinationToStatus(c.ai_data?.destination_suggestion ?? "inbox");
+      return { ...c, status: dest, review_status: "reviewed" as ReviewStatus, reviewed_at: new Date().toISOString() };
+    }));
   }, []);
 
   const editAndApproveCapture = useCallback((id: string, updates: Partial<AIProcessedData>, targetStatus: CaptureStatus) => {
-    setCaptures((prev) =>
-      prev.map((c) => {
-        if (c.id !== id || !c.ai_data) return c;
-        return {
-          ...c,
-          ai_data: { ...c.ai_data, ...updates },
-          status: targetStatus,
-          review_status: "reviewed" as ReviewStatus,
-          reviewed_at: new Date().toISOString(),
-          manually_adjusted: true,
-        };
-      })
-    );
+    setCaptures((prev) => prev.map((c) => {
+      if (c.id !== id || !c.ai_data) return c;
+      return { ...c, ai_data: { ...c.ai_data, ...updates }, status: targetStatus, review_status: "reviewed" as ReviewStatus, reviewed_at: new Date().toISOString(), manually_adjusted: true };
+    }));
   }, []);
 
   const archiveCapture = useCallback((id: string) => {
-    setCaptures((prev) =>
-      prev.map((c) => (c.id === id ? {
-        ...c,
-        status: "archived" as CaptureStatus,
-        review_status: "reviewed" as ReviewStatus,
-        reviewed_at: new Date().toISOString(),
-      } : c))
-    );
+    setCaptures((prev) => prev.map((c) => (c.id === id ? { ...c, status: "archived" as CaptureStatus, review_status: "reviewed" as ReviewStatus, reviewed_at: new Date().toISOString() } : c)));
   }, []);
 
   const routeCapture = useCallback((id: string, destination: CaptureStatus) => {
-    setCaptures((prev) =>
-      prev.map((c) => (c.id === id ? {
-        ...c,
-        status: destination,
-        review_status: "reviewed" as ReviewStatus,
-        reviewed_at: new Date().toISOString(),
-      } : c))
-    );
+    setCaptures((prev) => prev.map((c) => (c.id === id ? { ...c, status: destination, review_status: "reviewed" as ReviewStatus, reviewed_at: new Date().toISOString(), is_pinned_today: false } : c)));
+  }, []);
+
+  const completeCapture = useCallback((id: string) => {
+    setCaptures((prev) => prev.map((c) => (c.id === id ? { ...c, is_completed: true, completed_at: new Date().toISOString() } : c)));
+  }, []);
+
+  const uncompleteCapture = useCallback((id: string) => {
+    setCaptures((prev) => prev.map((c) => (c.id === id ? { ...c, is_completed: false, completed_at: null } : c)));
+  }, []);
+
+  const togglePinToday = useCallback((id: string) => {
+    setCaptures((prev) => {
+      const current = prev.find((c) => c.id === id);
+      if (!current) return prev;
+      const pinned = prev.filter((c) => c.is_pinned_today && c.id !== id);
+      if (!current.is_pinned_today && pinned.length >= 3) return prev; // Max 3 pins
+      return prev.map((c) => (c.id === id ? { ...c, is_pinned_today: !c.is_pinned_today } : c));
+    });
+  }, []);
+
+  const editCaptureAI = useCallback((id: string, updates: Partial<AIProcessedData>) => {
+    setCaptures((prev) => prev.map((c) => {
+      if (c.id !== id || !c.ai_data) return c;
+      return { ...c, ai_data: { ...c.ai_data, ...updates }, manually_adjusted: true };
+    }));
   }, []);
 
   return (
     <BrainContext.Provider value={{
       captures, addCapture, updateCaptureStatus, updateReviewStatus,
       approveCapture, editAndApproveCapture, archiveCapture, routeCapture,
+      completeCapture, uncompleteCapture, togglePinToday, editCaptureAI,
     }}>
       {children}
     </BrainContext.Provider>
@@ -172,8 +158,6 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
 
 export function useBrain() {
   const ctx = useContext(BrainContext);
-  if (!ctx) {
-    throw new Error("useBrain must be used within BrainProvider");
-  }
+  if (!ctx) throw new Error("useBrain must be used within BrainProvider");
   return ctx;
 }
