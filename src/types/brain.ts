@@ -8,6 +8,7 @@ export type UrgencyLevel = "low" | "medium" | "high";
 export type EffortLevel = "low" | "medium" | "high";
 export type ConfidenceLevel = "high" | "medium" | "needs_review";
 export type DueContext = "today" | "tomorrow" | "this_week" | "later" | "none";
+export type IdeaStatus = "new" | "explored" | "parked" | "converted_to_project" | "archived";
 export type DestinationSuggestion = "today" | "inbox" | "ideas" | "projects" | "someday" | "maybe_later";
 
 export interface AIProcessedData {
@@ -43,4 +44,6 @@ export interface Capture {
   is_completed: boolean;
   completed_at: string | null;
   is_pinned_today: boolean;
+  idea_status: IdeaStatus;
+  converted_to_project_at: string | null;
 }

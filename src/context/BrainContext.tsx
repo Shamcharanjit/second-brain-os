@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
-import { Capture, CaptureStatus, ReviewStatus, AIProcessedData } from "@/types/brain";
+import { Capture, CaptureStatus, ReviewStatus, AIProcessedData, IdeaStatus } from "@/types/brain";
 import { mockAIProcess } from "@/lib/mock-ai";
 
 interface BrainContextType {
@@ -15,6 +15,8 @@ interface BrainContextType {
   uncompleteCapture: (id: string) => void;
   togglePinToday: (id: string) => void;
   editCaptureAI: (id: string, updates: Partial<AIProcessedData>) => void;
+  updateIdeaStatus: (id: string, status: IdeaStatus) => void;
+  convertIdeaToProject: (id: string) => void;
 }
 
 const BrainContext = createContext<BrainContextType | null>(null);
@@ -50,6 +52,7 @@ function makeSeed(id: string, raw: string, type: "text" | "voice", hoursAgo: num
     processed: true, status, review_status: reviewStatus, ai_data: aiData,
     reviewed_at: null, manually_adjusted: false,
     is_completed: false, completed_at: null, is_pinned_today: false,
+    idea_status: "new", converted_to_project_at: null,
   };
 }
 
@@ -84,6 +87,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       review_status: reviewStatus, ai_data: aiData,
       reviewed_at: null, manually_adjusted: false,
       is_completed: false, completed_at: null, is_pinned_today: false,
+      idea_status: "new", converted_to_project_at: null,
     };
     setCaptures((prev) => [newCapture, ...prev]);
     return newCapture;
@@ -145,11 +149,27 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const updateIdeaStatus = useCallback((id: string, ideaStatus: IdeaStatus) => {
+    setCaptures((prev) => prev.map((c) => {
+      if (c.id !== id) return c;
+      if (ideaStatus === "archived") return { ...c, idea_status: ideaStatus, status: "archived" as CaptureStatus };
+      return { ...c, idea_status: ideaStatus };
+    }));
+  }, []);
+
+  const convertIdeaToProject = useCallback((id: string) => {
+    setCaptures((prev) => prev.map((c) => {
+      if (c.id !== id) return c;
+      return { ...c, idea_status: "converted_to_project" as IdeaStatus, status: "sent_to_projects" as CaptureStatus, converted_to_project_at: new Date().toISOString() };
+    }));
+  }, []);
+
   return (
     <BrainContext.Provider value={{
       captures, addCapture, updateCaptureStatus, updateReviewStatus,
       approveCapture, editAndApproveCapture, archiveCapture, routeCapture,
       completeCapture, uncompleteCapture, togglePinToday, editCaptureAI,
+      updateIdeaStatus, convertIdeaToProject,
     }}>
       {children}
     </BrainContext.Provider>

@@ -13,7 +13,7 @@ export default function Dashboard() {
   const stats = useMemo(() => {
     const pendingReview = captures.filter((c) => c.status !== "archived" && c.review_status !== "reviewed");
     const todayTasks = captures.filter((c) => c.status === "sent_to_today" && !c.is_completed);
-    const ideas = captures.filter((c) => c.status === "sent_to_ideas");
+    const ideas = captures.filter((c) => c.status === "sent_to_ideas" && c.idea_status !== "archived" && c.idea_status !== "converted_to_project");
     return { total: captures.length, pendingReview: pendingReview.length, todayTasks: todayTasks.length, ideas: ideas.length };
   }, [captures]);
 
