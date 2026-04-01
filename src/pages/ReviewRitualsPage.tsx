@@ -4,41 +4,62 @@ import {
   Sun, Moon, CalendarRange, Inbox, CalendarCheck, BrainCircuit,
   Lightbulb, FolderKanban, ArrowRight, Sparkles, Trash2, CheckCircle2,
   AlertTriangle, TrendingUp, Target, Flame, Zap, Clock, RotateCcw,
-  Trophy, Archive, ChevronRight,
+  Trophy, Archive, ChevronRight, ChevronLeft, Brain,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useBrain } from "@/context/BrainContext";
+import { MOCK_PROJECTS } from "@/lib/mock-projects";
+import { toast } from "sonner";
+import ReviewStepInbox from "@/components/review/ReviewStepInbox";
+import ReviewStepToday from "@/components/review/ReviewStepToday";
+import ReviewStepProjects from "@/components/review/ReviewStepProjects";
+import ReviewStepIdeas from "@/components/review/ReviewStepIdeas";
+import ReviewStepMemory from "@/components/review/ReviewStepMemory";
+import ReviewStepSummary from "@/components/review/ReviewStepSummary";
 
 type ReviewTab = "daily" | "weekly";
 
-/* ── Mock streak data ── */
 const MOCK_STREAK = { dailyStreak: 5, lastWeekly: "3 days ago", monthTotal: 18 };
 
-/* ── Mock weekly wins ── */
-const MOCK_WINS = [
-  "Completed client proposal for clinic project",
-  "Set up analytics tracking on landing page",
-  "Resolved GST issue with accountant",
-  "Captured 4 new product ideas",
-];
+const WEEKLY_STEPS = [
+  { key: "inbox", label: "Inbox", icon: Inbox },
+  { key: "today", label: "Today", icon: CalendarCheck },
+  { key: "projects", label: "Projects", icon: FolderKanban },
+  { key: "ideas", label: "Ideas", icon: Lightbulb },
+  { key: "memory", label: "Memory", icon: Brain },
+  { key: "summary", label: "Summary", icon: Trophy },
+] as const;
+
+type WeeklyStep = typeof WEEKLY_STEPS[number]["key"];
 
 export default function ReviewRitualsPage() {
-  const { captures } = useBrain();
+  const {
+    captures, approveCapture, routeCapture, archiveCapture,
+    completeCapture, updateIdeaStatus, convertIdeaToProject,
+  } = useBrain();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<ReviewTab>("daily");
+  const [tab, setTab] = useState<ReviewTab>("weekly");
   const [dailyComplete, setDailyComplete] = useState(false);
   const [weeklyComplete, setWeeklyComplete] = useState(false);
+  const [weeklyStep, setWeeklyStep] = useState<WeeklyStep>("inbox");
+  const [completedSteps, setCompletedSteps] = useState<Set<WeeklyStep>>(new Set());
 
   /* ── Computed data ── */
-  const unprocessed = useMemo(() => captures.filter((c) => c.status === "unprocessed"), [captures]);
-  const todayTasks = useMemo(() => captures.filter((c) =>
-    c.status !== "archived" && (c.status === "sent_to_today" || c.ai_data?.due_context === "today" || c.ai_data?.category === "reminder")
-  ), [captures]);
+  const unprocessed = useMemo(() => captures.filter((c) => c.status === "unprocessed" || (c.review_status === "needs_review" && c.status !== "archived")), [captures]);
+  const todayActive = useMemo(() => captures.filter((c) => c.status === "sent_to_today" && !c.is_completed), [captures]);
+  const todayCompleted = useMemo(() => captures.filter((c) => c.status === "sent_to_today" && c.is_completed), [captures]);
   const pendingReview = useMemo(() => captures.filter((c) => c.review_status === "needs_review" && c.status === "unprocessed"), [captures]);
   const ideas = useMemo(() => captures.filter((c) =>
-    c.status !== "archived" && (c.ai_data?.category === "idea" || c.ai_data?.category === "maybe_later")
+    (c.status === "sent_to_ideas" || c.ai_data?.category === "idea" || c.ai_data?.category === "maybe_later") &&
+    c.status !== "archived" && c.idea_status !== "archived" && c.idea_status !== "converted_to_project"
   ), [captures]);
+  const newIdeas = useMemo(() => ideas.filter((c) => c.idea_status === "new"), [ideas]);
+  const highPotentialIdeas = useMemo(() => ideas.filter((c) => (c.ai_data?.priority_score ?? 0) >= 65), [ideas]);
+  const parkedIdeas = useMemo(() => ideas.filter((c) => c.idea_status === "parked"), [ideas]);
+  const memoryItems = useMemo(() => captures.filter((c) =>
+    c.ai_data?.category === "note" && c.status !== "archived"
+  ).slice(0, 5), [captures]);
   const followUps = useMemo(() => captures.filter((c) =>
     c.status !== "archived" && c.ai_data?.category === "follow_up"
   ), [captures]);
@@ -48,10 +69,10 @@ export default function ReviewRitualsPage() {
   const staleItems = useMemo(() => captures.filter((c) =>
     c.status === "unprocessed" && (Date.now() - new Date(c.created_at).getTime()) > 3 * 86400000
   ), [captures]);
-  const completedMock = 7; // mock completed tasks this week
   const carryovers = useMemo(() => captures.filter((c) =>
     c.status === "unprocessed" && c.ai_data?.due_context === "today" && (Date.now() - new Date(c.created_at).getTime()) > 86400000
   ).slice(0, 3), [captures]);
+  const atRiskProjects = MOCK_PROJECTS.filter((p) => p.status === "at_risk" || p.status === "blocked").length;
 
   /* ── Daily AI suggestions ── */
   const dailySuggestions = useMemo(() => {
@@ -80,67 +101,43 @@ export default function ReviewRitualsPage() {
     return suggestions.slice(0, 3);
   }, [pendingReview, urgentItems, ideas]);
 
-  /* ── Weekly AI recommendations ── */
-  const weeklyRecs = useMemo(() => {
-    const recs: { text: string; why: string; action: string; dest: string }[] = [];
-    if (staleItems.length > 0) recs.push({
-      text: `Resolve ${staleItems.length} stale capture${staleItems.length > 1 ? "s" : ""} sitting in Inbox for 3+ days`,
-      why: "Old unprocessed items indicate decision debt", action: "Review Inbox", dest: "/inbox",
-    });
-    if (ideas.length > 2) recs.push({
-      text: `Convert ${Math.min(2, ideas.length)} strong ideas into active project tasks`,
-      why: "Ideas lose momentum without action plans", action: "Open Ideas Vault", dest: "/ideas",
-    });
-    recs.push({
-      text: "Review Growth Experiments project — check momentum",
-      why: "Strategic projects need weekly attention", action: "Open Projects", dest: "/projects",
-    });
-    if (followUps.length > 0) recs.push({
-      text: `Follow up on ${followUps.length} pending item${followUps.length > 1 ? "s" : ""}`,
-      why: "Pending follow-ups can block progress", action: "Open Inbox", dest: "/inbox",
-    });
-    recs.push({
-      text: "Move tax-related items into Finance & Admin with due dates",
-      why: "Financial tasks with deadlines prevent last-minute stress", action: "Open Projects", dest: "/projects",
-    });
-    return recs.slice(0, 5);
-  }, [staleItems, ideas, followUps]);
+  /* ── Step navigation ── */
+  const currentStepIndex = WEEKLY_STEPS.findIndex((s) => s.key === weeklyStep);
+  const canGoBack = currentStepIndex > 0;
+  const canGoForward = currentStepIndex < WEEKLY_STEPS.length - 1;
 
-  /* ── Mock project momentum ── */
-  const projectMomentum = [
-    { name: "Client Work", progress: 68, movement: "+12%", risk: "on_track" as const, milestone: "Deliver proposal draft" },
-    { name: "Product Development", progress: 42, movement: "+5%", risk: "at_risk" as const, milestone: "Finalize MVP scope" },
-    { name: "Finance & Admin", progress: 80, movement: "+20%", risk: "on_track" as const, milestone: "Complete GST filing" },
-    { name: "Growth Experiments", progress: 25, movement: "+2%", risk: "at_risk" as const, milestone: "Launch pricing test" },
-    { name: "Personal Operations", progress: 55, movement: "+8%", risk: "on_track" as const, milestone: "Set up weekly planning" },
-  ];
+  const markStepAndAdvance = () => {
+    setCompletedSteps((prev) => new Set([...prev, weeklyStep]));
+    if (canGoForward) setWeeklyStep(WEEKLY_STEPS[currentStepIndex + 1].key);
+  };
 
-  const riskColor = (r: string) => r === "on_track" ? "text-[hsl(var(--brain-teal))]" : "text-[hsl(var(--brain-amber))]";
-
-  /* ── KPI cards per tab ── */
+  /* ── KPI cards ── */
   const dailyKpis = [
     { label: "Unprocessed", value: unprocessed.length, icon: Inbox, color: "text-[hsl(var(--brain-amber))]" },
-    { label: "Today's Priorities", value: todayTasks.length, icon: CalendarCheck, color: "text-[hsl(var(--brain-teal))]" },
+    { label: "Today's Priorities", value: todayActive.length, icon: CalendarCheck, color: "text-[hsl(var(--brain-teal))]" },
     { label: "Pending Review", value: pendingReview.length, icon: BrainCircuit, color: "text-primary" },
     { label: "Carryovers", value: carryovers.length, icon: RotateCcw, color: "text-[hsl(var(--brain-rose))]" },
   ];
 
-  const weeklyKpis = [
-    { label: "Captures This Week", value: captures.length, icon: Inbox, color: "text-primary" },
-    { label: "Completed", value: completedMock, icon: CheckCircle2, color: "text-[hsl(var(--brain-teal))]" },
-    { label: "New Ideas", value: ideas.length, icon: Lightbulb, color: "text-[hsl(var(--brain-purple))]" },
-    { label: "Still Unclear", value: staleItems.length, icon: AlertTriangle, color: "text-[hsl(var(--brain-amber))]" },
-  ];
+  /* ── Actions with toast ── */
+  const handleApproveInbox = (id: string) => { approveCapture(id); toast.success("Approved"); };
+  const handleRouteToday = (id: string) => { routeCapture(id, "sent_to_today"); toast.success("Moved to Today"); };
+  const handleRouteIdeas = (id: string) => { routeCapture(id, "sent_to_ideas"); toast.success("Moved to Ideas Vault"); };
+  const handleRouteProjects = (id: string) => { routeCapture(id, "sent_to_projects"); toast.success("Moved to Projects"); };
+  const handleArchive = (id: string) => { archiveCapture(id); toast("Archived"); };
+  const handleComplete = (id: string) => { completeCapture(id); toast.success("Completed"); };
+  const handleDefer = (id: string) => { routeCapture(id, "unprocessed"); toast("Deferred to Inbox"); };
+  const handleExplore = (id: string) => { updateIdeaStatus(id, "explored"); toast.success("Marked as Explored"); };
+  const handleConvert = (id: string) => { convertIdeaToProject(id); toast.success("Converted to Project"); };
 
   return (
     <div className="space-y-10">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Review Rituals</h1>
-        <p className="text-sm text-muted-foreground mt-1">Turn captures into clarity with daily and weekly reflection.</p>
+        <p className="text-sm text-muted-foreground mt-1">Reset your system. Reclaim clarity. Choose what matters next.</p>
       </div>
 
-      {/* Microcopy */}
       <div className="rounded-xl border bg-card p-4 text-center">
         <p className="text-sm font-medium text-foreground italic">"Your best decisions come after review."</p>
         <p className="text-[10px] text-muted-foreground mt-0.5">A few minutes of review saves hours of mental drag.</p>
@@ -169,7 +166,6 @@ export default function ReviewRitualsPage() {
       {/* ═══════════════ DAILY REVIEW ═══════════════ */}
       {tab === "daily" && !dailyComplete && (
         <div className="space-y-8">
-          {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {dailyKpis.map((k) => (
               <div key={k.label} className="rounded-xl border bg-card p-4 space-y-2">
@@ -248,12 +244,6 @@ export default function ReviewRitualsPage() {
                 </div>
               )}
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Dismiss outdated reminders</span>
-                <Button size="sm" variant="ghost" className="text-xs gap-1" onClick={() => navigate("/today")}>
-                  Open Today <ArrowRight className="h-3 w-3" />
-                </Button>
-              </div>
-              <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Convert loose notes into tasks or ideas</span>
                 <Button size="sm" variant="ghost" className="text-xs gap-1" onClick={() => navigate("/ai-review")}>
                   AI Review <ArrowRight className="h-3 w-3" />
@@ -262,7 +252,6 @@ export default function ReviewRitualsPage() {
             </div>
           </section>
 
-          {/* Quick Links */}
           <div className="flex flex-wrap gap-2">
             {[
               { label: "Inbox", to: "/inbox", icon: Inbox },
@@ -277,7 +266,6 @@ export default function ReviewRitualsPage() {
             ))}
           </div>
 
-          {/* Start My Day */}
           <Button className="w-full h-12 text-base font-semibold gap-2" onClick={() => setDailyComplete(true)}>
             <Sun className="h-5 w-5" /> Start My Day
           </Button>
@@ -295,153 +283,136 @@ export default function ReviewRitualsPage() {
 
       {/* ═══════════════ WEEKLY REVIEW ═══════════════ */}
       {tab === "weekly" && !weeklyComplete && (
-        <div className="space-y-8">
-          {/* KPIs */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {weeklyKpis.map((k) => (
-              <div key={k.label} className="rounded-xl border bg-card p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{k.label}</span>
-                  <k.icon className={`h-4 w-4 ${k.color}`} />
-                </div>
-                <p className="text-2xl font-bold tracking-tight">{k.value}</p>
-              </div>
-            ))}
+        <div className="space-y-6">
+          {/* Step Progress */}
+          <div className="flex items-center gap-1 overflow-x-auto pb-2">
+            {WEEKLY_STEPS.map((step, i) => {
+              const isActive = step.key === weeklyStep;
+              const isDone = completedSteps.has(step.key);
+              const StepIcon = step.icon;
+
+              return (
+                <button
+                  key={step.key}
+                  onClick={() => setWeeklyStep(step.key)}
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium border transition-all shrink-0 ${
+                    isActive
+                      ? "border-primary bg-primary/10 text-primary"
+                      : isDone
+                      ? "border-[hsl(var(--brain-teal))/0.3] bg-[hsl(var(--brain-teal))/0.08] text-[hsl(var(--brain-teal))]"
+                      : "border-border bg-card text-muted-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  {isDone && !isActive ? (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  ) : (
+                    <StepIcon className="h-3.5 w-3.5" />
+                  )}
+                  {step.label}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Wins This Week */}
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-[hsl(var(--brain-teal))]" />
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Wins This Week</h2>
+          {/* Step Content */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold tracking-tight">
+                {WEEKLY_STEPS[currentStepIndex].label} Review
+              </h2>
+              <span className="text-xs text-muted-foreground">
+                Step {currentStepIndex + 1} of {WEEKLY_STEPS.length}
+              </span>
             </div>
-            <div className="space-y-2">
-              {MOCK_WINS.map((w, i) => (
-                <div key={i} className="rounded-xl border bg-card p-3 flex items-center gap-3">
-                  <CheckCircle2 className="h-4 w-4 text-[hsl(var(--brain-teal))] shrink-0" />
-                  <p className="text-sm">{w}</p>
-                </div>
-              ))}
-            </div>
-          </section>
 
-          {/* What's Stuck */}
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-[hsl(var(--brain-amber))]" />
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">What's Stuck?</h2>
-            </div>
-            {staleItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">Nothing stuck — strong week.</p>
-            ) : (
-              <div className="space-y-2">
-                {staleItems.slice(0, 4).map((c) => (
-                  <div key={c.id} className="rounded-xl border bg-card p-3 flex items-center gap-3">
-                    <Clock className="h-4 w-4 text-[hsl(var(--brain-amber))] shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{c.ai_data?.title}</p>
-                      <p className="text-[10px] text-muted-foreground">Unprocessed for {Math.round((Date.now() - new Date(c.created_at).getTime()) / 86400000)}d</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {weeklyStep === "inbox" && (
+              <ReviewStepInbox
+                items={unprocessed}
+                onApprove={handleApproveInbox}
+                onRouteToday={handleRouteToday}
+                onRouteIdeas={handleRouteIdeas}
+                onRouteProjects={handleRouteProjects}
+                onArchive={handleArchive}
+              />
             )}
-          </section>
 
-          {/* Project Momentum */}
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Project Momentum</h2>
-            </div>
-            <div className="space-y-2">
-              {projectMomentum.map((p) => (
-                <div key={p.name} className="rounded-xl border bg-card p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold">{p.name}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-[hsl(var(--brain-teal))] font-medium">{p.movement}</span>
-                      <Badge variant={p.risk === "on_track" ? "default" : "secondary"} className={`text-[9px] ${riskColor(p.risk)}`}>
-                        {p.risk === "on_track" ? "On Track" : "At Risk"}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-1.5">
-                    <div className="bg-primary rounded-full h-1.5 transition-all" style={{ width: `${p.progress}%` }} />
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">Next: {p.milestone}</p>
-                </div>
-              ))}
-            </div>
-          </section>
+            {weeklyStep === "today" && (
+              <ReviewStepToday
+                active={todayActive}
+                completed={todayCompleted}
+                onComplete={handleComplete}
+                onDefer={handleDefer}
+                onMoveToProjects={handleRouteProjects}
+                onArchive={handleArchive}
+              />
+            )}
 
-          {/* AI Weekly Recommendations */}
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">AI Weekly Recommendations</h2>
-            </div>
-            <div className="space-y-2">
-              {weeklyRecs.map((r, i) => (
-                <div key={i} className="rounded-xl border bg-card p-4 flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <BrainCircuit className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <p className="text-sm font-medium">{r.text}</p>
-                    <p className="text-[10px] text-muted-foreground italic">{r.why}</p>
-                  </div>
-                  <Button size="sm" variant="ghost" className="text-xs gap-1 shrink-0" onClick={() => navigate(r.dest)}>
-                    {r.action} <ChevronRight className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </section>
+            {weeklyStep === "projects" && (
+              <ReviewStepProjects projects={MOCK_PROJECTS} />
+            )}
 
-          {/* Plan Next Week */}
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-[hsl(var(--brain-purple))]" />
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Plan Next Week</h2>
-            </div>
-            <div className="rounded-xl border bg-card p-5 space-y-3">
-              {[
-                { label: "Top 3 priorities", hint: "What must get done?" },
-                { label: "1 project to push hard", hint: "Where will you create momentum?" },
-                { label: "1 idea to explore", hint: "What deserves creative time?" },
-                { label: "1 task to defer or delegate", hint: "What can wait?" },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center gap-3 text-sm">
-                  <div className="h-2 w-2 rounded-full bg-primary shrink-0" />
-                  <div>
-                    <span className="font-medium">{item.label}</span>
-                    <span className="text-muted-foreground text-xs ml-2">— {item.hint}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+            {weeklyStep === "ideas" && (
+              <ReviewStepIdeas
+                newIdeas={newIdeas}
+                highPotential={highPotentialIdeas}
+                parked={parkedIdeas}
+                onExplore={handleExplore}
+                onConvert={handleConvert}
+                onPromote={handleRouteToday}
+                onArchive={handleArchive}
+              />
+            )}
 
-          {/* Quick Links */}
-          <div className="flex flex-wrap gap-2">
-            {[
-              { label: "Inbox", to: "/inbox", icon: Inbox },
-              { label: "Today", to: "/today", icon: CalendarCheck },
-              { label: "AI Review", to: "/ai-review", icon: BrainCircuit },
-              { label: "Projects", to: "/projects", icon: FolderKanban },
-              { label: "Ideas Vault", to: "/ideas", icon: Lightbulb },
-            ].map((l) => (
-              <Button key={l.to} size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => navigate(l.to)}>
-                <l.icon className="h-3 w-3" /> {l.label}
-              </Button>
-            ))}
+            {weeklyStep === "memory" && (
+              <ReviewStepMemory
+                items={memoryItems}
+                onRouteToday={handleRouteToday}
+                onRouteIdeas={handleRouteIdeas}
+              />
+            )}
+
+            {weeklyStep === "summary" && (
+              <ReviewStepSummary
+                health={{
+                  inboxCount: unprocessed.length,
+                  unfinishedToday: todayActive.length,
+                  atRiskProjects,
+                  newIdeas: newIdeas.length,
+                  notesCount: memoryItems.length,
+                  completedThisWeek: todayCompleted.length,
+                }}
+                stepsCompleted={completedSteps.size}
+                totalSteps={WEEKLY_STEPS.length}
+                onComplete={() => setWeeklyComplete(true)}
+              />
+            )}
           </div>
 
-          {/* Complete Weekly Review */}
-          <Button className="w-full h-12 text-base font-semibold gap-2" onClick={() => setWeeklyComplete(true)}>
-            <CalendarRange className="h-5 w-5" /> Complete Weekly Review
-          </Button>
+          {/* Navigation */}
+          {weeklyStep !== "summary" && (
+            <div className="flex items-center justify-between pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs gap-1"
+                disabled={!canGoBack}
+                onClick={() => setWeeklyStep(WEEKLY_STEPS[currentStepIndex - 1].key)}
+              >
+                <ChevronLeft className="h-3 w-3" /> Back
+              </Button>
+              <Button
+                size="sm"
+                className="text-xs gap-1"
+                onClick={markStepAndAdvance}
+              >
+                {canGoForward ? (
+                  <>Next: {WEEKLY_STEPS[currentStepIndex + 1].label} <ChevronRight className="h-3 w-3" /></>
+                ) : (
+                  <>View Summary <Trophy className="h-3 w-3" /></>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -450,7 +421,9 @@ export default function ReviewRitualsPage() {
           <Trophy className="h-12 w-12 text-primary mx-auto" />
           <h3 className="text-lg font-bold">Weekly Review Complete</h3>
           <p className="text-sm text-muted-foreground">You've reset and planned. Clarity compounds.</p>
-          <Button variant="outline" size="sm" onClick={() => setWeeklyComplete(false)}>Review Again</Button>
+          <Button variant="outline" size="sm" onClick={() => { setWeeklyComplete(false); setCompletedSteps(new Set()); setWeeklyStep("inbox"); }}>
+            Review Again
+          </Button>
         </div>
       )}
 
