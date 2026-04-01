@@ -16,6 +16,7 @@ const NAV_LINKS = [
   { to: "/review", label: "Review Rituals", icon: RotateCcw },
   { to: "/memory", label: "Memory", icon: Search },
   { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
+  { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
