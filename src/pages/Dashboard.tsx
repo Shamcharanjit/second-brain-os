@@ -53,7 +53,7 @@ export default function Dashboard() {
 
   const statCards = [
     { label: "Total Captures", value: stats.total, icon: Brain, color: "text-primary" },
-    { label: "Unprocessed", value: stats.unprocessed, icon: Inbox, color: "text-[hsl(var(--brain-amber))]" },
+    { label: "Pending Review", value: stats.pendingReview, icon: Inbox, color: "text-[hsl(var(--brain-amber))]" },
     { label: "Today Tasks", value: stats.todayTasks, icon: CalendarCheck, color: "text-[hsl(var(--brain-teal))]" },
     { label: "Ideas Stored", value: stats.ideas, icon: Lightbulb, color: "text-[hsl(var(--brain-purple))]" },
   ];
