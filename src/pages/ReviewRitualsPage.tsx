@@ -345,15 +345,15 @@ export default function ReviewRitualsPage() {
         </div>
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-xl border bg-card p-4 text-center space-y-1">
-            <p className="text-2xl font-bold text-primary">{MOCK_STREAK.dailyStreak}</p>
+            <p className="text-2xl font-bold text-primary">{dailyStreak}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Day Streak</p>
           </div>
           <div className="rounded-xl border bg-card p-4 text-center space-y-1">
-            <p className="text-sm font-bold">{MOCK_STREAK.lastWeekly}</p>
+            <p className="text-sm font-bold">{lastWeeklyLabel}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Last Weekly</p>
           </div>
           <div className="rounded-xl border bg-card p-4 text-center space-y-1">
-            <p className="text-2xl font-bold">{MOCK_STREAK.monthTotal}</p>
+            <p className="text-2xl font-bold">{monthTotal}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">This Month</p>
           </div>
         </div>
