@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
-import { Capture, CaptureStatus, ReviewStatus, AIProcessedData } from "@/types/brain";
+import { Capture, CaptureStatus, ReviewStatus, AIProcessedData, IdeaStatus } from "@/types/brain";
 import { mockAIProcess } from "@/lib/mock-ai";
 
 interface BrainContextType {
@@ -15,6 +15,8 @@ interface BrainContextType {
   uncompleteCapture: (id: string) => void;
   togglePinToday: (id: string) => void;
   editCaptureAI: (id: string, updates: Partial<AIProcessedData>) => void;
+  updateIdeaStatus: (id: string, status: IdeaStatus) => void;
+  convertIdeaToProject: (id: string) => void;
 }
 
 const BrainContext = createContext<BrainContextType | null>(null);
