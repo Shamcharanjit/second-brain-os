@@ -1,11 +1,14 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useSubscription } from "@/context/SubscriptionContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Settings, Shield, Cloud, HardDrive, Download, Upload,
   Trash2, RefreshCw, ArrowLeft, CheckCircle2, AlertTriangle, Heart,
+  Sparkles, Crown,
 } from "lucide-react";
 import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLocalData } from "@/lib/data-export";
 import type { InsightHaloBackup } from "@/lib/data-export";
