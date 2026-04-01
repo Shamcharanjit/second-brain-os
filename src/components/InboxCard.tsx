@@ -134,7 +134,7 @@ export default function InboxCard({ capture }: InboxCardProps) {
   if (isReviewed) {
     const statusLabels: Record<string, string> = {
       processed: "Processed", sent_to_today: "→ Today", sent_to_ideas: "→ Ideas Vault",
-      sent_to_projects: "→ Projects", sent_to_someday: "→ Someday",
+      sent_to_projects: "→ Projects", sent_to_someday: "→ Someday", sent_to_memory: "→ Memory",
     };
     return (
       <div className="flex items-center gap-3 rounded-xl border bg-card/60 px-4 py-3 opacity-70">
