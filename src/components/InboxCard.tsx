@@ -53,6 +53,7 @@ const ROUTE_ACTIONS: { label: string; icon: typeof CalendarCheck; status: Captur
 const destLabel: Record<string, string> = {
   today: "→ Today", inbox: "→ Inbox", ideas: "→ Ideas Vault",
   projects: "→ Projects", someday: "→ Someday", maybe_later: "→ Someday",
+  memory: "→ Memory",
 };
 
 interface InboxCardProps {
