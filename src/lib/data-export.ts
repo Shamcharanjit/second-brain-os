@@ -52,7 +52,6 @@ export function validateBackup(obj: unknown): obj is InsightHaloBackup {
 /** Restore a validated backup into localStorage (replaces local data). Returns true on success. */
 export function restoreBackup(backup: InsightHaloBackup): boolean {
   try {
-    const { saveState } = require("@/lib/persistence");
     saveState(KEYS.captures, backup.captures);
     saveState(KEYS.projects, backup.projects);
     saveState(KEYS.memory, backup.memory);
