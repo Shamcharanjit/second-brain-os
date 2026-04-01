@@ -21,6 +21,7 @@ export default function DashboardAlerts() {
   const { captures } = useBrain();
   const { projects, getProjectHealth } = useProjects();
   const { memories } = useMemory();
+  const { last_weekly_review_at } = useReviewMeta();
   const navigate = useNavigate();
 
   const alerts = useMemo(() => {
