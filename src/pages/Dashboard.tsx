@@ -135,9 +135,9 @@ export default function Dashboard() {
             <Inbox className="h-4 w-4 text-[hsl(var(--brain-amber))]" />
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Inbox Needs Review
-              {stats.unprocessed > 0 && (
+              {stats.pendingReview > 0 && (
                 <span className="ml-2 inline-flex items-center justify-center rounded-full bg-[hsl(var(--brain-amber))/0.15] text-[hsl(var(--brain-amber))] text-[10px] font-bold px-1.5 py-0.5">
-                  {stats.unprocessed}
+                  {stats.pendingReview}
                 </span>
               )}
             </h2>
