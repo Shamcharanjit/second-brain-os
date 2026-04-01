@@ -247,8 +247,8 @@ export default function ReviewRitualsPage() {
             ))}
           </div>
 
-          <Button className="w-full h-12 text-base font-semibold gap-2" onClick={() => { setDailyComplete(true); persistDaily(); }}>
-            <Sun className="h-5 w-5" /> Start My Day
+          <Button className="w-full h-12 text-base font-semibold gap-2" onClick={() => { setDailyComplete(true); persistDaily(); toast.success("Daily review complete — clarity restored."); }}>
+            <Sun className="h-5 w-5" /> Complete Daily Review
           </Button>
         </div>
       )}
