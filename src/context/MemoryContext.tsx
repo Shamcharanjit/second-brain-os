@@ -109,6 +109,9 @@ export function MemoryProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { saveState(STORAGE_KEY, memories); }, [memories]);
 
+  useCloudHydration(memories, setMemories, fetchMemories, upsertMemories, (d) => d.length === 0);
+  useCloudSync(memories, upsertMemories);
+
   const getMemory = useCallback((id: string) => memories.find((m) => m.id === id), [memories]);
 
   const createMemory = useCallback((data: { title: string; raw_text: string; summary: string; memory_type: MemoryType; tags?: string[]; importance_score?: number; source_capture_id?: string }): MemoryEntry => {
