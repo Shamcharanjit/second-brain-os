@@ -221,6 +221,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_subscriptions: {
+        Row: {
+          billing_provider: string | null
+          created_at: string
+          current_period_end: string | null
+          id: string
+          plan_tier: string
+          provider_customer_id: string | null
+          provider_subscription_id: string | null
+          subscription_status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_provider?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan_tier?: string
+          provider_customer_id?: string | null
+          provider_subscription_id?: string | null
+          subscription_status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_provider?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan_tier?: string
+          provider_customer_id?: string | null
+          provider_subscription_id?: string | null
+          subscription_status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
