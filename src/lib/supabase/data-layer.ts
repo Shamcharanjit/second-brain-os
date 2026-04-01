@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, isSupabaseEnabled } from "@/lib/supabase/client";
 import { Capture } from "@/types/brain";
 import { Project } from "@/types/project";
 import { MemoryEntry } from "@/types/memory";
