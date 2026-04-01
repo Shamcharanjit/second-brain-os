@@ -8,24 +8,22 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { formatDistanceToNow } from "date-fns";
 
-type FilterValue = CaptureCategory | "all" | "processed_filter" | "unprocessed_filter" | "high_priority";
+type FilterValue = CaptureCategory | "all" | "pending_review" | "reviewed_filter" | "high_priority";
 type SortValue = "newest" | "priority" | "needs_decision";
 
-const filters: { label: string; value: FilterValue; icon?: React.ReactNode }[] = [
+const filters: { label: string; value: FilterValue }[] = [
   { label: "All", value: "all" },
-  { label: "Unprocessed", value: "unprocessed_filter" },
+  { label: "Pending Review", value: "pending_review" },
   { label: "Tasks", value: "task" },
   { label: "Reminders", value: "reminder" },
   { label: "Ideas", value: "idea" },
-  { label: "High Priority", value: "high_priority" },
-  { label: "Follow-ups", value: "follow_up" },
-  { label: "Notes", value: "note" },
   { label: "Goals", value: "goal" },
+  { label: "Notes", value: "note" },
   { label: "Projects", value: "project" },
-  { label: "Maybe Later", value: "maybe_later" },
-  { label: "Processed", value: "processed_filter" },
+  { label: "Follow-ups", value: "follow_up" },
+  { label: "High Priority", value: "high_priority" },
+  { label: "Reviewed", value: "reviewed_filter" },
 ];
 
 const sortOptions: { label: string; value: SortValue }[] = [
@@ -34,25 +32,17 @@ const sortOptions: { label: string; value: SortValue }[] = [
   { label: "Needs Decision", value: "needs_decision" },
 ];
 
-const destinationLabel: Record<string, string> = {
-  processed: "Processed",
-  sent_to_today: "→ Today",
-  sent_to_ideas: "→ Ideas Vault",
-  archived: "Archived",
-};
-
 export default function InboxPage() {
   const { captures } = useBrain();
   const [filter, setFilter] = useState<FilterValue>("all");
-  const [sort, setSort] = useState<SortValue>("newest");
+  const [sort, setSort] = useState<SortValue>("needs_decision");
   const [search, setSearch] = useState("");
 
+  // Inbox = everything not archived
   const active = captures.filter((c) => c.status !== "archived");
 
-  // Filtered
   const filtered = useMemo(() => {
     let list = active;
-    // search
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -62,28 +52,26 @@ export default function InboxPage() {
           c.ai_data?.tags.some((t) => t.toLowerCase().includes(q))
       );
     }
-    // filter
     switch (filter) {
       case "all": break;
-      case "processed_filter":
-        list = list.filter((c) => c.status === "processed" || c.status === "sent_to_today" || c.status === "sent_to_ideas");
+      case "pending_review":
+        list = list.filter((c) => c.review_status !== "reviewed");
         break;
-      case "unprocessed_filter":
-        list = list.filter((c) => c.status === "unprocessed");
+      case "reviewed_filter":
+        list = list.filter((c) => c.review_status === "reviewed");
         break;
       case "high_priority":
-        list = list.filter((c) => (c.ai_data?.priority_score ?? 0) >= 7);
+        list = list.filter((c) => (c.ai_data?.priority_score ?? 0) >= 65);
         break;
       default:
         list = list.filter((c) => c.ai_data?.category === filter);
     }
-    // sort
     list = [...list].sort((a, b) => {
       if (sort === "priority") return (b.ai_data?.priority_score ?? 0) - (a.ai_data?.priority_score ?? 0);
       if (sort === "needs_decision") {
-        const aU = a.status === "unprocessed" ? 1 : 0;
-        const bU = b.status === "unprocessed" ? 1 : 0;
-        if (bU !== aU) return bU - aU;
+        const aP = a.review_status !== "reviewed" ? 1 : 0;
+        const bP = b.review_status !== "reviewed" ? 1 : 0;
+        if (bP !== aP) return bP - aP;
         return (b.ai_data?.priority_score ?? 0) - (a.ai_data?.priority_score ?? 0);
       }
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -91,15 +79,17 @@ export default function InboxPage() {
     return list;
   }, [active, filter, sort, search]);
 
-  // Split into unprocessed (hero) and processed (secondary)
-  const needsProcessing = filtered.filter((c) => c.status === "unprocessed");
-  const recentlyProcessed = filtered.filter((c) => c.status !== "unprocessed");
+  const pendingReview = filtered.filter((c) => c.review_status !== "reviewed");
+  const reviewed = filtered.filter((c) => c.review_status === "reviewed");
 
   // Stats
-  const totalCaptures = active.length;
-  const unprocessedCount = active.filter((c) => c.status === "unprocessed").length;
-  const highPriorityCount = active.filter((c) => (c.ai_data?.priority_score ?? 0) >= 7).length;
-  const needsDecisionCount = active.filter((c) => c.status === "unprocessed" && (c.ai_data?.priority_score ?? 0) >= 5).length;
+  const totalPending = active.filter((c) => c.review_status !== "reviewed").length;
+  const highPriorityCount = active.filter((c) => c.review_status !== "reviewed" && (c.ai_data?.priority_score ?? 0) >= 65).length;
+  const needsReviewCount = active.filter((c) => c.review_status === "needs_review").length;
+  const reviewedToday = active.filter((c) => {
+    if (!c.reviewed_at) return false;
+    return (Date.now() - new Date(c.reviewed_at).getTime()) < 86400000;
+  }).length;
 
   return (
     <div className="space-y-8">
@@ -112,18 +102,18 @@ export default function InboxPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Inbox</h1>
             <p className="text-sm text-muted-foreground">
-              Review raw captures, decide what matters, and let AI organize the rest.
+              Review AI decisions, approve or adjust, and route to the right place.
             </p>
           </div>
         </div>
       </div>
 
-      {/* KPI Summary Bar */}
+      {/* KPI Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard icon={<Inbox className="h-4 w-4" />} label="Total Captures" value={totalCaptures} accent="text-foreground" />
-        <KPICard icon={<Clock className="h-4 w-4" />} label="Unprocessed" value={unprocessedCount} accent="text-brain-amber" highlight={unprocessedCount > 0} />
-        <KPICard icon={<AlertTriangle className="h-4 w-4" />} label="High Priority" value={highPriorityCount} accent="text-brain-rose" highlight={highPriorityCount > 0} />
-        <KPICard icon={<Lightbulb className="h-4 w-4" />} label="Needs Decision" value={needsDecisionCount} accent="text-brain-purple" highlight={needsDecisionCount > 0} />
+        <KPICard icon={<Clock className="h-4 w-4" />} label="Pending Review" value={totalPending} accent="text-[hsl(var(--brain-amber))]" highlight={totalPending > 0} />
+        <KPICard icon={<AlertTriangle className="h-4 w-4" />} label="High Priority" value={highPriorityCount} accent="text-[hsl(var(--brain-rose))]" highlight={highPriorityCount > 0} />
+        <KPICard icon={<Lightbulb className="h-4 w-4" />} label="Needs AI Review" value={needsReviewCount} accent="text-[hsl(var(--brain-purple))]" highlight={needsReviewCount > 0} />
+        <KPICard icon={<CheckCircle2 className="h-4 w-4" />} label="Reviewed Today" value={reviewedToday} accent="text-primary" />
       </div>
 
       {/* Filter + Search + Sort */}
@@ -131,12 +121,7 @@ export default function InboxPage() {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search captures…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9 text-sm"
-            />
+            <Input placeholder="Search captures…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
           </div>
           <div className="flex items-center gap-1.5">
             <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
@@ -145,9 +130,7 @@ export default function InboxPage() {
               onChange={(e) => setSort(e.target.value as SortValue)}
               className="h-9 rounded-md border border-input bg-background px-3 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              {sortOptions.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
+              {sortOptions.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </div>
         </div>
@@ -163,9 +146,9 @@ export default function InboxPage() {
               }`}
             >
               {f.label}
-              {f.value === "unprocessed_filter" && unprocessedCount > 0 && (
+              {f.value === "pending_review" && totalPending > 0 && (
                 <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-primary-foreground/20 px-1.5 text-[10px]">
-                  {unprocessedCount}
+                  {totalPending}
                 </span>
               )}
             </button>
@@ -173,50 +156,38 @@ export default function InboxPage() {
         </div>
       </div>
 
-      {/* Hero: Needs Processing */}
+      {/* Pending Review Section */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-brain-amber" />
-          <h2 className="text-base font-semibold tracking-tight">Needs Processing</h2>
-          {needsProcessing.length > 0 && (
-            <Badge variant="secondary" className="text-[10px] px-2 py-0.5">{needsProcessing.length}</Badge>
+          <Sparkles className="h-4 w-4 text-[hsl(var(--brain-amber))]" />
+          <h2 className="text-base font-semibold tracking-tight">Pending Review</h2>
+          {pendingReview.length > 0 && (
+            <Badge variant="secondary" className="text-[10px] px-2 py-0.5">{pendingReview.length}</Badge>
           )}
         </div>
 
-        {needsProcessing.length === 0 ? (
-          <EmptyState message="All caught up! No items need processing." />
+        {pendingReview.length === 0 ? (
+          <EmptyState message="All caught up! No items need review." />
         ) : (
           <div className="space-y-4">
-            {needsProcessing.map((c) => (
+            {pendingReview.map((c) => (
               <InboxCard key={c.id} capture={c} />
             ))}
           </div>
         )}
       </section>
 
-      {/* Secondary: Recently Processed */}
-      {recentlyProcessed.length > 0 && (
+      {/* Reviewed Section */}
+      {reviewed.length > 0 && (
         <section className="space-y-4">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-primary" />
-            <h2 className="text-base font-semibold tracking-tight">Recently Processed</h2>
-            <Badge variant="secondary" className="text-[10px] px-2 py-0.5">{recentlyProcessed.length}</Badge>
+            <h2 className="text-base font-semibold tracking-tight">Recently Reviewed</h2>
+            <Badge variant="secondary" className="text-[10px] px-2 py-0.5">{reviewed.length}</Badge>
           </div>
-
-          <div className="grid gap-2">
-            {recentlyProcessed.slice(0, 5).map((c) => (
-              <div key={c.id} className="flex items-center gap-3 rounded-lg border bg-card/60 px-4 py-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{c.ai_data?.title}</p>
-                  <p className="text-xs text-muted-foreground truncate">{c.ai_data?.summary}</p>
-                </div>
-                <Badge variant="outline" className="text-[10px] shrink-0">
-                  {destinationLabel[c.status] ?? c.status}
-                </Badge>
-                <span className="text-[10px] text-muted-foreground shrink-0">
-                  {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                </span>
-              </div>
+          <div className="space-y-2">
+            {reviewed.slice(0, 8).map((c) => (
+              <InboxCard key={c.id} capture={c} />
             ))}
           </div>
         </section>

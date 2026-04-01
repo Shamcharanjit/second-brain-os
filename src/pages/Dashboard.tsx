@@ -11,18 +11,10 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const stats = useMemo(() => {
-    const unprocessed = captures.filter((c) => c.status === "unprocessed");
-    const todayTasks = captures.filter(
-      (c) =>
-        c.status !== "archived" &&
-        (c.status === "sent_to_today" || c.ai_data?.category === "task" || c.ai_data?.category === "reminder")
-    );
-    const ideas = captures.filter(
-      (c) =>
-        c.status !== "archived" &&
-        (c.ai_data?.category === "idea" || c.ai_data?.category === "maybe_later")
-    );
-    return { total: captures.length, unprocessed: unprocessed.length, todayTasks: todayTasks.length, ideas: ideas.length };
+    const pendingReview = captures.filter((c) => c.status !== "archived" && c.review_status !== "reviewed");
+    const todayTasks = captures.filter((c) => c.status === "sent_to_today");
+    const ideas = captures.filter((c) => c.status === "sent_to_ideas");
+    return { total: captures.length, pendingReview: pendingReview.length, todayTasks: todayTasks.length, ideas: ideas.length };
   }, [captures]);
 
   const topPriorities = useMemo(() => {
@@ -38,16 +30,12 @@ export default function Dashboard() {
   }, [captures]);
 
   const unprocessedRecent = useMemo(() => {
-    return captures.filter((c) => c.status === "unprocessed").slice(0, 3);
+    return captures.filter((c) => c.review_status !== "reviewed" && c.status !== "archived").slice(0, 3);
   }, [captures]);
 
   const ideasToRevisit = useMemo(() => {
     return captures
-      .filter(
-        (c) =>
-          c.status !== "archived" &&
-          (c.ai_data?.category === "idea" || c.ai_data?.category === "maybe_later")
-      )
+      .filter((c) => c.status === "sent_to_ideas")
       .slice(0, 3);
   }, [captures]);
 
@@ -61,7 +49,7 @@ export default function Dashboard() {
 
   const statCards = [
     { label: "Total Captures", value: stats.total, icon: Brain, color: "text-primary" },
-    { label: "Unprocessed", value: stats.unprocessed, icon: Inbox, color: "text-[hsl(var(--brain-amber))]" },
+    { label: "Pending Review", value: stats.pendingReview, icon: Inbox, color: "text-[hsl(var(--brain-amber))]" },
     { label: "Today Tasks", value: stats.todayTasks, icon: CalendarCheck, color: "text-[hsl(var(--brain-teal))]" },
     { label: "Ideas Stored", value: stats.ideas, icon: Lightbulb, color: "text-[hsl(var(--brain-purple))]" },
   ];
@@ -143,9 +131,9 @@ export default function Dashboard() {
             <Inbox className="h-4 w-4 text-[hsl(var(--brain-amber))]" />
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Inbox Needs Review
-              {stats.unprocessed > 0 && (
+              {stats.pendingReview > 0 && (
                 <span className="ml-2 inline-flex items-center justify-center rounded-full bg-[hsl(var(--brain-amber))/0.15] text-[hsl(var(--brain-amber))] text-[10px] font-bold px-1.5 py-0.5">
-                  {stats.unprocessed}
+                  {stats.pendingReview}
                 </span>
               )}
             </h2>
