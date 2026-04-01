@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Brain, Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings } from "lucide-react";
+import { Brain, Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings, Crown } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -17,6 +17,7 @@ const NAV_LINKS = [
   { to: "/memory", label: "Memory", icon: Search },
   { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
   { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/upgrade", label: "Upgrade", icon: Crown },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

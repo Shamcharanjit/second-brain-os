@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Mic, MicOff, Send, Sparkles, Check } from "lucide-react";
+import { Mic, MicOff, Send, Sparkles, Check, Crown } from "lucide-react";
 import { useBrain } from "@/context/BrainContext";
+import { useSubscription } from "@/context/SubscriptionContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Capture } from "@/types/brain";
 import AIResultCard from "@/components/AIResultCard";
 import AITriageCard from "@/components/AITriageCard";
-import { runAITriage, isAITriageAvailable, type AITriageResult } from "@/lib/ai-triage";
+import { runAITriage, isAITriageAvailable, triageToAIData, type AITriageResult } from "@/lib/ai-triage";
 
 const VOICE_TRANSCRIPTS = [
   "Remind me to send the project update to the team by tomorrow",
@@ -40,7 +41,8 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   const [lastResult, setLastResult] = useState<Capture | null>(null);
   const [triageResult, setTriageResult] = useState<{ triage: AITriageResult; source: "ai" | "local" } | null>(null);
   const [capturedText, setCapturedText] = useState("");
-  const { addCapture } = useBrain();
+  const { addCapture, addCaptureWithAI } = useBrain();
+  const { canUseAITriage, recordAITriageUse, shouldShowUpgradePrompt, aiTriageRemaining } = useSubscription();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
@@ -92,6 +94,14 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     const trimmed = text.trim();
     if (!trimmed || phase !== "idle") return;
 
+    if (!canUseAITriage) {
+      toast.error("AI organize limit reached for today.", {
+        description: "Upgrade to Pro for more AI-powered organization.",
+        action: { label: "Upgrade", onClick: () => window.location.href = "/upgrade" },
+      });
+      return;
+    }
+
     setCapturedText(trimmed);
     setPhase("triaging");
     setTriageResult(null);
@@ -99,10 +109,10 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
 
     try {
       const result = await runAITriage(trimmed);
+      recordAITriageUse();
       setTriageResult({ triage: result.triage, source: result.source });
       setPhase("triage_result");
     } catch {
-      // Fallback: just do a normal capture
       const capture = addCapture(trimmed, "text");
       setText("");
       setLastResult(capture);
@@ -110,13 +120,15 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       toast.info("AI unavailable — captured with smart sort.");
       setTimeout(() => { setPhase("idle"); onComplete?.(); }, 3000);
     }
-  }, [text, phase, addCapture, onComplete]);
+  }, [text, phase, addCapture, onComplete, canUseAITriage, recordAITriageUse]);
 
-  // Apply triage result
+  // Apply triage result — use addCaptureWithAI to preserve real AI data
   const handleApplyTriage = useCallback(() => {
     if (!triageResult || !capturedText) return;
 
-    const capture = addCapture(capturedText, "text");
+    const aiData = triageToAIData(triageResult.triage, capturedText);
+    const reviewStatus = triageResult.triage.confidence >= 0.8 ? "auto_approved" as const : "needs_review" as const;
+    const capture = addCaptureWithAI(capturedText, "text", aiData, reviewStatus);
     setText("");
     setLastResult(capture);
     setPhase("done");
@@ -134,7 +146,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       onComplete?.();
       textareaRef.current?.focus();
     }, 3000);
-  }, [triageResult, capturedText, addCapture, onComplete]);
+  }, [triageResult, capturedText, addCaptureWithAI, onComplete]);
 
   // Dismiss triage — save as-is
   const handleDismissTriage = useCallback(() => {
@@ -226,10 +238,15 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
                 size="sm"
                 variant="outline"
                 onClick={handleAITriage}
-                disabled={!text.trim() || isBusy || phase === "done"}
-                className="gap-1.5 text-xs"
+                disabled={!text.trim() || isBusy}
+                className={`gap-1.5 text-xs ${!canUseAITriage ? "opacity-60" : ""}`}
               >
-                <Sparkles className="h-3.5 w-3.5" /> AI Organize
+                <Sparkles className="h-3.5 w-3.5" />
+                AI Organize
+                {!canUseAITriage && <Crown className="h-3 w-3 text-primary" />}
+                {canUseAITriage && aiTriageRemaining <= 3 && (
+                  <span className="text-[9px] text-muted-foreground">({aiTriageRemaining})</span>
+                )}
               </Button>
             )}
             <Button

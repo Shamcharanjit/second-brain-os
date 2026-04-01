@@ -10,6 +10,7 @@ const STORAGE_KEY = "insighthalo_brain";
 interface BrainContextType {
   captures: Capture[];
   addCapture: (text: string, type: "text" | "voice") => Capture;
+  addCaptureWithAI: (text: string, type: "text" | "voice", aiData: AIProcessedData, reviewStatus: ReviewStatus) => Capture;
   addCaptureFromAction: (data: { text: string; projectId?: string; projectName?: string; actionId?: string }) => Capture;
   updateCaptureStatus: (id: string, status: CaptureStatus) => void;
   updateReviewStatus: (id: string, reviewStatus: ReviewStatus) => void;
@@ -98,6 +99,21 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       id: crypto.randomUUID(), raw_input: text, input_type: type,
       created_at: new Date().toISOString(), processed: true, status,
       review_status: reviewStatus, ai_data: aiData,
+      reviewed_at: null, manually_adjusted: false,
+      is_completed: false, completed_at: null, is_pinned_today: false,
+      idea_status: "new", converted_to_project_at: null,
+      source_project_id: null, source_action_id: null,
+    };
+    setCaptures((prev) => [newCapture, ...prev]);
+    return newCapture;
+  }, []);
+
+  const addCaptureWithAI = useCallback((text: string, type: "text" | "voice", preAiData: AIProcessedData, preReviewStatus: ReviewStatus): Capture => {
+    const status = preReviewStatus === "needs_review" ? "unprocessed" : autoRouteStatus(preAiData.destination_suggestion);
+    const newCapture: Capture = {
+      id: crypto.randomUUID(), raw_input: text, input_type: type,
+      created_at: new Date().toISOString(), processed: true, status,
+      review_status: preReviewStatus, ai_data: preAiData,
       reviewed_at: null, manually_adjusted: false,
       is_completed: false, completed_at: null, is_pinned_today: false,
       idea_status: "new", converted_to_project_at: null,
@@ -199,7 +215,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <BrainContext.Provider value={{
-      captures, addCapture, addCaptureFromAction, updateCaptureStatus, updateReviewStatus,
+      captures, addCapture, addCaptureWithAI, addCaptureFromAction, updateCaptureStatus, updateReviewStatus,
       approveCapture, editAndApproveCapture, archiveCapture, routeCapture,
       completeCapture, uncompleteCapture, togglePinToday, editCaptureAI,
       updateIdeaStatus, convertIdeaToProject,

@@ -1,17 +1,21 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useSubscription } from "@/context/SubscriptionContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Settings, Shield, Cloud, HardDrive, Download, Upload,
   Trash2, RefreshCw, ArrowLeft, CheckCircle2, AlertTriangle, Heart,
+  Sparkles, Crown,
 } from "lucide-react";
 import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLocalData } from "@/lib/data-export";
 import type { InsightHaloBackup } from "@/lib/data-export";
 
 export default function SettingsPage() {
   const { user, cloudAvailable, signOut } = useAuth();
+  const { plan, isPro, aiTriageRemaining, aiTriageUsedToday, limits } = useSubscription();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -123,6 +127,45 @@ export default function SettingsPage() {
             </Button>
             <Button size="sm" variant="ghost" className="text-xs gap-1.5 text-muted-foreground" onClick={() => signOut()}>Sign out</Button>
           </div>
+        )}
+      </section>
+
+      {/* Plan & AI Usage */}
+      <section className="rounded-xl border bg-card p-5 space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+          <Crown className="h-4 w-4 text-primary" /> Plan & AI Usage
+        </h2>
+        <div className="flex items-center gap-3">
+          <Badge variant={isPro ? "default" : "secondary"} className="text-xs gap-1">
+            {isPro && <Sparkles className="h-3 w-3" />}
+            {isPro ? "Pro" : "Free"}
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            {isPro ? "Expanded AI access" : "Basic AI access"}
+          </span>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">AI Organize used today</span>
+            <span className="font-medium">{aiTriageUsedToday} / {limits.aiTriagePerDay}</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${Math.min(100, (aiTriageUsedToday / limits.aiTriagePerDay) * 100)}%` }}
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            {aiTriageRemaining > 0
+              ? `${aiTriageRemaining} AI organize${aiTriageRemaining === 1 ? "" : "s"} remaining today`
+              : "Daily limit reached — resets tomorrow"
+            }
+          </p>
+        </div>
+        {!isPro && (
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => navigate("/upgrade")}>
+            <Sparkles className="h-3 w-3" /> Upgrade to Pro
+          </Button>
         )}
       </section>
 
