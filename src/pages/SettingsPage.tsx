@@ -16,7 +16,7 @@ import type { InsightHaloBackup } from "@/lib/data-export";
 
 export default function SettingsPage() {
   const { user, cloudAvailable, signOut } = useAuth();
-  const { plan, isPro, aiTriageRemaining, aiTriageUsedToday, limits } = useSubscription();
+  const { plan, isPro, aiTriageRemaining, aiTriageUsedToday, limits, billingEnabled, subscriptionStatus, currentPeriodEnd, loadingSubscription } = useSubscription();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
