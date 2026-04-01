@@ -19,12 +19,7 @@ export default function Dashboard() {
 
   const topPriorities = useMemo(() => {
     return captures
-      .filter(
-        (c) =>
-          c.status !== "archived" &&
-          c.status !== "sent_to_ideas" &&
-          (c.ai_data?.category === "task" || c.ai_data?.category === "reminder")
-      )
+      .filter((c) => c.status === "sent_to_today" && !c.is_completed)
       .sort((a, b) => (b.ai_data?.priority_score ?? 0) - (a.ai_data?.priority_score ?? 0))
       .slice(0, 3);
   }, [captures]);
