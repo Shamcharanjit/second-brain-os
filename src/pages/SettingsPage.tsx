@@ -8,14 +8,15 @@ import { toast } from "sonner";
 import {
   Settings, Shield, Cloud, HardDrive, Download, Upload,
   Trash2, RefreshCw, ArrowLeft, CheckCircle2, AlertTriangle, Heart,
-  Sparkles, Crown,
+  Sparkles, Crown, CreditCard,
 } from "lucide-react";
+import { createPortalSession } from "@/lib/stripe/billing";
 import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLocalData } from "@/lib/data-export";
 import type { InsightHaloBackup } from "@/lib/data-export";
 
 export default function SettingsPage() {
   const { user, cloudAvailable, signOut } = useAuth();
-  const { plan, isPro, aiTriageRemaining, aiTriageUsedToday, limits } = useSubscription();
+  const { plan, isPro, aiTriageRemaining, aiTriageUsedToday, limits, billingEnabled, subscriptionStatus, currentPeriodEnd, loadingSubscription } = useSubscription();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -166,6 +167,30 @@ export default function SettingsPage() {
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => navigate("/upgrade")}>
             <Sparkles className="h-3 w-3" /> Upgrade to Pro
           </Button>
+        )}
+        {isPro && billingEnabled && (
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={async () => {
+            try {
+              const result = await createPortalSession();
+              if (result?.url) { window.location.href = result.url; return; }
+              toast.info("Billing portal is not available yet.");
+            } catch { toast.error("Could not open billing portal."); }
+          }}>
+            <CreditCard className="h-3 w-3" /> Manage Subscription
+          </Button>
+        )}
+        {isPro && subscriptionStatus === "active" && currentPeriodEnd && (
+          <p className="text-[10px] text-muted-foreground">
+            Renews {new Date(currentPeriodEnd).toLocaleDateString()}
+          </p>
+        )}
+        {isPro && subscriptionStatus === "canceled" && (
+          <p className="text-[10px] text-destructive">
+            Canceled — access until {currentPeriodEnd ? new Date(currentPeriodEnd).toLocaleDateString() : "end of period"}
+          </p>
+        )}
+        {!billingEnabled && isPro && (
+          <p className="text-[10px] text-muted-foreground">Dev mode — billing not yet configured</p>
         )}
       </section>
 

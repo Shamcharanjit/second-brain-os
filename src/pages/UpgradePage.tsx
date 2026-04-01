@@ -1,10 +1,15 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Sparkles, Check, ArrowRight, Brain, Shield, Zap, Crown,
+  Sparkles, Check, ArrowRight, Brain, Shield, Zap, Crown, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { useAuth } from "@/context/AuthContext";
+import { isStripeEnabled } from "@/lib/stripe/config";
+import { createCheckoutSession, createPortalSession } from "@/lib/stripe/billing";
+import { toast } from "sonner";
 
 const FREE_FEATURES = [
   "Unlimited captures & local storage",
@@ -25,7 +30,55 @@ const PRO_FEATURES = [
 
 export default function UpgradePage() {
   const navigate = useNavigate();
-  const { plan, isPro, setPlan } = useSubscription();
+  const [searchParams] = useSearchParams();
+  const { plan, isPro, setPlan, billingEnabled, subscriptionStatus, loadingSubscription } = useSubscription();
+  const { user } = useAuth();
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  const checkoutResult = searchParams.get("checkout");
+
+  const handleUpgrade = async () => {
+    if (!user) {
+      toast.info("Please sign in first to upgrade.");
+      navigate("/auth");
+      return;
+    }
+
+    if (billingEnabled) {
+      setCheckoutLoading(true);
+      try {
+        const result = await createCheckoutSession();
+        if (result?.url) {
+          window.location.href = result.url;
+          return;
+        }
+        toast.error("Could not start checkout. Please try again.");
+      } catch (err: any) {
+        toast.error(err.message || "Checkout failed.");
+      } finally {
+        setCheckoutLoading(false);
+      }
+    } else {
+      // Dormant mode — dev toggle
+      setPlan("pro");
+      toast.success("Pro activated (dev mode)");
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    if (billingEnabled) {
+      try {
+        const result = await createPortalSession();
+        if (result?.url) {
+          window.location.href = result.url;
+          return;
+        }
+        toast.info("Billing portal is not available yet.");
+      } catch {
+        toast.error("Could not open billing portal.");
+      }
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -34,6 +87,19 @@ export default function UpgradePage() {
           <ArrowRight className="h-3.5 w-3.5 rotate-180" /> Dashboard
         </Button>
       </div>
+
+      {/* Checkout result banners */}
+      {checkoutResult === "success" && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-center space-y-1">
+          <p className="text-sm font-medium text-primary">🎉 Welcome to Pro!</p>
+          <p className="text-xs text-muted-foreground">Your subscription is being activated. It may take a moment to reflect.</p>
+        </div>
+      )}
+      {checkoutResult === "canceled" && (
+        <div className="rounded-xl border bg-muted/30 p-4 text-center">
+          <p className="text-sm text-muted-foreground">Checkout was canceled. No charges were made.</p>
+        </div>
+      )}
 
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center gap-2">
@@ -48,12 +114,12 @@ export default function UpgradePage() {
       {/* Plan cards */}
       <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
         {/* Free */}
-        <div className={`rounded-xl border p-6 space-y-4 ${plan === "free" ? "border-primary/30 bg-primary/5" : "bg-card"}`}>
+        <div className={`rounded-xl border p-6 space-y-4 ${!isPro ? "border-primary/30 bg-primary/5" : "bg-card"}`}>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Brain className="h-5 w-5 text-muted-foreground" />
               <h2 className="text-lg font-semibold">Free</h2>
-              {plan === "free" && <Badge variant="secondary" className="text-[10px]">Current</Badge>}
+              {!isPro && <Badge variant="secondary" className="text-[10px]">Current</Badge>}
             </div>
             <p className="text-2xl font-bold">$0<span className="text-sm font-normal text-muted-foreground">/month</span></p>
           </div>
@@ -68,15 +134,17 @@ export default function UpgradePage() {
         </div>
 
         {/* Pro */}
-        <div className={`rounded-xl border p-6 space-y-4 ${plan === "pro" ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "bg-card border-primary/30"}`}>
+        <div className={`rounded-xl border p-6 space-y-4 ${isPro ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "bg-card border-primary/30"}`}>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
               <h2 className="text-lg font-semibold">Pro</h2>
-              {plan === "pro" && <Badge className="text-[10px]">Current</Badge>}
+              {isPro && <Badge className="text-[10px]">Current</Badge>}
             </div>
             <p className="text-2xl font-bold">$9<span className="text-sm font-normal text-muted-foreground">/month</span></p>
-            <p className="text-[10px] text-muted-foreground">Pricing coming soon</p>
+            {!billingEnabled && (
+              <p className="text-[10px] text-muted-foreground">Pricing coming soon</p>
+            )}
           </div>
           <ul className="space-y-2">
             {PRO_FEATURES.map((f) => (
@@ -86,18 +154,39 @@ export default function UpgradePage() {
               </li>
             ))}
           </ul>
-          {!isPro ? (
-            <Button className="w-full gap-2" onClick={() => setPlan("pro")}>
-              <Sparkles className="h-4 w-4" /> Upgrade to Pro
+
+          {loadingSubscription ? (
+            <Button className="w-full" disabled>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
+            </Button>
+          ) : !isPro ? (
+            <Button className="w-full gap-2" onClick={handleUpgrade} disabled={checkoutLoading}>
+              {checkoutLoading ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Starting checkout…</>
+              ) : (
+                <><Sparkles className="h-4 w-4" /> {billingEnabled ? "Upgrade to Pro" : "Activate Pro (Preview)"}</>
+              )}
             </Button>
           ) : (
-            <Button variant="outline" className="w-full gap-2 text-muted-foreground" onClick={() => setPlan("free")}>
-              Switch to Free
-            </Button>
+            <div className="space-y-2">
+              {billingEnabled && (
+                <Button variant="outline" className="w-full gap-2 text-xs" onClick={handleManageSubscription}>
+                  Manage Subscription
+                </Button>
+              )}
+              {!billingEnabled && (
+                <Button variant="outline" className="w-full gap-2 text-muted-foreground text-xs" onClick={() => setPlan("free")}>
+                  Switch to Free (dev)
+                </Button>
+              )}
+            </div>
           )}
-          <p className="text-[10px] text-center text-muted-foreground">
-            Billing integration coming soon. Toggle for testing.
-          </p>
+
+          {!billingEnabled && (
+            <p className="text-[10px] text-center text-muted-foreground">
+              Billing integration coming soon. Toggle for testing.
+            </p>
+          )}
         </div>
       </div>
 
