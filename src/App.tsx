@@ -20,6 +20,7 @@ import CaptureGatewayPage from "@/pages/CaptureGatewayPage";
 import ReviewRitualsPage from "@/pages/ReviewRitualsPage";
 import MemoryPage from "@/pages/MemoryPage";
 import AuthPage from "@/pages/AuthPage";
+import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
