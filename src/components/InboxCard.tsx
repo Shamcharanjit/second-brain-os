@@ -63,6 +63,7 @@ interface InboxCardProps {
 export default function InboxCard({ capture }: InboxCardProps) {
   const ai = capture.ai_data;
   const { approveCapture, editAndApproveCapture, archiveCapture, routeCapture } = useBrain();
+  const { routeToMemory } = useIntegrationActions();
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
 
@@ -88,6 +89,11 @@ export default function InboxCard({ capture }: InboxCardProps) {
   };
 
   const handleRoute = (status: CaptureStatus, msg: string) => {
+    if (status === "sent_to_memory") {
+      routeToMemory(capture);
+      toast.success(msg);
+      return;
+    }
     routeCapture(capture.id, status);
     toast.success(msg);
   };
