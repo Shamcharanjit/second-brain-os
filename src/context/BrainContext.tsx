@@ -5,6 +5,7 @@ import { mockAIProcess } from "@/lib/mock-ai";
 interface BrainContextType {
   captures: Capture[];
   addCapture: (text: string, type: "text" | "voice") => Capture;
+  addCaptureFromAction: (data: { text: string; projectId?: string; projectName?: string }) => Capture;
   updateCaptureStatus: (id: string, status: CaptureStatus) => void;
   updateReviewStatus: (id: string, reviewStatus: ReviewStatus) => void;
   approveCapture: (id: string, targetStatus?: CaptureStatus) => void;
@@ -53,6 +54,7 @@ function makeSeed(id: string, raw: string, type: "text" | "voice", hoursAgo: num
     reviewed_at: null, manually_adjusted: false,
     is_completed: false, completed_at: null, is_pinned_today: false,
     idea_status: "new", converted_to_project_at: null,
+    source_project_id: null,
   };
 }
 
@@ -88,6 +90,25 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       reviewed_at: null, manually_adjusted: false,
       is_completed: false, completed_at: null, is_pinned_today: false,
       idea_status: "new", converted_to_project_at: null,
+      source_project_id: null,
+    };
+    setCaptures((prev) => [newCapture, ...prev]);
+    return newCapture;
+  }, []);
+
+  // Create a capture directly routed to Today, e.g. from a project next action
+  const addCaptureFromAction = useCallback((data: { text: string; projectId?: string; projectName?: string }): Capture => {
+    const { aiData } = mockAIProcess(data.text);
+    const newCapture: Capture = {
+      id: crypto.randomUUID(), raw_input: data.text, input_type: "text",
+      created_at: new Date().toISOString(), processed: true,
+      status: "sent_to_today",
+      review_status: "reviewed",
+      ai_data: { ...aiData, destination_suggestion: "today", suggested_project: data.projectName ?? aiData.suggested_project },
+      reviewed_at: new Date().toISOString(), manually_adjusted: false,
+      is_completed: false, completed_at: null, is_pinned_today: false,
+      idea_status: "new", converted_to_project_at: null,
+      source_project_id: data.projectId ?? null,
     };
     setCaptures((prev) => [newCapture, ...prev]);
     return newCapture;
@@ -137,7 +158,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       const current = prev.find((c) => c.id === id);
       if (!current) return prev;
       const pinned = prev.filter((c) => c.is_pinned_today && c.id !== id);
-      if (!current.is_pinned_today && pinned.length >= 3) return prev; // Max 3 pins
+      if (!current.is_pinned_today && pinned.length >= 3) return prev;
       return prev.map((c) => (c.id === id ? { ...c, is_pinned_today: !c.is_pinned_today } : c));
     });
   }, []);
@@ -166,7 +187,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <BrainContext.Provider value={{
-      captures, addCapture, updateCaptureStatus, updateReviewStatus,
+      captures, addCapture, addCaptureFromAction, updateCaptureStatus, updateReviewStatus,
       approveCapture, editAndApproveCapture, archiveCapture, routeCapture,
       completeCapture, uncompleteCapture, togglePinToday, editCaptureAI,
       updateIdeaStatus, convertIdeaToProject,

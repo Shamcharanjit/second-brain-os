@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
+import { useMemory } from "@/context/MemoryContext";
 import { ProjectHealth, NextAction } from "@/types/project";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import { toast } from "sonner";
 import {
   FolderKanban, Zap, CheckCircle2, Circle, Plus, Star, Rocket, Trash2,
   Clock, AlertTriangle, StickyNote, Lightbulb, Pencil, X,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, Brain, Pin,
 } from "lucide-react";
 import CaptureCard from "@/components/CaptureCard";
 
@@ -38,7 +39,8 @@ interface Props {
 
 export default function ProjectDetailPanel({ projectId, onClose }: Props) {
   const { projects, getProjectHealth, updateProject, addNextAction, completeNextAction, setPrimaryAction, editNextAction, removeNextAction, markActionSentToToday, addNote, removeNote } = useProjects();
-  const { captures } = useBrain();
+  const { captures, addCaptureFromAction } = useBrain();
+  const { memories } = useMemory();
 
   const [newActionText, setNewActionText] = useState("");
   const [newNoteText, setNewNoteText] = useState("");
@@ -65,6 +67,9 @@ export default function ProjectDetailPanel({ projectId, onClose }: Props) {
   const linkedIdeas = linkedCaptures.filter((c) => c.ai_data?.category === "idea" || c.ai_data?.category === "maybe_later");
   const sourceIdea = project.source_idea_id ? captures.find((c) => c.id === project.source_idea_id) : null;
 
+  // Linked memories (bidirectional)
+  const linkedMemories = memories.filter((m) => !m.is_archived && m.linked_project_ids.includes(projectId));
+
   const handleAddAction = () => {
     if (!newActionText.trim()) return;
     addNextAction(projectId, newActionText.trim(), activeActions.length === 0);
@@ -83,6 +88,13 @@ export default function ProjectDetailPanel({ projectId, onClose }: Props) {
     updateProject(projectId, { name: editName, description: editDesc });
     setEditing(false);
     toast.success("Project updated");
+  };
+
+  const handleSendToToday = (a: NextAction) => {
+    // Create a real capture in Today
+    addCaptureFromAction({ text: a.text, projectId, projectName: project.name });
+    markActionSentToToday(projectId, a.id);
+    toast.success("Sent to Today — item created");
   };
 
   return (
@@ -193,10 +205,12 @@ export default function ProjectDetailPanel({ projectId, onClose }: Props) {
                         <Star className="h-3 w-3 text-muted-foreground" />
                       </Button>
                     )}
-                    {!a.sent_to_today && (
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => { markActionSentToToday(projectId, a.id); toast.success("Sent to Today"); }}>
+                    {!a.sent_to_today ? (
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleSendToToday(a)}>
                         <Rocket className="h-3 w-3 text-muted-foreground" />
                       </Button>
+                    ) : (
+                      <Badge variant="secondary" className="text-[9px] gap-0.5"><Rocket className="h-2.5 w-2.5" />In Today</Badge>
                     )}
                     <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => removeNextAction(projectId, a.id)}>
                       <Trash2 className="h-3 w-3 text-muted-foreground" />
@@ -221,6 +235,32 @@ export default function ProjectDetailPanel({ projectId, onClose }: Props) {
                   <div key={a.id} className="flex items-center gap-2 text-xs text-muted-foreground">
                     <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--brain-teal))] shrink-0" />
                     <span className="line-through truncate">{a.text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Linked Memories */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Brain className="h-3.5 w-3.5 text-primary" /> Linked Memories ({linkedMemories.length})
+            </h3>
+            {linkedMemories.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2">No memories linked yet. Link from the Memory page.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {linkedMemories.map((m) => (
+                  <div key={m.id} className="rounded-lg border bg-card p-3 flex items-start gap-2">
+                    {m.is_pinned ? <Pin className="h-3.5 w-3.5 text-[hsl(var(--brain-amber))] shrink-0 mt-0.5" /> : <Brain className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{m.title}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{m.summary}</p>
+                      <div className="flex gap-1 mt-1">
+                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 capitalize">{m.memory_type}</Badge>
+                        {m.importance_score >= 70 && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Important</Badge>}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
+import { useIntegrationActions } from "@/hooks/useIntegrationActions";
 import { toast } from "sonner";
 import ReviewStepInbox from "@/components/review/ReviewStepInbox";
 import ReviewStepToday from "@/components/review/ReviewStepToday";
@@ -38,6 +39,7 @@ export default function ReviewRitualsPage() {
     captures, approveCapture, routeCapture, archiveCapture,
     completeCapture, updateIdeaStatus, convertIdeaToProject,
   } = useBrain();
+  const { routeToMemory } = useIntegrationActions();
   const { projects, getProjectHealth } = useProjects();
   const navigate = useNavigate();
   const [tab, setTab] = useState<ReviewTab>("weekly");
@@ -117,6 +119,10 @@ export default function ReviewRitualsPage() {
   const handleRouteIdeas = (id: string) => { routeCapture(id, "sent_to_ideas"); toast.success("Moved to Ideas Vault"); };
   const handleRouteProjects = (id: string) => { routeCapture(id, "sent_to_projects"); toast.success("Moved to Projects"); };
   const handleArchive = (id: string) => { archiveCapture(id); toast("Archived"); };
+  const handleRouteMemory = (id: string) => {
+    const capture = captures.find((c) => c.id === id);
+    if (capture) { routeToMemory(capture); toast.success("Saved to Memory"); }
+  };
   const handleComplete = (id: string) => { completeCapture(id); toast.success("Completed"); };
   const handleDefer = (id: string) => { routeCapture(id, "unprocessed"); toast("Deferred to Inbox"); };
   const handleExplore = (id: string) => { updateIdeaStatus(id, "explored"); toast.success("Marked as Explored"); };
@@ -281,7 +287,7 @@ export default function ReviewRitualsPage() {
             </div>
 
             {weeklyStep === "inbox" && (
-              <ReviewStepInbox items={unprocessed} onApprove={handleApproveInbox} onRouteToday={handleRouteToday} onRouteIdeas={handleRouteIdeas} onRouteProjects={handleRouteProjects} onArchive={handleArchive} />
+              <ReviewStepInbox items={unprocessed} onApprove={handleApproveInbox} onRouteToday={handleRouteToday} onRouteIdeas={handleRouteIdeas} onRouteProjects={handleRouteProjects} onRouteMemory={handleRouteMemory} onArchive={handleArchive} />
             )}
             {weeklyStep === "today" && (
               <ReviewStepToday active={todayActive} completed={todayCompleted} onComplete={handleComplete} onDefer={handleDefer} onMoveToProjects={handleRouteProjects} onArchive={handleArchive} />

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Capture, CaptureCategory, CaptureStatus, ConfidenceLevel, UrgencyLevel, DestinationSuggestion } from "@/types/brain";
 import { useBrain } from "@/context/BrainContext";
+import { useIntegrationActions } from "@/hooks/useIntegrationActions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import {
   Mic, Type, ArrowRight, FolderOpen, Check, X,
   CalendarCheck, Lightbulb, Archive, Clock, Sparkles, Pencil,
   ShieldCheck, ShieldAlert, ShieldQuestion, Gauge, FolderKanban, Hourglass,
-  ChevronDown, ChevronUp, Inbox,
+  ChevronDown, ChevronUp, Inbox, Brain,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -44,6 +45,7 @@ const ROUTE_ACTIONS: { label: string; icon: typeof CalendarCheck; status: Captur
   { label: "Today", icon: CalendarCheck, status: "sent_to_today", toastMsg: "Moved to Today", color: "text-[hsl(var(--brain-teal))]" },
   { label: "Projects", icon: FolderKanban, status: "sent_to_projects", toastMsg: "Moved to Projects", color: "text-[hsl(var(--brain-blue))]" },
   { label: "Ideas", icon: Lightbulb, status: "sent_to_ideas", toastMsg: "Moved to Ideas Vault", color: "text-[hsl(var(--brain-amber))]" },
+  { label: "Memory", icon: Brain, status: "sent_to_memory", toastMsg: "Saved to Memory", color: "text-primary" },
   { label: "Someday", icon: Hourglass, status: "sent_to_someday", toastMsg: "Moved to Someday", color: "text-muted-foreground" },
   { label: "Keep in Inbox", icon: Inbox, status: "processed", toastMsg: "Kept in Inbox as processed", color: "text-primary" },
 ];
@@ -51,6 +53,7 @@ const ROUTE_ACTIONS: { label: string; icon: typeof CalendarCheck; status: Captur
 const destLabel: Record<string, string> = {
   today: "→ Today", inbox: "→ Inbox", ideas: "→ Ideas Vault",
   projects: "→ Projects", someday: "→ Someday", maybe_later: "→ Someday",
+  memory: "→ Memory",
 };
 
 interface InboxCardProps {
@@ -60,6 +63,7 @@ interface InboxCardProps {
 export default function InboxCard({ capture }: InboxCardProps) {
   const ai = capture.ai_data;
   const { approveCapture, editAndApproveCapture, archiveCapture, routeCapture } = useBrain();
+  const { routeToMemory } = useIntegrationActions();
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
 
@@ -85,6 +89,11 @@ export default function InboxCard({ capture }: InboxCardProps) {
   };
 
   const handleRoute = (status: CaptureStatus, msg: string) => {
+    if (status === "sent_to_memory") {
+      routeToMemory(capture);
+      toast.success(msg);
+      return;
+    }
     routeCapture(capture.id, status);
     toast.success(msg);
   };
@@ -125,7 +134,7 @@ export default function InboxCard({ capture }: InboxCardProps) {
   if (isReviewed) {
     const statusLabels: Record<string, string> = {
       processed: "Processed", sent_to_today: "→ Today", sent_to_ideas: "→ Ideas Vault",
-      sent_to_projects: "→ Projects", sent_to_someday: "→ Someday",
+      sent_to_projects: "→ Projects", sent_to_someday: "→ Someday", sent_to_memory: "→ Memory",
     };
     return (
       <div className="flex items-center gap-3 rounded-xl border bg-card/60 px-4 py-3 opacity-70">

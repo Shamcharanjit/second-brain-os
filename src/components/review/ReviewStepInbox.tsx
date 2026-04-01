@@ -2,7 +2,7 @@ import { Capture } from "@/types/brain";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Inbox, CheckCircle2, Rocket, Lightbulb, FolderKanban, Archive, Sparkles,
+  Inbox, CheckCircle2, Rocket, Lightbulb, FolderKanban, Archive, Sparkles, Brain,
 } from "lucide-react";
 
 interface Props {
@@ -11,10 +11,11 @@ interface Props {
   onRouteToday: (id: string) => void;
   onRouteIdeas: (id: string) => void;
   onRouteProjects: (id: string) => void;
+  onRouteMemory: (id: string) => void;
   onArchive: (id: string) => void;
 }
 
-export default function ReviewStepInbox({ items, onApprove, onRouteToday, onRouteIdeas, onRouteProjects, onArchive }: Props) {
+export default function ReviewStepInbox({ items, onApprove, onRouteToday, onRouteIdeas, onRouteProjects, onRouteMemory, onArchive }: Props) {
   if (items.length === 0) {
     return (
       <div className="rounded-xl border bg-card p-8 text-center space-y-2">
@@ -66,6 +67,9 @@ export default function ReviewStepInbox({ items, onApprove, onRouteToday, onRout
                 </Button>
                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => onRouteProjects(c.id)}>
                   <FolderKanban className="h-3 w-3" /> Projects
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => onRouteMemory(c.id)}>
+                  <Brain className="h-3 w-3" /> Memory
                 </Button>
                 <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 ml-auto text-muted-foreground" onClick={() => onArchive(c.id)}>
                   <Archive className="h-3 w-3" />
