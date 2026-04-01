@@ -286,7 +286,7 @@ export default function ReviewRitualsPage() {
             </div>
 
             {weeklyStep === "inbox" && (
-              <ReviewStepInbox items={unprocessed} onApprove={handleApproveInbox} onRouteToday={handleRouteToday} onRouteIdeas={handleRouteIdeas} onRouteProjects={handleRouteProjects} onArchive={handleArchive} />
+              <ReviewStepInbox items={unprocessed} onApprove={handleApproveInbox} onRouteToday={handleRouteToday} onRouteIdeas={handleRouteIdeas} onRouteProjects={handleRouteProjects} onRouteMemory={handleRouteMemory} onArchive={handleArchive} />
             )}
             {weeklyStep === "today" && (
               <ReviewStepToday active={todayActive} completed={todayCompleted} onComplete={handleComplete} onDefer={handleDefer} onMoveToProjects={handleRouteProjects} onArchive={handleArchive} />
