@@ -8,6 +8,7 @@ import { BrainProvider } from "@/context/BrainContext";
 import { ProjectProvider } from "@/context/ProjectContext";
 import { MemoryProvider } from "@/context/MemoryContext";
 import { ReviewMetaProvider } from "@/context/ReviewMetaContext";
+import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import AppLayout from "@/components/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import InboxPage from "@/pages/InboxPage";
@@ -21,6 +22,7 @@ import ReviewRitualsPage from "@/pages/ReviewRitualsPage";
 import MemoryPage from "@/pages/MemoryPage";
 import AuthPage from "@/pages/AuthPage";
 import SettingsPage from "@/pages/SettingsPage";
+import UpgradePage from "@/pages/UpgradePage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
