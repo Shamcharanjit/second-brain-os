@@ -118,6 +118,10 @@ export default function ReviewRitualsPage() {
   const handleRouteIdeas = (id: string) => { routeCapture(id, "sent_to_ideas"); toast.success("Moved to Ideas Vault"); };
   const handleRouteProjects = (id: string) => { routeCapture(id, "sent_to_projects"); toast.success("Moved to Projects"); };
   const handleArchive = (id: string) => { archiveCapture(id); toast("Archived"); };
+  const handleRouteMemory = (id: string) => {
+    const capture = captures.find((c) => c.id === id);
+    if (capture) { routeToMemory(capture); toast.success("Saved to Memory"); }
+  };
   const handleComplete = (id: string) => { completeCapture(id); toast.success("Completed"); };
   const handleDefer = (id: string) => { routeCapture(id, "unprocessed"); toast("Deferred to Inbox"); };
   const handleExplore = (id: string) => { updateIdeaStatus(id, "explored"); toast.success("Marked as Explored"); };
