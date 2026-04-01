@@ -186,8 +186,10 @@ export default function Dashboard() {
           <Search className="h-5 w-5 text-[hsl(var(--brain-purple))]" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold">Memory Recall</h3>
-          <p className="text-[10px] text-muted-foreground">The right thought, at the right time.</p>
+          <h3 className="text-sm font-semibold">Memory Bank</h3>
+          <p className="text-[10px] text-muted-foreground">
+            {memories.filter((m) => !m.is_archived).length} memories · {memories.filter((m) => m.is_pinned && !m.is_archived).length} pinned
+          </p>
         </div>
         <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">Open Memory <ArrowRight className="h-3 w-3" /></Button>
       </div>
