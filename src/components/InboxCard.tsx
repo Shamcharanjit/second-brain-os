@@ -360,10 +360,24 @@ export default function InboxCard({ capture }: InboxCardProps) {
                   <r.icon className={`h-3 w-3 ${r.color}`} /> {r.label}
                 </Button>
               ))}
+              <Button size="sm" variant="ghost" className="h-6 text-[10px] gap-1 px-2"
+                onClick={() => setShowCreateProject(true)}>
+                <FolderKanban className="h-3 w-3 text-[hsl(var(--brain-blue))]" /> Create Project
+              </Button>
             </div>
           </div>
         )}
       </div>
+
+      {showCreateProject && (
+        <CreateProjectDialog
+          open={showCreateProject}
+          onClose={() => setShowCreateProject(false)}
+          defaultName={ai.title}
+          defaultDescription={ai.summary}
+          sourceIdeaId={capture.id}
+        />
+      )}
     </div>
   );
 }

@@ -102,6 +102,11 @@ export default function AITriageCard({ triage, source, onApply, onDismiss, onCre
         <Button size="sm" onClick={onApply} className="gap-1.5 text-xs">
           <Check className="h-3 w-3" /> Apply
         </Button>
+        {(triage.type === "project" || triage.recommendedDestination === "projects") && onCreateProject && (
+          <Button size="sm" variant="outline" onClick={onCreateProject} className="gap-1.5 text-xs">
+            <FolderKanban className="h-3 w-3" /> Create Project
+          </Button>
+        )}
         <Button size="sm" variant="ghost" onClick={onDismiss} className="gap-1.5 text-xs text-muted-foreground">
           <X className="h-3 w-3" /> Keep as-is
         </Button>
