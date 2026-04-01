@@ -91,8 +91,8 @@ export default function ProjectDetailPanel({ projectId, onClose }: Props) {
   };
 
   const handleSendToToday = (a: NextAction) => {
-    // Create a real capture in Today
-    addCaptureFromAction({ text: a.text, projectId, projectName: project.name });
+    // Create a real capture in Today with action linkage
+    addCaptureFromAction({ text: a.text, projectId, projectName: project.name, actionId: a.id });
     markActionSentToToday(projectId, a.id);
     toast.success("Sent to Today — item created");
   };

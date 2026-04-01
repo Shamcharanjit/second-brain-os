@@ -116,14 +116,20 @@ export default function InboxCard({ capture }: InboxCardProps) {
   const cancelEditing = () => setEditing(false);
 
   const saveEdits = (targetStatus: CaptureStatus, toastMsg: string) => {
-    editAndApproveCapture(capture.id, {
+    const updates = {
       title: editTitle,
       category: editCategory,
       priority_score: editPriority,
       urgency: editUrgency,
       next_action: editNextAction,
       tags: editTags.split(",").map((t) => t.trim()).filter(Boolean),
-    }, targetStatus);
+    };
+    editAndApproveCapture(capture.id, updates, targetStatus);
+    // If routing to Memory via edit, create real MemoryEntry
+    if (targetStatus === "sent_to_memory") {
+      const updatedCapture = { ...capture, ai_data: capture.ai_data ? { ...capture.ai_data, ...updates } : capture.ai_data, status: targetStatus } as Capture;
+      routeToMemory(updatedCapture);
+    }
     setEditing(false);
     toast.success(toastMsg, { description: "Edits saved." });
   };

@@ -2,14 +2,17 @@ import { useNavigate } from "react-router-dom";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useMemory } from "@/context/MemoryContext";
+import { useReviewMeta } from "@/context/ReviewMetaContext";
 import { Plus, CalendarCheck, RotateCcw, FolderKanban, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMemo } from "react";
+import { formatDistanceToNow } from "date-fns";
 
 export default function DashboardHero() {
   const { captures } = useBrain();
   const { projects, getProjectHealth } = useProjects();
   const { memories } = useMemory();
+  const { last_weekly_review_at } = useReviewMeta();
   const navigate = useNavigate();
 
   const briefing = useMemo(() => {
@@ -28,8 +31,9 @@ export default function DashboardHero() {
     if (atRisk > 0) lines.push(`${atRisk} project${atRisk > 1 ? "s" : ""} at risk`);
     if (unreviewed > 3) lines.push(`${unreviewed} memories unreviewed`);
     if (inbox > 0) lines.push(`${inbox} item${inbox > 1 ? "s" : ""} in inbox`);
+    if (last_weekly_review_at) lines.push(`Last review ${formatDistanceToNow(new Date(last_weekly_review_at), { addSuffix: true })}`);
 
-    return lines.slice(0, 2);
+    return lines.slice(0, 3);
   }, [captures, projects, memories, getProjectHealth]);
 
   return (

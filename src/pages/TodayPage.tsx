@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useBrain } from "@/context/BrainContext";
+import { useIntegrationActions } from "@/hooks/useIntegrationActions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ export default function TodayPage() {
     captures, completeCapture, uncompleteCapture, togglePinToday,
     routeCapture, editCaptureAI,
   } = useBrain();
+  const { syncCompletionToProject } = useIntegrationActions();
   const [showCompleted, setShowCompleted] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -86,7 +88,9 @@ export default function TodayPage() {
   }, [todayItems, active, completed, highPriorityRemaining]);
 
   const handleComplete = (id: string) => {
+    const capture = captures.find((c) => c.id === id);
     completeCapture(id);
+    if (capture) syncCompletionToProject(capture);
     toast.success("Marked complete ✓");
   };
 
@@ -347,6 +351,14 @@ function TodayCard({
             {ai.tags.slice(0, 3).map((tag) => (
               <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">{tag}</Badge>
             ))}
+          </div>
+        )}
+
+        {/* Source project indicator */}
+        {!isEditing && capture.source_project_id && (
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <FolderKanban className="h-3 w-3" />
+            <span>From project: <span className="font-medium text-foreground">{ai.suggested_project || "Linked project"}</span></span>
           </div>
         )}
 

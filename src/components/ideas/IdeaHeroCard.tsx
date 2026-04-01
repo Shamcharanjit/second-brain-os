@@ -1,11 +1,12 @@
 import { Capture } from "@/types/brain";
+import { useMemory } from "@/context/MemoryContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
   Sparkles, Rocket, FolderPlus, StickyNote, Archive,
-  FolderOpen, ArrowRight, Eye, PauseCircle,
+  FolderOpen, ArrowRight, Eye, PauseCircle, Brain,
 } from "lucide-react";
 
 const effortLabels = { low: "Low Effort", medium: "Medium Effort", high: "High Effort" };
@@ -31,6 +32,8 @@ interface Props {
 export default function IdeaHeroCard({ capture, onPromote, onArchive, onExplore, onPark, onConvert, onEdit }: Props) {
   const ai = capture.ai_data;
   if (!ai) return null;
+  const { memories } = useMemory();
+  const linkedMemories = memories.filter((m) => m.linked_idea_ids.includes(capture.id));
   const effort = { label: effortLabels[ai.effort], color: effortColors[ai.effort] };
   const badge = statusBadge[capture.idea_status] ?? statusBadge.new;
 
@@ -88,6 +91,25 @@ export default function IdeaHeroCard({ capture, onPromote, onArchive, onExplore,
           {formatDistanceToNow(new Date(capture.created_at), { addSuffix: true })}
         </span>
       </div>
+
+      {/* Linked Memories */}
+      {linkedMemories.length > 0 && (
+        <div className="rounded-lg border border-primary/10 bg-primary/5 p-3 space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <Brain className="h-3 w-3 text-primary" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">Linked Knowledge</span>
+          </div>
+          {linkedMemories.slice(0, 3).map((m) => (
+            <div key={m.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground truncate">{m.title}</span>
+              <Badge variant="secondary" className="text-[9px] px-1 py-0 shrink-0">{m.memory_type}</Badge>
+            </div>
+          ))}
+          {linkedMemories.length > 3 && (
+            <p className="text-[10px] text-muted-foreground">+{linkedMemories.length - 3} more</p>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center gap-2 pt-1 flex-wrap">
         <Button size="sm" className="h-7 text-xs gap-1" onClick={() => onPromote(capture.id)}>
