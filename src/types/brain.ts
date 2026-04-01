@@ -46,4 +46,5 @@ export interface Capture {
   idea_status: IdeaStatus;
   converted_to_project_at: string | null;
   source_project_id: string | null;
+  source_action_id: string | null;
 }
