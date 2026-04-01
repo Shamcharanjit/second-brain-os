@@ -14,9 +14,10 @@ import { toast } from "sonner";
 import {
   FolderKanban, Zap, CheckCircle2, Circle, Plus, Star, Rocket, Trash2,
   Clock, AlertTriangle, StickyNote, Lightbulb, Pencil, X,
-  ChevronDown, ChevronUp, Brain, Pin,
+  ChevronDown, ChevronUp, Brain, Pin, ArrowRight,
 } from "lucide-react";
 import CaptureCard from "@/components/CaptureCard";
+import ProjectAIAssist from "@/components/projects/ProjectAIAssist";
 
 const HEALTH_CONFIG: Record<ProjectHealth, { label: string; className: string }> = {
   healthy: { label: "Healthy", className: "text-[hsl(var(--brain-teal))]" },
@@ -241,7 +242,23 @@ export default function ProjectDetailPanel({ projectId, onClose }: Props) {
             )}
           </div>
 
-          {/* Linked Memories */}
+          {/* AI Project Assist */}
+          <ProjectAIAssist project={project} />
+
+          {/* Source Capture */}
+          {sourceIdea && (
+            <div className="rounded-lg bg-primary/5 border border-primary/15 p-3 flex items-start gap-2">
+              <ArrowRight className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5 rotate-180" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Created from capture</p>
+                <p className="text-xs text-foreground mt-0.5 truncate">{sourceIdea.raw_input}</p>
+                {sourceIdea.ai_data?.title && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5">AI title: {sourceIdea.ai_data.title}</p>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <Brain className="h-3.5 w-3.5 text-primary" /> Linked Memories ({linkedMemories.length})

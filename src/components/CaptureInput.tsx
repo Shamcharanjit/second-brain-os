@@ -335,6 +335,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
           }}
           defaultName={triageResult.triage.title}
           defaultDescription={triageResult.triage.summary}
+          initialNextAction={triageResult.triage.suggestedNextAction}
         />
       )}
     </div>
