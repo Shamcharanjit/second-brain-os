@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Capture, CaptureCategory, CaptureStatus, ConfidenceLevel, UrgencyLevel, DestinationSuggestion } from "@/types/brain";
 import { useBrain } from "@/context/BrainContext";
+import { useProjects } from "@/context/ProjectContext";
 import { useIntegrationActions } from "@/hooks/useIntegrationActions";
+import CreateProjectDialog from "@/components/projects/CreateProjectDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
