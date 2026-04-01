@@ -88,8 +88,8 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { saveState(STORAGE_KEY, captures); }, [captures]);
 
   // Cloud sync
-  useCloudHydration(captures, setCaptures, fetchCaptures, upsertCaptures, (d) => d.length === 0);
-  useCloudSync(captures, upsertCaptures);
+  useCloudHydration(captures, setCaptures, STORAGE_KEY, fetchCaptures, upsertCaptures, (d) => d.length === 0);
+  useCloudSync(captures, syncCaptures);
 
   const addCapture = useCallback((text: string, type: "text" | "voice"): Capture => {
     const { aiData, reviewStatus } = mockAIProcess(text);

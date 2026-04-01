@@ -131,8 +131,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { saveState(STORAGE_KEY, projects); }, [projects]);
 
-  useCloudHydration(projects, setProjects, fetchProjects, upsertProjects, (d) => d.length === 0);
-  useCloudSync(projects, upsertProjects);
+  useCloudHydration(projects, setProjects, STORAGE_KEY, fetchProjects, upsertProjects, (d) => d.length === 0);
+  useCloudSync(projects, syncProjects);
 
   const getProject = useCallback((id: string) => projects.find((p) => p.id === id), [projects]);
   const getProjectHealth = useCallback((p: Project) => computeHealth(p), []);
