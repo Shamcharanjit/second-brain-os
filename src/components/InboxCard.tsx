@@ -33,8 +33,8 @@ const priorityColor = (score: number) => {
 };
 
 const priorityBg = (score: number) => {
-  if (score >= 8) return "bg-brain-rose/10 border-brain-rose/20";
-  if (score >= 5) return "bg-brain-amber/10 border-brain-amber/20";
+  if (score >= 70) return "bg-brain-rose/10 border-brain-rose/20";
+  if (score >= 45) return "bg-brain-amber/10 border-brain-amber/20";
   return "bg-muted border-border";
 };
 
