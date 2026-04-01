@@ -1,15 +1,15 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Sun, Moon, CalendarRange, Inbox, CalendarCheck, BrainCircuit,
+  Sun, CalendarRange, Inbox, CalendarCheck, BrainCircuit,
   Lightbulb, FolderKanban, ArrowRight, Sparkles, Trash2, CheckCircle2,
-  AlertTriangle, TrendingUp, Target, Flame, Zap, Clock, RotateCcw,
+  AlertTriangle, Target, Flame, Zap, Clock, RotateCcw,
   Trophy, Archive, ChevronRight, ChevronLeft, Brain,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useBrain } from "@/context/BrainContext";
-import { MOCK_PROJECTS } from "@/lib/mock-projects";
+import { useProjects } from "@/context/ProjectContext";
 import { toast } from "sonner";
 import ReviewStepInbox from "@/components/review/ReviewStepInbox";
 import ReviewStepToday from "@/components/review/ReviewStepToday";
@@ -38,6 +38,7 @@ export default function ReviewRitualsPage() {
     captures, approveCapture, routeCapture, archiveCapture,
     completeCapture, updateIdeaStatus, convertIdeaToProject,
   } = useBrain();
+  const { projects, getProjectHealth } = useProjects();
   const navigate = useNavigate();
   const [tab, setTab] = useState<ReviewTab>("weekly");
   const [dailyComplete, setDailyComplete] = useState(false);
@@ -45,7 +46,6 @@ export default function ReviewRitualsPage() {
   const [weeklyStep, setWeeklyStep] = useState<WeeklyStep>("inbox");
   const [completedSteps, setCompletedSteps] = useState<Set<WeeklyStep>>(new Set());
 
-  /* ── Computed data ── */
   const unprocessed = useMemo(() => captures.filter((c) => c.status === "unprocessed" || (c.review_status === "needs_review" && c.status !== "archived")), [captures]);
   const todayActive = useMemo(() => captures.filter((c) => c.status === "sent_to_today" && !c.is_completed), [captures]);
   const todayCompleted = useMemo(() => captures.filter((c) => c.status === "sent_to_today" && c.is_completed), [captures]);
@@ -57,24 +57,19 @@ export default function ReviewRitualsPage() {
   const newIdeas = useMemo(() => ideas.filter((c) => c.idea_status === "new"), [ideas]);
   const highPotentialIdeas = useMemo(() => ideas.filter((c) => (c.ai_data?.priority_score ?? 0) >= 65), [ideas]);
   const parkedIdeas = useMemo(() => ideas.filter((c) => c.idea_status === "parked"), [ideas]);
-  const memoryItems = useMemo(() => captures.filter((c) =>
-    c.ai_data?.category === "note" && c.status !== "archived"
-  ).slice(0, 5), [captures]);
-  const followUps = useMemo(() => captures.filter((c) =>
-    c.status !== "archived" && c.ai_data?.category === "follow_up"
-  ), [captures]);
+  const memoryItems = useMemo(() => captures.filter((c) => c.ai_data?.category === "note" && c.status !== "archived").slice(0, 5), [captures]);
   const urgentItems = useMemo(() => captures.filter((c) =>
     c.status !== "archived" && c.ai_data?.urgency === "high"
   ).sort((a, b) => (b.ai_data?.priority_score ?? 0) - (a.ai_data?.priority_score ?? 0)).slice(0, 5), [captures]);
   const staleItems = useMemo(() => captures.filter((c) =>
     c.status === "unprocessed" && (Date.now() - new Date(c.created_at).getTime()) > 3 * 86400000
   ), [captures]);
-  const carryovers = useMemo(() => captures.filter((c) =>
-    c.status === "unprocessed" && c.ai_data?.due_context === "today" && (Date.now() - new Date(c.created_at).getTime()) > 86400000
-  ).slice(0, 3), [captures]);
-  const atRiskProjects = MOCK_PROJECTS.filter((p) => p.status === "at_risk" || p.status === "blocked").length;
 
-  /* ── Daily AI suggestions ── */
+  const atRiskProjects = useMemo(() =>
+    projects.filter((p) => p.status !== "completed" && p.status !== "archived" && (getProjectHealth(p) === "at_risk" || getProjectHealth(p) === "stalled")).length,
+    [projects, getProjectHealth]
+  );
+
   const dailySuggestions = useMemo(() => {
     const suggestions: { text: string; reason: string; destination: string; action: string }[] = [];
     if (pendingReview.length > 0) suggestions.push({
@@ -101,7 +96,6 @@ export default function ReviewRitualsPage() {
     return suggestions.slice(0, 3);
   }, [pendingReview, urgentItems, ideas]);
 
-  /* ── Step navigation ── */
   const currentStepIndex = WEEKLY_STEPS.findIndex((s) => s.key === weeklyStep);
   const canGoBack = currentStepIndex > 0;
   const canGoForward = currentStepIndex < WEEKLY_STEPS.length - 1;
@@ -111,15 +105,13 @@ export default function ReviewRitualsPage() {
     if (canGoForward) setWeeklyStep(WEEKLY_STEPS[currentStepIndex + 1].key);
   };
 
-  /* ── KPI cards ── */
   const dailyKpis = [
     { label: "Unprocessed", value: unprocessed.length, icon: Inbox, color: "text-[hsl(var(--brain-amber))]" },
     { label: "Today's Priorities", value: todayActive.length, icon: CalendarCheck, color: "text-[hsl(var(--brain-teal))]" },
     { label: "Pending Review", value: pendingReview.length, icon: BrainCircuit, color: "text-primary" },
-    { label: "Carryovers", value: carryovers.length, icon: RotateCcw, color: "text-[hsl(var(--brain-rose))]" },
+    { label: "At Risk Projects", value: atRiskProjects, icon: AlertTriangle, color: "text-[hsl(var(--brain-rose))]" },
   ];
 
-  /* ── Actions with toast ── */
   const handleApproveInbox = (id: string) => { approveCapture(id); toast.success("Approved"); };
   const handleRouteToday = (id: string) => { routeCapture(id, "sent_to_today"); toast.success("Moved to Today"); };
   const handleRouteIdeas = (id: string) => { routeCapture(id, "sent_to_ideas"); toast.success("Moved to Ideas Vault"); };
@@ -132,7 +124,6 @@ export default function ReviewRitualsPage() {
 
   return (
     <div className="space-y-10">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Review Rituals</h1>
         <p className="text-sm text-muted-foreground mt-1">Reset your system. Reclaim clarity. Choose what matters next.</p>
@@ -143,27 +134,16 @@ export default function ReviewRitualsPage() {
         <p className="text-[10px] text-muted-foreground mt-0.5">A few minutes of review saves hours of mental drag.</p>
       </div>
 
-      {/* Tab toggle */}
       <div className="flex gap-2">
-        <button
-          onClick={() => setTab("daily")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium border transition-all ${
-            tab === "daily" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:bg-muted/50"
-          }`}
-        >
+        <button onClick={() => setTab("daily")} className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium border transition-all ${tab === "daily" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:bg-muted/50"}`}>
           <Sun className="h-4 w-4" /> Daily Review
         </button>
-        <button
-          onClick={() => setTab("weekly")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium border transition-all ${
-            tab === "weekly" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:bg-muted/50"
-          }`}
-        >
+        <button onClick={() => setTab("weekly")} className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium border transition-all ${tab === "weekly" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:bg-muted/50"}`}>
           <CalendarRange className="h-4 w-4" /> Weekly Review
         </button>
       </div>
 
-      {/* ═══════════════ DAILY REVIEW ═══════════════ */}
+      {/* DAILY */}
       {tab === "daily" && !dailyComplete && (
         <div className="space-y-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -178,7 +158,6 @@ export default function ReviewRitualsPage() {
             ))}
           </div>
 
-          {/* What Needs Attention */}
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-[hsl(var(--brain-amber))]" />
@@ -204,7 +183,6 @@ export default function ReviewRitualsPage() {
             )}
           </section>
 
-          {/* AI Suggested Focus */}
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
@@ -228,7 +206,6 @@ export default function ReviewRitualsPage() {
             </div>
           </section>
 
-          {/* Clear the Noise */}
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <Archive className="h-4 w-4 text-muted-foreground" />
@@ -238,16 +215,12 @@ export default function ReviewRitualsPage() {
               {staleItems.length > 0 && (
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">{staleItems.length} stale capture{staleItems.length > 1 ? "s" : ""} to archive or decide</span>
-                  <Button size="sm" variant="ghost" className="text-xs gap-1" onClick={() => navigate("/inbox")}>
-                    Review <ArrowRight className="h-3 w-3" />
-                  </Button>
+                  <Button size="sm" variant="ghost" className="text-xs gap-1" onClick={() => navigate("/inbox")}>Review <ArrowRight className="h-3 w-3" /></Button>
                 </div>
               )}
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Convert loose notes into tasks or ideas</span>
-                <Button size="sm" variant="ghost" className="text-xs gap-1" onClick={() => navigate("/ai-review")}>
-                  AI Review <ArrowRight className="h-3 w-3" />
-                </Button>
+                <Button size="sm" variant="ghost" className="text-xs gap-1" onClick={() => navigate("/ai-review")}>AI Review <ArrowRight className="h-3 w-3" /></Button>
               </div>
             </div>
           </section>
@@ -281,135 +254,60 @@ export default function ReviewRitualsPage() {
         </div>
       )}
 
-      {/* ═══════════════ WEEKLY REVIEW ═══════════════ */}
+      {/* WEEKLY */}
       {tab === "weekly" && !weeklyComplete && (
         <div className="space-y-6">
-          {/* Step Progress */}
           <div className="flex items-center gap-1 overflow-x-auto pb-2">
-            {WEEKLY_STEPS.map((step, i) => {
+            {WEEKLY_STEPS.map((step) => {
               const isActive = step.key === weeklyStep;
               const isDone = completedSteps.has(step.key);
               const StepIcon = step.icon;
-
               return (
-                <button
-                  key={step.key}
-                  onClick={() => setWeeklyStep(step.key)}
+                <button key={step.key} onClick={() => setWeeklyStep(step.key)}
                   className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium border transition-all shrink-0 ${
-                    isActive
-                      ? "border-primary bg-primary/10 text-primary"
-                      : isDone
-                      ? "border-[hsl(var(--brain-teal))/0.3] bg-[hsl(var(--brain-teal))/0.08] text-[hsl(var(--brain-teal))]"
-                      : "border-border bg-card text-muted-foreground hover:bg-muted/50"
-                  }`}
-                >
-                  {isDone && !isActive ? (
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                  ) : (
-                    <StepIcon className="h-3.5 w-3.5" />
-                  )}
+                    isActive ? "border-primary bg-primary/10 text-primary" : isDone ? "border-[hsl(var(--brain-teal))/0.3] bg-[hsl(var(--brain-teal))/0.08] text-[hsl(var(--brain-teal))]" : "border-border bg-card text-muted-foreground hover:bg-muted/50"
+                  }`}>
+                  {isDone && !isActive ? <CheckCircle2 className="h-3.5 w-3.5" /> : <StepIcon className="h-3.5 w-3.5" />}
                   {step.label}
                 </button>
               );
             })}
           </div>
 
-          {/* Step Content */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold tracking-tight">
-                {WEEKLY_STEPS[currentStepIndex].label} Review
-              </h2>
-              <span className="text-xs text-muted-foreground">
-                Step {currentStepIndex + 1} of {WEEKLY_STEPS.length}
-              </span>
+              <h2 className="text-lg font-semibold tracking-tight">{WEEKLY_STEPS[currentStepIndex].label} Review</h2>
+              <span className="text-xs text-muted-foreground">Step {currentStepIndex + 1} of {WEEKLY_STEPS.length}</span>
             </div>
 
             {weeklyStep === "inbox" && (
-              <ReviewStepInbox
-                items={unprocessed}
-                onApprove={handleApproveInbox}
-                onRouteToday={handleRouteToday}
-                onRouteIdeas={handleRouteIdeas}
-                onRouteProjects={handleRouteProjects}
-                onArchive={handleArchive}
-              />
+              <ReviewStepInbox items={unprocessed} onApprove={handleApproveInbox} onRouteToday={handleRouteToday} onRouteIdeas={handleRouteIdeas} onRouteProjects={handleRouteProjects} onArchive={handleArchive} />
             )}
-
             {weeklyStep === "today" && (
-              <ReviewStepToday
-                active={todayActive}
-                completed={todayCompleted}
-                onComplete={handleComplete}
-                onDefer={handleDefer}
-                onMoveToProjects={handleRouteProjects}
-                onArchive={handleArchive}
-              />
+              <ReviewStepToday active={todayActive} completed={todayCompleted} onComplete={handleComplete} onDefer={handleDefer} onMoveToProjects={handleRouteProjects} onArchive={handleArchive} />
             )}
-
-            {weeklyStep === "projects" && (
-              <ReviewStepProjects projects={MOCK_PROJECTS} />
-            )}
-
+            {weeklyStep === "projects" && <ReviewStepProjects />}
             {weeklyStep === "ideas" && (
-              <ReviewStepIdeas
-                newIdeas={newIdeas}
-                highPotential={highPotentialIdeas}
-                parked={parkedIdeas}
-                onExplore={handleExplore}
-                onConvert={handleConvert}
-                onPromote={handleRouteToday}
-                onArchive={handleArchive}
-              />
+              <ReviewStepIdeas newIdeas={newIdeas} highPotential={highPotentialIdeas} parked={parkedIdeas} onExplore={handleExplore} onConvert={handleConvert} onPromote={handleRouteToday} onArchive={handleArchive} />
             )}
-
             {weeklyStep === "memory" && (
-              <ReviewStepMemory
-                items={memoryItems}
-                onRouteToday={handleRouteToday}
-                onRouteIdeas={handleRouteIdeas}
-              />
+              <ReviewStepMemory items={memoryItems} onRouteToday={handleRouteToday} onRouteIdeas={handleRouteIdeas} />
             )}
-
             {weeklyStep === "summary" && (
               <ReviewStepSummary
-                health={{
-                  inboxCount: unprocessed.length,
-                  unfinishedToday: todayActive.length,
-                  atRiskProjects,
-                  newIdeas: newIdeas.length,
-                  notesCount: memoryItems.length,
-                  completedThisWeek: todayCompleted.length,
-                }}
-                stepsCompleted={completedSteps.size}
-                totalSteps={WEEKLY_STEPS.length}
-                onComplete={() => setWeeklyComplete(true)}
+                health={{ inboxCount: unprocessed.length, unfinishedToday: todayActive.length, atRiskProjects, newIdeas: newIdeas.length, notesCount: memoryItems.length, completedThisWeek: todayCompleted.length }}
+                stepsCompleted={completedSteps.size} totalSteps={WEEKLY_STEPS.length} onComplete={() => setWeeklyComplete(true)}
               />
             )}
           </div>
 
-          {/* Navigation */}
           {weeklyStep !== "summary" && (
             <div className="flex items-center justify-between pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs gap-1"
-                disabled={!canGoBack}
-                onClick={() => setWeeklyStep(WEEKLY_STEPS[currentStepIndex - 1].key)}
-              >
+              <Button variant="outline" size="sm" className="text-xs gap-1" disabled={!canGoBack} onClick={() => setWeeklyStep(WEEKLY_STEPS[currentStepIndex - 1].key)}>
                 <ChevronLeft className="h-3 w-3" /> Back
               </Button>
-              <Button
-                size="sm"
-                className="text-xs gap-1"
-                onClick={markStepAndAdvance}
-              >
-                {canGoForward ? (
-                  <>Next: {WEEKLY_STEPS[currentStepIndex + 1].label} <ChevronRight className="h-3 w-3" /></>
-                ) : (
-                  <>View Summary <Trophy className="h-3 w-3" /></>
-                )}
+              <Button size="sm" className="text-xs gap-1" onClick={markStepAndAdvance}>
+                {canGoForward ? (<>Next: {WEEKLY_STEPS[currentStepIndex + 1].label} <ChevronRight className="h-3 w-3" /></>) : (<>View Summary <Trophy className="h-3 w-3" /></>)}
               </Button>
             </div>
           )}
@@ -421,13 +319,10 @@ export default function ReviewRitualsPage() {
           <Trophy className="h-12 w-12 text-primary mx-auto" />
           <h3 className="text-lg font-bold">Weekly Review Complete</h3>
           <p className="text-sm text-muted-foreground">You've reset and planned. Clarity compounds.</p>
-          <Button variant="outline" size="sm" onClick={() => { setWeeklyComplete(false); setCompletedSteps(new Set()); setWeeklyStep("inbox"); }}>
-            Review Again
-          </Button>
+          <Button variant="outline" size="sm" onClick={() => { setWeeklyComplete(false); setCompletedSteps(new Set()); setWeeklyStep("inbox"); }}>Review Again</Button>
         </div>
       )}
 
-      {/* Review Streak */}
       <section className="space-y-3">
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-[hsl(var(--brain-rose))]" />
