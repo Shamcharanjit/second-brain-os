@@ -5,6 +5,7 @@ import CaptureInput from "@/components/CaptureInput";
 import CaptureCard from "@/components/CaptureCard";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
+import { useMemory } from "@/context/MemoryContext";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
