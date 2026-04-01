@@ -33,6 +33,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
+        <SubscriptionProvider>
         <BrainProvider>
           <ProjectProvider>
             <MemoryProvider>
@@ -52,6 +53,7 @@ const App = () => (
                       <Route path="/ideas" element={<IdeasVaultPage />} />
                       <Route path="/auth" element={<AuthPage />} />
                       <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/upgrade" element={<UpgradePage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
@@ -60,6 +62,7 @@ const App = () => (
             </MemoryProvider>
           </ProjectProvider>
         </BrainProvider>
+        </SubscriptionProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

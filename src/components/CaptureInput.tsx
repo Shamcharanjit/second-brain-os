@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Mic, MicOff, Send, Sparkles, Check } from "lucide-react";
+import { Mic, MicOff, Send, Sparkles, Check, Crown } from "lucide-react";
 import { useBrain } from "@/context/BrainContext";
+import { useSubscription } from "@/context/SubscriptionContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Capture } from "@/types/brain";
 import AIResultCard from "@/components/AIResultCard";
 import AITriageCard from "@/components/AITriageCard";
-import { runAITriage, isAITriageAvailable, type AITriageResult } from "@/lib/ai-triage";
+import { runAITriage, isAITriageAvailable, triageToAIData, type AITriageResult } from "@/lib/ai-triage";
 
 const VOICE_TRANSCRIPTS = [
   "Remind me to send the project update to the team by tomorrow",
