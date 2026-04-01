@@ -49,6 +49,7 @@ const App = () => (
                       <Route path="/memory" element={<MemoryPage />} />
                       <Route path="/ideas" element={<IdeasVaultPage />} />
                       <Route path="/auth" element={<AuthPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
