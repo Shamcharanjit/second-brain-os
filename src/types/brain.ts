@@ -44,4 +44,6 @@ export interface Capture {
   is_completed: boolean;
   completed_at: string | null;
   is_pinned_today: boolean;
+  idea_status: IdeaStatus;
+  converted_to_project_at: string | null;
 }
