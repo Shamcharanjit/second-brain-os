@@ -330,8 +330,11 @@ export default function ReviewRitualsPage() {
         <div className="rounded-xl border bg-card p-8 text-center space-y-3">
           <Trophy className="h-12 w-12 text-primary mx-auto" />
           <h3 className="text-lg font-bold">Weekly Review Complete</h3>
-          <p className="text-sm text-muted-foreground">You've reset and planned. Clarity compounds.</p>
-          <Button variant="outline" size="sm" onClick={() => { setWeeklyComplete(false); setCompletedSteps(new Set()); setWeeklyStep("inbox"); }}>Review Again</Button>
+          <p className="text-sm text-muted-foreground">You've reset and planned. Your second brain is in sync.</p>
+          <div className="flex items-center justify-center gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={() => { setWeeklyComplete(false); setCompletedSteps(new Set()); setWeeklyStep("inbox"); }}>Review Again</Button>
+            <Button size="sm" onClick={() => navigate("/")}>Back to Dashboard</Button>
+          </div>
         </div>
       )}
 
