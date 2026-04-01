@@ -23,6 +23,28 @@ export async function upsertCaptures(userId: string, captures: Capture[]): Promi
   if (error) console.error("upsertCaptures error:", error);
 }
 
+/** Full replace: upsert current + delete cloud records not in local set */
+export async function syncCaptures(userId: string, captures: Capture[]): Promise<void> {
+  // Upsert current
+  if (captures.length > 0) {
+    const rows = captures.map((c) => captureToDbRow(userId, c));
+    const { error } = await supabase.from("user_captures").upsert(rows as any, { onConflict: "id" });
+    if (error) { console.error("syncCaptures upsert error:", error); return; }
+  }
+  // Delete orphaned cloud records
+  const localIds = captures.map((c) => c.id);
+  const { data: cloudRows, error: fetchErr } = await supabase
+    .from("user_captures")
+    .select("id")
+    .eq("user_id", userId);
+  if (fetchErr) { console.error("syncCaptures fetch error:", fetchErr); return; }
+  const orphanIds = (cloudRows ?? []).map((r: any) => r.id).filter((id: string) => !localIds.includes(id));
+  if (orphanIds.length > 0) {
+    const { error: delErr } = await supabase.from("user_captures").delete().in("id", orphanIds);
+    if (delErr) console.error("syncCaptures delete error:", delErr);
+  }
+}
+
 function dbCaptureToCapture(row: any): Capture {
   return {
     id: row.id,
@@ -88,6 +110,26 @@ export async function upsertProjects(userId: string, projects: Project[]): Promi
   if (error) console.error("upsertProjects error:", error);
 }
 
+/** Full replace: upsert current + delete cloud records not in local set */
+export async function syncProjects(userId: string, projects: Project[]): Promise<void> {
+  if (projects.length > 0) {
+    const rows = projects.map((p) => projectToDbRow(userId, p));
+    const { error } = await supabase.from("user_projects").upsert(rows as any, { onConflict: "id" });
+    if (error) { console.error("syncProjects upsert error:", error); return; }
+  }
+  const localIds = projects.map((p) => p.id);
+  const { data: cloudRows, error: fetchErr } = await supabase
+    .from("user_projects")
+    .select("id")
+    .eq("user_id", userId);
+  if (fetchErr) { console.error("syncProjects fetch error:", fetchErr); return; }
+  const orphanIds = (cloudRows ?? []).map((r: any) => r.id).filter((id: string) => !localIds.includes(id));
+  if (orphanIds.length > 0) {
+    const { error: delErr } = await supabase.from("user_projects").delete().in("id", orphanIds);
+    if (delErr) console.error("syncProjects delete error:", delErr);
+  }
+}
+
 function dbProjectToProject(row: any): Project {
   return {
     id: row.id,
@@ -147,6 +189,26 @@ export async function upsertMemories(userId: string, memories: MemoryEntry[]): P
   const rows = memories.map((m) => memoryToDbRow(userId, m));
   const { error } = await supabase.from("user_memory_entries").upsert(rows as any, { onConflict: "id" });
   if (error) console.error("upsertMemories error:", error);
+}
+
+/** Full replace: upsert current + delete cloud records not in local set */
+export async function syncMemories(userId: string, memories: MemoryEntry[]): Promise<void> {
+  if (memories.length > 0) {
+    const rows = memories.map((m) => memoryToDbRow(userId, m));
+    const { error } = await supabase.from("user_memory_entries").upsert(rows as any, { onConflict: "id" });
+    if (error) { console.error("syncMemories upsert error:", error); return; }
+  }
+  const localIds = memories.map((m) => m.id);
+  const { data: cloudRows, error: fetchErr } = await supabase
+    .from("user_memory_entries")
+    .select("id")
+    .eq("user_id", userId);
+  if (fetchErr) { console.error("syncMemories fetch error:", fetchErr); return; }
+  const orphanIds = (cloudRows ?? []).map((r: any) => r.id).filter((id: string) => !localIds.includes(id));
+  if (orphanIds.length > 0) {
+    const { error: delErr } = await supabase.from("user_memory_entries").delete().in("id", orphanIds);
+    if (delErr) console.error("syncMemories delete error:", delErr);
+  }
 }
 
 function dbMemoryToMemory(row: any): MemoryEntry {
