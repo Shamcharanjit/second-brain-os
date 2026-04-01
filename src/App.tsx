@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrainProvider } from "@/context/BrainContext";
 import { ProjectProvider } from "@/context/ProjectContext";
+import { MemoryProvider } from "@/context/MemoryContext";
 import AppLayout from "@/components/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import InboxPage from "@/pages/InboxPage";
