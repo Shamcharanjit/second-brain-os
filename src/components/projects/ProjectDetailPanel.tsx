@@ -14,9 +14,10 @@ import { toast } from "sonner";
 import {
   FolderKanban, Zap, CheckCircle2, Circle, Plus, Star, Rocket, Trash2,
   Clock, AlertTriangle, StickyNote, Lightbulb, Pencil, X,
-  ChevronDown, ChevronUp, Brain, Pin,
+  ChevronDown, ChevronUp, Brain, Pin, ArrowRight,
 } from "lucide-react";
 import CaptureCard from "@/components/CaptureCard";
+import ProjectAIAssist from "@/components/projects/ProjectAIAssist";
 
 const HEALTH_CONFIG: Record<ProjectHealth, { label: string; className: string }> = {
   healthy: { label: "Healthy", className: "text-[hsl(var(--brain-teal))]" },

@@ -376,6 +376,7 @@ export default function InboxCard({ capture }: InboxCardProps) {
           defaultName={ai.title}
           defaultDescription={ai.summary}
           sourceIdeaId={capture.id}
+          initialNextAction={ai.suggestedNextAction}
         />
       )}
     </div>
