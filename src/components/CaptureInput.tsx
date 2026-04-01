@@ -185,7 +185,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   };
 
   const isModal = variant === "modal";
-  const isBusy = phase !== "idle" && phase !== "triage_result";
+  const isBusy = ["recording", "transcribing", "processing", "triaging", "done"].includes(phase);
   const showAIButton = isAITriageAvailable();
 
   return (
