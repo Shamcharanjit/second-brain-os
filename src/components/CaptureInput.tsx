@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Capture } from "@/types/brain";
 import AIResultCard from "@/components/AIResultCard";
+import AITriageCard from "@/components/AITriageCard";
+import { runAITriage, isAITriageAvailable, type AITriageResult } from "@/lib/ai-triage";
 
 const VOICE_TRANSCRIPTS = [
   "Remind me to send the project update to the team by tomorrow",
@@ -25,7 +27,7 @@ const PLACEHOLDERS = [
   "What if we added a weekly review feature?…",
 ];
 
-type CapturePhase = "idle" | "recording" | "transcribing" | "processing" | "done";
+type CapturePhase = "idle" | "recording" | "transcribing" | "processing" | "triaging" | "triage_result" | "done";
 
 interface CaptureInputProps {
   variant?: "inline" | "modal";
@@ -36,6 +38,8 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   const [text, setText] = useState("");
   const [phase, setPhase] = useState<CapturePhase>("idle");
   const [lastResult, setLastResult] = useState<Capture | null>(null);
+  const [triageResult, setTriageResult] = useState<{ triage: AITriageResult; source: "ai" | "local" } | null>(null);
+  const [capturedText, setCapturedText] = useState("");
   const { addCapture } = useBrain();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -54,12 +58,14 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
 
+  // Quick capture (no AI triage — uses local mock-ai as before)
   const handleSubmit = useCallback(() => {
     const trimmed = text.trim();
     if (!trimmed || phase !== "idle") return;
 
     setPhase("processing");
     setLastResult(null);
+    setTriageResult(null);
     setTimeout(() => {
       const capture = addCapture(trimmed, "text");
       setText("");
@@ -69,7 +75,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       const dest = capture.ai_data?.destination_suggestion;
       const destLabel = dest === "today" ? "Today" : dest === "ideas" ? "Ideas Vault" : dest === "projects" ? "Projects" : dest === "someday" ? "Someday" : "Inbox";
 
-      toast.success("InsightHalo organized your thought.", {
+      toast.success("Thought captured.", {
         description: `Routed to ${destLabel} as ${capture.ai_data?.category?.replace("_", " ")}`,
       });
 
@@ -78,8 +84,76 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
         onComplete?.();
         textareaRef.current?.focus();
       }, 3000);
-    }, 1400);
+    }, 600);
   }, [text, phase, addCapture, onComplete]);
+
+  // AI triage flow
+  const handleAITriage = useCallback(async () => {
+    const trimmed = text.trim();
+    if (!trimmed || phase !== "idle") return;
+
+    setCapturedText(trimmed);
+    setPhase("triaging");
+    setTriageResult(null);
+    setLastResult(null);
+
+    try {
+      const result = await runAITriage(trimmed);
+      setTriageResult({ triage: result.triage, source: result.source });
+      setPhase("triage_result");
+    } catch {
+      // Fallback: just do a normal capture
+      const capture = addCapture(trimmed, "text");
+      setText("");
+      setLastResult(capture);
+      setPhase("done");
+      toast.info("AI unavailable — captured with smart sort.");
+      setTimeout(() => { setPhase("idle"); onComplete?.(); }, 3000);
+    }
+  }, [text, phase, addCapture, onComplete]);
+
+  // Apply triage result
+  const handleApplyTriage = useCallback(() => {
+    if (!triageResult || !capturedText) return;
+
+    const capture = addCapture(capturedText, "text");
+    setText("");
+    setLastResult(capture);
+    setPhase("done");
+
+    const dest = triageResult.triage.recommendedDestination;
+    const destLabel = dest === "today" ? "Today" : dest === "ideas" ? "Ideas Vault" : dest === "projects" ? "Projects" : dest === "someday" ? "Someday" : dest === "memory" ? "Memory" : "Inbox";
+
+    toast.success("AI suggestion applied.", {
+      description: `Organized as ${triageResult.triage.type.replace("_", " ")} → ${destLabel}`,
+    });
+
+    setTimeout(() => {
+      setPhase("idle");
+      setTriageResult(null);
+      onComplete?.();
+      textareaRef.current?.focus();
+    }, 3000);
+  }, [triageResult, capturedText, addCapture, onComplete]);
+
+  // Dismiss triage — save as-is
+  const handleDismissTriage = useCallback(() => {
+    if (!capturedText) return;
+
+    const capture = addCapture(capturedText, "text");
+    setText("");
+    setLastResult(capture);
+    setTriageResult(null);
+    setPhase("done");
+
+    toast.success("Thought captured as-is.");
+
+    setTimeout(() => {
+      setPhase("idle");
+      onComplete?.();
+      textareaRef.current?.focus();
+    }, 3000);
+  }, [capturedText, addCapture, onComplete]);
 
   const handleVoice = () => {
     if (phase === "recording") {
@@ -89,6 +163,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       setPhase("recording");
       setText("");
       setLastResult(null);
+      setTriageResult(null);
       timerRef.current = setTimeout(() => finishRecording(), 2500);
     }
   };
@@ -110,6 +185,8 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   };
 
   const isModal = variant === "modal";
+  const isBusy = phase !== "idle" && phase !== "triage_result";
+  const showAIButton = isAITriageAvailable();
 
   return (
     <div className="space-y-3">
@@ -122,7 +199,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
             if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); }
           }}
           placeholder={phase === "idle" ? PLACEHOLDERS[placeholderIdx] : ""}
-          disabled={phase === "recording" || phase === "transcribing" || phase === "processing" || phase === "done"}
+          disabled={isBusy || phase === "done"}
           className={`w-full resize-none border-0 bg-transparent px-1 py-1 text-sm outline-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 disabled:cursor-not-allowed ${isModal ? "min-h-[120px]" : "min-h-[60px]"}`}
         />
 
@@ -132,7 +209,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
               size="sm"
               variant={phase === "recording" ? "destructive" : "outline"}
               onClick={handleVoice}
-              disabled={phase === "transcribing" || phase === "processing" || phase === "done"}
+              disabled={isBusy || phase === "done"}
               className="gap-1.5 text-xs"
             >
               {phase === "recording" ? (
@@ -143,14 +220,27 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
             </Button>
           </div>
 
-          <Button
-            size="sm"
-            onClick={handleSubmit}
-            disabled={!text.trim() || phase !== "idle"}
-            className="gap-1.5 text-xs"
-          >
-            <Send className="h-3.5 w-3.5" /> Capture
-          </Button>
+          <div className="flex items-center gap-1.5">
+            {showAIButton && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleAITriage}
+                disabled={!text.trim() || isBusy || phase === "done"}
+                className="gap-1.5 text-xs"
+              >
+                <Sparkles className="h-3.5 w-3.5" /> AI Organize
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={handleSubmit}
+              disabled={!text.trim() || isBusy || phase === "done"}
+              className="gap-1.5 text-xs"
+            >
+              <Send className="h-3.5 w-3.5" /> Capture
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -176,14 +266,32 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       {phase === "processing" && (
         <div className="flex items-center gap-2 px-2 animate-pulse">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs text-primary font-medium">AI is thinking…</span>
+          <span className="text-xs text-primary font-medium">Organizing…</span>
         </div>
       )}
+      {phase === "triaging" && (
+        <div className="flex items-center gap-2 px-2 animate-pulse">
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <span className="text-xs text-primary font-medium">AI is analyzing your thought…</span>
+        </div>
+      )}
+
+      {/* AI Triage result */}
+      {phase === "triage_result" && triageResult && (
+        <AITriageCard
+          triage={triageResult.triage}
+          source={triageResult.source}
+          onApply={handleApplyTriage}
+          onDismiss={handleDismissTriage}
+        />
+      )}
+
+      {/* Done state */}
       {phase === "done" && lastResult && (
         <div className="space-y-2">
           <div className="flex items-center gap-2 px-2">
             <Check className="h-3.5 w-3.5 text-[hsl(var(--brain-teal))]" />
-            <span className="text-xs text-[hsl(var(--brain-teal))] font-medium">InsightHalo organized your thought</span>
+            <span className="text-xs text-[hsl(var(--brain-teal))] font-medium">Thought captured and organized</span>
           </div>
           <AIResultCard capture={lastResult} />
         </div>
