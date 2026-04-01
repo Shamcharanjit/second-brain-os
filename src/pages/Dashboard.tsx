@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 export default function Dashboard() {
   const { captures } = useBrain();
   const { projects, getProjectHealth } = useProjects();
+  const { memories } = useMemory();
   const navigate = useNavigate();
 
   const stats = useMemo(() => {
