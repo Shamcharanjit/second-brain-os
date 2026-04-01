@@ -11,18 +11,10 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const stats = useMemo(() => {
-    const unprocessed = captures.filter((c) => c.status === "unprocessed");
-    const todayTasks = captures.filter(
-      (c) =>
-        c.status !== "archived" &&
-        (c.status === "sent_to_today" || c.ai_data?.category === "task" || c.ai_data?.category === "reminder")
-    );
-    const ideas = captures.filter(
-      (c) =>
-        c.status !== "archived" &&
-        (c.ai_data?.category === "idea" || c.ai_data?.category === "maybe_later")
-    );
-    return { total: captures.length, unprocessed: unprocessed.length, todayTasks: todayTasks.length, ideas: ideas.length };
+    const pendingReview = captures.filter((c) => c.status !== "archived" && c.review_status !== "reviewed");
+    const todayTasks = captures.filter((c) => c.status === "sent_to_today");
+    const ideas = captures.filter((c) => c.status === "sent_to_ideas");
+    return { total: captures.length, pendingReview: pendingReview.length, todayTasks: todayTasks.length, ideas: ideas.length };
   }, [captures]);
 
   const topPriorities = useMemo(() => {
