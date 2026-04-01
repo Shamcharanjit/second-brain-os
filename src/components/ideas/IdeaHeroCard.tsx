@@ -1,11 +1,12 @@
 import { Capture } from "@/types/brain";
+import { useMemory } from "@/context/MemoryContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
   Sparkles, Rocket, FolderPlus, StickyNote, Archive,
-  FolderOpen, ArrowRight, Eye, PauseCircle,
+  FolderOpen, ArrowRight, Eye, PauseCircle, Brain,
 } from "lucide-react";
 
 const effortLabels = { low: "Low Effort", medium: "Medium Effort", high: "High Effort" };
