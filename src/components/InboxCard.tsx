@@ -27,8 +27,8 @@ const categoryLabels: Record<CaptureCategory, string> = {
 };
 
 const priorityColor = (score: number) => {
-  if (score >= 8) return "text-brain-rose font-bold";
-  if (score >= 5) return "text-brain-amber font-semibold";
+  if (score >= 70) return "text-brain-rose font-bold";
+  if (score >= 45) return "text-brain-amber font-semibold";
   return "text-muted-foreground font-medium";
 };
 
