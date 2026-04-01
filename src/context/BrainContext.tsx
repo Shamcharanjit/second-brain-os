@@ -10,6 +10,7 @@ const STORAGE_KEY = "insighthalo_brain";
 interface BrainContextType {
   captures: Capture[];
   addCapture: (text: string, type: "text" | "voice") => Capture;
+  addCaptureWithAI: (text: string, type: "text" | "voice", aiData: AIProcessedData, reviewStatus: ReviewStatus) => Capture;
   addCaptureFromAction: (data: { text: string; projectId?: string; projectName?: string; actionId?: string }) => Capture;
   updateCaptureStatus: (id: string, status: CaptureStatus) => void;
   updateReviewStatus: (id: string, reviewStatus: ReviewStatus) => void;
