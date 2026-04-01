@@ -3,17 +3,19 @@ import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useMemory } from "@/context/MemoryContext";
 import { useReviewMeta } from "@/context/ReviewMetaContext";
-import { Plus, CalendarCheck, RotateCcw, FolderKanban, Brain } from "lucide-react";
+import { CalendarCheck, RotateCcw, FolderKanban, Brain, CheckCircle2, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMemo } from "react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, isToday, differenceInDays } from "date-fns";
 
 export default function DashboardHero() {
   const { captures } = useBrain();
   const { projects, getProjectHealth } = useProjects();
   const { memories } = useMemory();
-  const { last_weekly_review_at } = useReviewMeta();
+  const { last_daily_review_at, last_weekly_review_at } = useReviewMeta();
   const navigate = useNavigate();
+
+  const dailyDone = !!(last_daily_review_at && isToday(new Date(last_daily_review_at)));
 
   const briefing = useMemo(() => {
     const lines: string[] = [];
@@ -34,7 +36,9 @@ export default function DashboardHero() {
     if (last_weekly_review_at) lines.push(`Last review ${formatDistanceToNow(new Date(last_weekly_review_at), { addSuffix: true })}`);
 
     return lines.slice(0, 3);
-  }, [captures, projects, memories, getProjectHealth]);
+  }, [captures, projects, memories, getProjectHealth, last_daily_review_at, last_weekly_review_at]);
+
+  const weeklyOverdue = !last_weekly_review_at || differenceInDays(new Date(), new Date(last_weekly_review_at)) >= 7;
 
   return (
     <section className="rounded-2xl border bg-card p-6 space-y-4">
@@ -46,9 +50,37 @@ export default function DashboardHero() {
           ))}
         </div>
       </div>
+
+      {/* Review status chip */}
+      <div className="flex items-center gap-3">
+        {dailyDone ? (
+          <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1">
+            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs font-medium text-primary">Daily review complete</span>
+          </div>
+        ) : (
+          <button
+            onClick={() => navigate("/review")}
+            className="flex items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/30 px-3 py-1 transition-colors hover:border-primary/50 hover:bg-primary/5"
+          >
+            <Sun className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Daily review pending</span>
+          </button>
+        )}
+        {weeklyOverdue && (
+          <button
+            onClick={() => navigate("/review")}
+            className="flex items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/30 px-3 py-1 transition-colors hover:border-primary/50 hover:bg-primary/5"
+          >
+            <RotateCcw className="h-3 w-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Weekly review due</span>
+          </button>
+        )}
+      </div>
+
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => navigate("/today")}><CalendarCheck className="h-3.5 w-3.5" />Open Today</Button>
-        <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => navigate("/review")}><RotateCcw className="h-3.5 w-3.5" />Start Review</Button>
+        <Button size="sm" variant={dailyDone ? "outline" : "default"} className="text-xs gap-1.5" onClick={() => navigate("/review")}><RotateCcw className="h-3.5 w-3.5" />{dailyDone ? "Review Again" : "Start Review"}</Button>
         <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => navigate("/projects")}><FolderKanban className="h-3.5 w-3.5" />Projects</Button>
         <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => navigate("/memory")}><Brain className="h-3.5 w-3.5" />Memory</Button>
       </div>
