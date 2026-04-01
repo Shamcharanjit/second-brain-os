@@ -37,4 +37,6 @@ export interface Capture {
   status: CaptureStatus;
   review_status: ReviewStatus;
   ai_data: AIProcessedData | null;
+  reviewed_at: string | null;
+  manually_adjusted: boolean;
 }
