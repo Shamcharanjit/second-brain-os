@@ -1,5 +1,8 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { MemoryEntry, MemoryType } from "@/types/memory";
+import { saveState, loadState } from "@/lib/persistence";
+
+const STORAGE_KEY = "insighthalo_memory";
 
 interface MemoryContextType {
   memories: MemoryEntry[];
