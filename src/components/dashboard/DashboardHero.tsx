@@ -2,9 +2,11 @@ import { useNavigate } from "react-router-dom";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useMemory } from "@/context/MemoryContext";
+import { useReviewMeta } from "@/context/ReviewMetaContext";
 import { Plus, CalendarCheck, RotateCcw, FolderKanban, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMemo } from "react";
+import { formatDistanceToNow } from "date-fns";
 
 export default function DashboardHero() {
   const { captures } = useBrain();
