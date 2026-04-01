@@ -85,6 +85,10 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { saveState(STORAGE_KEY, captures); }, [captures]);
 
+  // Cloud sync
+  useCloudHydration(captures, setCaptures, fetchCaptures, upsertCaptures, (d) => d.length === 0);
+  useCloudSync(captures, upsertCaptures);
+
   const addCapture = useCallback((text: string, type: "text" | "voice"): Capture => {
     const { aiData, reviewStatus } = mockAIProcess(text);
     const status = reviewStatus === "needs_review" ? "unprocessed" : autoRouteStatus(aiData.destination_suggestion);
