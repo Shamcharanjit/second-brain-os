@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, MicOff, Send, Sparkles, Check, Crown } from "lucide-react";
 import { useBrain } from "@/context/BrainContext";
+import { useProjects } from "@/context/ProjectContext";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +9,7 @@ import { toast } from "sonner";
 import { Capture } from "@/types/brain";
 import AIResultCard from "@/components/AIResultCard";
 import AITriageCard from "@/components/AITriageCard";
+import CreateProjectDialog from "@/components/projects/CreateProjectDialog";
 import { runAITriage, isAITriageAvailable, triageToAIData, type AITriageResult } from "@/lib/ai-triage";
 
 const VOICE_TRANSCRIPTS = [
