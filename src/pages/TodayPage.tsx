@@ -11,8 +11,8 @@ import type { Capture, CaptureCategory } from "@/types/brain";
 
 /* ── helpers ── */
 const categoryLabel: Record<CaptureCategory, string> = {
-  task: "Task", idea: "Idea", reminder: "Reminder",
-  project_note: "Project", follow_up: "Follow-up", maybe_later: "Someday",
+  task: "Task", idea: "Idea", reminder: "Reminder", goal: "Goal", note: "Note",
+  project: "Project", follow_up: "Follow-up", maybe_later: "Someday",
 };
 
 const priorityColor = (s: number) =>

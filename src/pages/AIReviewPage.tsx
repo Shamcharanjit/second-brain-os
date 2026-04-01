@@ -15,13 +15,15 @@ const categoryColors: Record<CaptureCategory, string> = {
   task: "bg-[hsl(var(--brain-teal))/0.12] text-[hsl(var(--brain-teal))]",
   idea: "bg-[hsl(var(--brain-amber))/0.12] text-[hsl(var(--brain-amber))]",
   reminder: "bg-[hsl(var(--brain-rose))/0.12] text-[hsl(var(--brain-rose))]",
-  project_note: "bg-[hsl(var(--brain-blue))/0.12] text-[hsl(var(--brain-blue))]",
+  goal: "bg-[hsl(var(--brain-purple))/0.12] text-[hsl(var(--brain-purple))]",
+  note: "bg-[hsl(var(--brain-blue))/0.12] text-[hsl(var(--brain-blue))]",
+  project: "bg-[hsl(var(--brain-blue))/0.12] text-[hsl(var(--brain-blue))]",
   follow_up: "bg-[hsl(var(--brain-purple))/0.12] text-[hsl(var(--brain-purple))]",
   maybe_later: "bg-muted text-muted-foreground",
 };
 const categoryLabels: Record<CaptureCategory, string> = {
-  task: "Task", idea: "Idea", reminder: "Reminder",
-  project_note: "Project Note", follow_up: "Follow-up", maybe_later: "Maybe Later",
+  task: "Task", idea: "Idea", reminder: "Reminder", goal: "Goal", note: "Note",
+  project: "Project", follow_up: "Follow-up", maybe_later: "Someday",
 };
 
 const DEST_LABELS: Record<string, { label: string; color: string }> = {

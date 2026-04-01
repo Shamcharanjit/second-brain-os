@@ -14,14 +14,16 @@ const categoryColors: Record<CaptureCategory, string> = {
   task: "bg-brain-teal/15 text-brain-teal border-brain-teal/20",
   idea: "bg-brain-amber/15 text-brain-amber border-brain-amber/20",
   reminder: "bg-brain-rose/15 text-brain-rose border-brain-rose/20",
-  project_note: "bg-brain-blue/15 text-brain-blue border-brain-blue/20",
+  goal: "bg-brain-purple/15 text-brain-purple border-brain-purple/20",
+  note: "bg-brain-blue/15 text-brain-blue border-brain-blue/20",
+  project: "bg-brain-blue/15 text-brain-blue border-brain-blue/20",
   follow_up: "bg-brain-purple/15 text-brain-purple border-brain-purple/20",
   maybe_later: "bg-muted text-muted-foreground border-border",
 };
 
 const categoryLabels: Record<CaptureCategory, string> = {
-  task: "Task", idea: "Idea", reminder: "Reminder",
-  project_note: "Project Note", follow_up: "Follow-up", maybe_later: "Maybe Later",
+  task: "Task", idea: "Idea", reminder: "Reminder", goal: "Goal", note: "Note",
+  project: "Project", follow_up: "Follow-up", maybe_later: "Someday",
 };
 
 const priorityColor = (score: number) => {
