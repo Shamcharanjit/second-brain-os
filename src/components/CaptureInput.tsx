@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, MicOff, Send, Sparkles, Check, Crown } from "lucide-react";
 import { useBrain } from "@/context/BrainContext";
+import { useProjects } from "@/context/ProjectContext";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +9,7 @@ import { toast } from "sonner";
 import { Capture } from "@/types/brain";
 import AIResultCard from "@/components/AIResultCard";
 import AITriageCard from "@/components/AITriageCard";
+import CreateProjectDialog from "@/components/projects/CreateProjectDialog";
 import { runAITriage, isAITriageAvailable, triageToAIData, type AITriageResult } from "@/lib/ai-triage";
 
 const VOICE_TRANSCRIPTS = [
@@ -42,7 +44,9 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   const [triageResult, setTriageResult] = useState<{ triage: AITriageResult; source: "ai" | "local" } | null>(null);
   const [capturedText, setCapturedText] = useState("");
   const { addCapture, addCaptureWithAI } = useBrain();
+  const { createProject, linkCapture: linkCaptureToProject } = useProjects();
   const { canUseAITriage, recordAITriageUse, shouldShowUpgradePrompt, aiTriageRemaining } = useSubscription();
+  const [showCreateProject, setShowCreateProject] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
@@ -147,6 +151,11 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       textareaRef.current?.focus();
     }, 3000);
   }, [triageResult, capturedText, addCaptureWithAI, onComplete]);
+
+  // Create project from triage
+  const handleCreateProjectFromTriage = useCallback(() => {
+    setShowCreateProject(true);
+  }, []);
 
   // Dismiss triage — save as-is
   const handleDismissTriage = useCallback(() => {
@@ -300,6 +309,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
           source={triageResult.source}
           onApply={handleApplyTriage}
           onDismiss={handleDismissTriage}
+          onCreateProject={handleCreateProjectFromTriage}
         />
       )}
 
@@ -312,6 +322,20 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
           </div>
           <AIResultCard capture={lastResult} />
         </div>
+      )}
+
+      {/* Create Project from triage */}
+      {showCreateProject && triageResult && (
+        <CreateProjectDialog
+          open={showCreateProject}
+          onClose={() => {
+            setShowCreateProject(false);
+            // Also apply the triage to save the capture
+            handleApplyTriage();
+          }}
+          defaultName={triageResult.triage.title}
+          defaultDescription={triageResult.triage.summary}
+        />
       )}
     </div>
   );

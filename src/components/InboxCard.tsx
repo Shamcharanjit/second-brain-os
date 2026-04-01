@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Capture, CaptureCategory, CaptureStatus, ConfidenceLevel, UrgencyLevel, DestinationSuggestion } from "@/types/brain";
 import { useBrain } from "@/context/BrainContext";
+import { useProjects } from "@/context/ProjectContext";
 import { useIntegrationActions } from "@/hooks/useIntegrationActions";
+import CreateProjectDialog from "@/components/projects/CreateProjectDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,9 +65,11 @@ interface InboxCardProps {
 export default function InboxCard({ capture }: InboxCardProps) {
   const ai = capture.ai_data;
   const { approveCapture, editAndApproveCapture, archiveCapture, routeCapture } = useBrain();
+  const { linkCapture } = useProjects();
   const { routeToMemory } = useIntegrationActions();
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [showCreateProject, setShowCreateProject] = useState(false);
 
   // Edit state
   const [editTitle, setEditTitle] = useState(ai?.title ?? "");
@@ -356,10 +360,24 @@ export default function InboxCard({ capture }: InboxCardProps) {
                   <r.icon className={`h-3 w-3 ${r.color}`} /> {r.label}
                 </Button>
               ))}
+              <Button size="sm" variant="ghost" className="h-6 text-[10px] gap-1 px-2"
+                onClick={() => setShowCreateProject(true)}>
+                <FolderKanban className="h-3 w-3 text-[hsl(var(--brain-blue))]" /> Create Project
+              </Button>
             </div>
           </div>
         )}
       </div>
+
+      {showCreateProject && (
+        <CreateProjectDialog
+          open={showCreateProject}
+          onClose={() => setShowCreateProject(false)}
+          defaultName={ai.title}
+          defaultDescription={ai.summary}
+          sourceIdeaId={capture.id}
+        />
+      )}
     </div>
   );
 }
