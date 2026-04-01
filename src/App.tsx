@@ -30,6 +30,7 @@ const App = () => (
       <BrainProvider>
         <ProjectProvider>
           <MemoryProvider>
+          <ReviewMetaProvider>
           <BrowserRouter>
             <AppLayout>
               <Routes>
@@ -47,6 +48,7 @@ const App = () => (
               </Routes>
             </AppLayout>
           </BrowserRouter>
+          </ReviewMetaProvider>
           </MemoryProvider>
         </ProjectProvider>
       </BrainProvider>
