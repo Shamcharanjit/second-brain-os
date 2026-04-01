@@ -30,7 +30,7 @@ export default function Dashboard() {
   }, [captures]);
 
   const unprocessedRecent = useMemo(() => {
-    return captures.filter((c) => c.status === "unprocessed").slice(0, 3);
+    return captures.filter((c) => c.review_status !== "reviewed" && c.status !== "archived").slice(0, 3);
   }, [captures]);
 
   const ideasToRevisit = useMemo(() => {
