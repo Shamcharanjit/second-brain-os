@@ -1,5 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Project, ProjectStatus, ProjectPriority, ProjectHealth, NextAction, ProjectNote, ProjectEvent } from "@/types/project";
+import { saveState, loadState } from "@/lib/persistence";
+
+const STORAGE_KEY = "insighthalo_projects";
 
 function makeEvent(type: ProjectEvent["type"], description: string): ProjectEvent {
   return { id: crypto.randomUUID(), type, description, timestamp: new Date().toISOString() };
