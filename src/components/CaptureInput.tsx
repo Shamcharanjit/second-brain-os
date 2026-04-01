@@ -152,6 +152,11 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     }, 3000);
   }, [triageResult, capturedText, addCaptureWithAI, onComplete]);
 
+  // Create project from triage
+  const handleCreateProjectFromTriage = useCallback(() => {
+    setShowCreateProject(true);
+  }, []);
+
   // Dismiss triage — save as-is
   const handleDismissTriage = useCallback(() => {
     if (!capturedText) return;
