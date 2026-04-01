@@ -12,19 +12,14 @@ export default function Dashboard() {
 
   const stats = useMemo(() => {
     const pendingReview = captures.filter((c) => c.status !== "archived" && c.review_status !== "reviewed");
-    const todayTasks = captures.filter((c) => c.status === "sent_to_today");
+    const todayTasks = captures.filter((c) => c.status === "sent_to_today" && !c.is_completed);
     const ideas = captures.filter((c) => c.status === "sent_to_ideas");
     return { total: captures.length, pendingReview: pendingReview.length, todayTasks: todayTasks.length, ideas: ideas.length };
   }, [captures]);
 
   const topPriorities = useMemo(() => {
     return captures
-      .filter(
-        (c) =>
-          c.status !== "archived" &&
-          c.status !== "sent_to_ideas" &&
-          (c.ai_data?.category === "task" || c.ai_data?.category === "reminder")
-      )
+      .filter((c) => c.status === "sent_to_today" && !c.is_completed)
       .sort((a, b) => (b.ai_data?.priority_score ?? 0) - (a.ai_data?.priority_score ?? 0))
       .slice(0, 3);
   }, [captures]);
