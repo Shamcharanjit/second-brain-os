@@ -33,6 +33,7 @@ export default function TodayPage() {
     captures, completeCapture, uncompleteCapture, togglePinToday,
     routeCapture, editCaptureAI,
   } = useBrain();
+  const { syncCompletionToProject } = useIntegrationActions();
   const [showCompleted, setShowCompleted] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
 
