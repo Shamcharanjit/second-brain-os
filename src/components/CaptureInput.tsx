@@ -238,10 +238,15 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
                 size="sm"
                 variant="outline"
                 onClick={handleAITriage}
-                disabled={!text.trim() || isBusy || phase === "done"}
-                className="gap-1.5 text-xs"
+                disabled={!text.trim() || isBusy}
+                className={`gap-1.5 text-xs ${!canUseAITriage ? "opacity-60" : ""}`}
               >
-                <Sparkles className="h-3.5 w-3.5" /> AI Organize
+                <Sparkles className="h-3.5 w-3.5" />
+                AI Organize
+                {!canUseAITriage && <Crown className="h-3 w-3 text-primary" />}
+                {canUseAITriage && aiTriageRemaining <= 3 && (
+                  <span className="text-[9px] text-muted-foreground">({aiTriageRemaining})</span>
+                )}
               </Button>
             )}
             <Button
