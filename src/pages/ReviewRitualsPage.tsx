@@ -256,9 +256,15 @@ export default function ReviewRitualsPage() {
       {tab === "daily" && dailyComplete && (
         <div className="rounded-xl border bg-card p-8 text-center space-y-3">
           <CheckCircle2 className="h-12 w-12 text-primary mx-auto" />
-          <h3 className="text-lg font-bold">Daily Review Complete</h3>
-          <p className="text-sm text-muted-foreground">You're focused and ready. Clarity compounds.</p>
-          <Button variant="outline" size="sm" onClick={() => setDailyComplete(false)}>Review Again</Button>
+          <h3 className="text-lg font-bold">Clarity Restored</h3>
+          <p className="text-sm text-muted-foreground">Your system is back in sync. You're set for today.</p>
+          {dailyStreak > 1 && (
+            <p className="text-xs font-medium text-primary">{dailyStreak}-day review streak 🔥</p>
+          )}
+          <div className="flex items-center justify-center gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={() => setDailyComplete(false)}>Review Again</Button>
+            <Button size="sm" onClick={() => navigate("/")}>Back to Dashboard</Button>
+          </div>
         </div>
       )}
 
