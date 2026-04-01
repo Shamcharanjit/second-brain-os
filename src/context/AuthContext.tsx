@@ -36,9 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => { subscription.unsubscribe(); };
 
-    return () => {
-      (window as any).__insighthalo_auth_unsub?.();
-    };
+    // cleanup handled by subscription.unsubscribe above
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
