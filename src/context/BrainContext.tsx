@@ -81,7 +81,9 @@ const SEED_DATA: Capture[] = [
 ];
 
 export function BrainProvider({ children }: { children: React.ReactNode }) {
-  const [captures, setCaptures] = useState<Capture[]>(SEED_DATA);
+  const [captures, setCaptures] = useState<Capture[]>(() => loadState(STORAGE_KEY, SEED_DATA));
+
+  useEffect(() => { saveState(STORAGE_KEY, captures); }, [captures]);
 
   const addCapture = useCallback((text: string, type: "text" | "voice"): Capture => {
     const { aiData, reviewStatus } = mockAIProcess(text);

@@ -125,7 +125,9 @@ interface ProjectContextType {
 const ProjectContext = createContext<ProjectContextType | null>(null);
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
-  const [projects, setProjects] = useState<Project[]>(SEED_PROJECTS);
+  const [projects, setProjects] = useState<Project[]>(() => loadState(STORAGE_KEY, SEED_PROJECTS));
+
+  useEffect(() => { saveState(STORAGE_KEY, projects); }, [projects]);
 
   const getProject = useCallback((id: string) => projects.find((p) => p.id === id), [projects]);
   const getProjectHealth = useCallback((p: Project) => computeHealth(p), []);
