@@ -33,8 +33,8 @@ export function ReviewMetaProvider({ children }: { children: React.ReactNode }) 
       const cloud = await fetchReviewMeta(user.id);
       if (cloud && !cancelled) {
         setMeta(cloud);
+        saveState(STORAGE_KEY, cloud); // overwrite local to stay in sync
       } else if (!cloud && (meta.last_daily_review_at || meta.last_weekly_review_at)) {
-        // Seed cloud from local
         await upsertReviewMeta(user.id, meta);
       }
     })();
