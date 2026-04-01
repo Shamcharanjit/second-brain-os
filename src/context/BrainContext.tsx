@@ -149,11 +149,27 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const updateIdeaStatus = useCallback((id: string, ideaStatus: IdeaStatus) => {
+    setCaptures((prev) => prev.map((c) => {
+      if (c.id !== id) return c;
+      if (ideaStatus === "archived") return { ...c, idea_status: ideaStatus, status: "archived" as CaptureStatus };
+      return { ...c, idea_status: ideaStatus };
+    }));
+  }, []);
+
+  const convertIdeaToProject = useCallback((id: string) => {
+    setCaptures((prev) => prev.map((c) => {
+      if (c.id !== id) return c;
+      return { ...c, idea_status: "converted_to_project" as IdeaStatus, status: "sent_to_projects" as CaptureStatus, converted_to_project_at: new Date().toISOString() };
+    }));
+  }, []);
+
   return (
     <BrainContext.Provider value={{
       captures, addCapture, updateCaptureStatus, updateReviewStatus,
       approveCapture, editAndApproveCapture, archiveCapture, routeCapture,
       completeCapture, uncompleteCapture, togglePinToday, editCaptureAI,
+      updateIdeaStatus, convertIdeaToProject,
     }}>
       {children}
     </BrainContext.Provider>
