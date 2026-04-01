@@ -309,6 +309,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
           source={triageResult.source}
           onApply={handleApplyTriage}
           onDismiss={handleDismissTriage}
+          onCreateProject={handleCreateProjectFromTriage}
         />
       )}
 
@@ -321,6 +322,20 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
           </div>
           <AIResultCard capture={lastResult} />
         </div>
+      )}
+
+      {/* Create Project from triage */}
+      {showCreateProject && triageResult && (
+        <CreateProjectDialog
+          open={showCreateProject}
+          onClose={() => {
+            setShowCreateProject(false);
+            // Also apply the triage to save the capture
+            handleApplyTriage();
+          }}
+          defaultName={triageResult.triage.title}
+          defaultDescription={triageResult.triage.summary}
+        />
       )}
     </div>
   );
