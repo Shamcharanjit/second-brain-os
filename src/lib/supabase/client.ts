@@ -1,12 +1,23 @@
 /**
- * Portable Supabase client re-export.
+ * Standalone Supabase client — fully owned, no generated dependencies.
  *
- * Re-exports the auto-generated client from src/integrations/supabase/client.ts.
- * All data-layer code imports from HERE so that a future standalone deployment
- * can swap the underlying client without touching business logic.
- *
- * The isSupabaseEnabled flag lets callers guard cloud operations.
+ * All app code imports from HERE. The client is only created when
+ * VITE_SUPABASE_URL and an anon key are present; otherwise `supabase`
+ * is null and callers must guard via `isSupabaseEnabled`.
  */
 
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, isSupabaseEnabled } from "./config";
+
 export { isSupabaseEnabled } from "./config";
-export { supabase } from "@/integrations/supabase/client";
+
+export const supabase: SupabaseClient =
+  isSupabaseEnabled
+    ? createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
+        auth: {
+          storage: localStorage,
+          persistSession: true,
+          autoRefreshToken: true,
+        },
+      })
+    : (null as unknown as SupabaseClient);
