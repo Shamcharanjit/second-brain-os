@@ -45,6 +45,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AppLayout>
+          </BrowserRouter>
           </MemoryProvider>
         </ProjectProvider>
       </BrainProvider>
