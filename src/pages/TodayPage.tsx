@@ -16,7 +16,7 @@ const categoryLabel: Record<CaptureCategory, string> = {
 };
 
 const priorityColor = (s: number) =>
-  s >= 8 ? "text-brain-rose" : s >= 5 ? "text-brain-amber" : "text-muted-foreground";
+  s >= 70 ? "text-brain-rose" : s >= 45 ? "text-brain-amber" : "text-muted-foreground";
 
 const aiReasoning = (c: Capture) => c.ai_data?.why_it_matters ?? "";
 
