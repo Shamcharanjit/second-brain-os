@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Capture, CaptureCategory, CaptureStatus, ConfidenceLevel, UrgencyLevel, DestinationSuggestion } from "@/types/brain";
 import { useBrain } from "@/context/BrainContext";
+import { useIntegrationActions } from "@/hooks/useIntegrationActions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import {
   Mic, Type, ArrowRight, FolderOpen, Check, X,
   CalendarCheck, Lightbulb, Archive, Clock, Sparkles, Pencil,
   ShieldCheck, ShieldAlert, ShieldQuestion, Gauge, FolderKanban, Hourglass,
-  ChevronDown, ChevronUp, Inbox,
+  ChevronDown, ChevronUp, Inbox, Brain,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
