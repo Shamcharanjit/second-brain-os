@@ -13,7 +13,7 @@ import { useBrain } from "@/context/BrainContext";
 import type { Capture } from "@/types/brain";
 
 /* ── Types ── */
-type TypeFilter = "all" | "task" | "idea" | "reminder" | "follow_up" | "project_note" | "maybe_later";
+type TypeFilter = "all" | "task" | "idea" | "reminder" | "follow_up" | "goal" | "note" | "project" | "maybe_later";
 type TimeFilter = "all" | "today" | "week" | "month";
 
 const TYPE_CHIPS: { value: TypeFilter; label: string }[] = [
@@ -22,7 +22,9 @@ const TYPE_CHIPS: { value: TypeFilter; label: string }[] = [
   { value: "idea", label: "Ideas" },
   { value: "reminder", label: "Reminders" },
   { value: "follow_up", label: "Follow-Ups" },
-  { value: "project_note", label: "Projects" },
+  { value: "goal", label: "Goals" },
+  { value: "note", label: "Notes" },
+  { value: "project", label: "Projects" },
   { value: "maybe_later", label: "Maybe Later" },
 ];
 

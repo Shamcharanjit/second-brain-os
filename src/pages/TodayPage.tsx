@@ -117,7 +117,7 @@ export default function TodayPage() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge variant="secondary" className="text-[10px]">{categoryLabel[ai.category]}</Badge>
-                      <span className={`text-xs font-bold ${priorityColor(ai.priority_score)}`}>{ai.priority_score}/10</span>
+                      <span className={`text-xs font-bold ${priorityColor(ai.priority_score)}`}>{ai.priority_score}/100</span>
                     </div>
                   </div>
                   {ai.due_date && (
