@@ -1,23 +1,20 @@
 import { Capture, CaptureCategory } from "@/types/brain";
 import { Badge } from "@/components/ui/badge";
-import { Mic, Type, ArrowRight, FolderOpen, Gauge, ShieldCheck, ShieldQuestion } from "lucide-react";
+import { Mic, Type, ArrowRight, FolderOpen, Gauge, ShieldCheck, ShieldQuestion, Target, Lightbulb, ListChecks, Bell, FileText, FolderKanban, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-const categoryColors: Record<CaptureCategory, string> = {
-  task: "bg-brain-teal/15 text-brain-teal",
-  idea: "bg-brain-amber/15 text-brain-amber",
-  reminder: "bg-brain-rose/15 text-brain-rose",
-  project_note: "bg-brain-blue/15 text-brain-blue",
-  follow_up: "bg-brain-purple/15 text-brain-purple",
-  maybe_later: "bg-muted text-muted-foreground",
+const categoryConfig: Record<CaptureCategory, { label: string; color: string }> = {
+  task: { label: "Task", color: "bg-[hsl(var(--brain-teal))]/15 text-[hsl(var(--brain-teal))]" },
+  idea: { label: "Idea", color: "bg-[hsl(var(--brain-amber))]/15 text-[hsl(var(--brain-amber))]" },
+  reminder: { label: "Reminder", color: "bg-[hsl(var(--brain-rose))]/15 text-[hsl(var(--brain-rose))]" },
+  goal: { label: "Goal", color: "bg-[hsl(var(--brain-purple))]/15 text-[hsl(var(--brain-purple))]" },
+  note: { label: "Note", color: "bg-[hsl(var(--brain-blue))]/15 text-[hsl(var(--brain-blue))]" },
+  project: { label: "Project", color: "bg-[hsl(var(--brain-blue))]/15 text-[hsl(var(--brain-blue))]" },
+  follow_up: { label: "Follow-up", color: "bg-[hsl(var(--brain-purple))]/15 text-[hsl(var(--brain-purple))]" },
+  maybe_later: { label: "Someday", color: "bg-muted text-muted-foreground" },
 };
 
-const categoryLabels: Record<CaptureCategory, string> = {
-  task: "Task", idea: "Idea", reminder: "Reminder",
-  project_note: "Project Note", follow_up: "Follow-up", maybe_later: "Maybe Later",
-};
-
-const urgencyColors = { high: "text-brain-rose", medium: "text-brain-amber", low: "text-muted-foreground" };
+const urgencyColors = { high: "text-[hsl(var(--brain-rose))]", medium: "text-[hsl(var(--brain-amber))]", low: "text-muted-foreground" };
 
 interface CaptureCardProps {
   capture: Capture;
@@ -28,6 +25,8 @@ export default function CaptureCard({ capture, expanded = false }: CaptureCardPr
   const ai = capture.ai_data;
   if (!ai) return null;
 
+  const cat = categoryConfig[ai.category];
+
   return (
     <div className="rounded-lg border bg-card p-4 space-y-3 transition-colors hover:border-primary/20">
       {/* Header */}
@@ -35,8 +34,8 @@ export default function CaptureCard({ capture, expanded = false }: CaptureCardPr
         <h3 className="text-sm font-semibold leading-snug">{ai.title}</h3>
         <div className="flex items-center gap-1.5 shrink-0">
           {capture.input_type === "voice" ? <Mic className="h-3 w-3 text-muted-foreground" /> : <Type className="h-3 w-3 text-muted-foreground" />}
-          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${categoryColors[ai.category]}`}>
-            {categoryLabels[ai.category]}
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${cat.color}`}>
+            {cat.label}
           </span>
         </div>
       </div>
@@ -56,8 +55,8 @@ export default function CaptureCard({ capture, expanded = false }: CaptureCardPr
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-1">
           <span className="text-[10px] text-muted-foreground font-medium uppercase">Priority</span>
-          <span className={`text-xs font-bold ${ai.priority_score >= 8 ? "text-brain-rose" : ai.priority_score >= 5 ? "text-brain-amber" : "text-muted-foreground"}`}>
-            {ai.priority_score}/10
+          <span className={`text-xs font-bold ${ai.priority_score >= 70 ? "text-[hsl(var(--brain-rose))]" : ai.priority_score >= 45 ? "text-[hsl(var(--brain-amber))]" : "text-muted-foreground"}`}>
+            {ai.priority_score}/100
           </span>
         </div>
         <span className={`text-[10px] font-medium ${urgencyColors[ai.urgency]}`}>
@@ -96,6 +95,12 @@ export default function CaptureCard({ capture, expanded = false }: CaptureCardPr
         )}
         {capture.status === "sent_to_ideas" && (
           <span className="text-[hsl(var(--brain-purple))] font-medium">→ Routed to Ideas Vault</span>
+        )}
+        {capture.status === "sent_to_projects" && (
+          <span className="text-[hsl(var(--brain-blue))] font-medium">→ Routed to Projects</span>
+        )}
+        {capture.status === "sent_to_someday" && (
+          <span className="text-muted-foreground font-medium">→ Routed to Someday</span>
         )}
       </div>
 
