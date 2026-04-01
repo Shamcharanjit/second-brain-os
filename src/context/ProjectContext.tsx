@@ -4,6 +4,8 @@ import { saveState, loadState } from "@/lib/persistence";
 import { fetchProjects, upsertProjects } from "@/lib/supabase/data-layer";
 import { useCloudSync, useCloudHydration } from "@/hooks/useCloudSync";
 
+const STORAGE_KEY = "insighthalo_projects";
+
 function makeEvent(type: ProjectEvent["type"], description: string): ProjectEvent {
   return { id: crypto.randomUUID(), type, description, timestamp: new Date().toISOString() };
 }

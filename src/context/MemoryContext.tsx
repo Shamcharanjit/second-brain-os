@@ -4,6 +4,8 @@ import { saveState, loadState } from "@/lib/persistence";
 import { fetchMemories, upsertMemories } from "@/lib/supabase/data-layer";
 import { useCloudSync, useCloudHydration } from "@/hooks/useCloudSync";
 
+const STORAGE_KEY = "insighthalo_memory";
+
 interface MemoryContextType {
   memories: MemoryEntry[];
   getMemory: (id: string) => MemoryEntry | undefined;
