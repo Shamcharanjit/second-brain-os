@@ -1,4 +1,4 @@
-import { loadState, clearAllInsightHaloData } from "@/lib/persistence";
+import { loadState, saveState, clearAllInsightHaloData } from "@/lib/persistence";
 
 const KEYS = {
   captures: "insighthalo_brain",
