@@ -330,8 +330,8 @@ function IdeaCompactCard({ capture, onPromote, onArchive }: { capture: Capture; 
     <div className="rounded-lg border bg-card p-4 space-y-2.5 hover:border-primary/20 transition-colors group">
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-sm font-medium leading-snug truncate">{ai.title}</h3>
-        <span className={`text-xs font-bold shrink-0 ${ai.priority_score >= 7 ? "text-brain-teal" : "text-muted-foreground"}`}>
-          {ai.priority_score}/10
+        <span className={`text-xs font-bold shrink-0 ${ai.priority_score >= 65 ? "text-brain-teal" : "text-muted-foreground"}`}>
+          {ai.priority_score}/100
         </span>
       </div>
       <p className="text-xs text-muted-foreground line-clamp-2">{ai.summary}</p>

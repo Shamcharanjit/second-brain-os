@@ -235,8 +235,8 @@ function ReviewCard({
                 <Mic className="h-2.5 w-2.5" /> Voice
               </Badge>
             )}
-            <span className={`text-[10px] font-bold ${ai.priority_score >= 8 ? "text-[hsl(var(--brain-rose))]" : ai.priority_score >= 5 ? "text-[hsl(var(--brain-amber))]" : "text-muted-foreground"}`}>
-              {ai.priority_score}/10
+            <span className={`text-[10px] font-bold ${ai.priority_score >= 70 ? "text-[hsl(var(--brain-rose))]" : ai.priority_score >= 45 ? "text-[hsl(var(--brain-amber))]" : "text-muted-foreground"}`}>
+              {ai.priority_score}/100
             </span>
           </div>
           <div className="flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">

@@ -85,7 +85,7 @@ export default function InboxCard({ capture }: { capture: Capture }) {
               {categoryLabels[ai.category]}
             </span>
             <div className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] ${priorityBg(ai.priority_score)}`}>
-              <span className={priorityColor(ai.priority_score)}>{ai.priority_score}/10</span>
+              <span className={priorityColor(ai.priority_score)}>{ai.priority_score}/100</span>
             </div>
             {/* Confidence badge */}
             <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${conf.color}`}>
