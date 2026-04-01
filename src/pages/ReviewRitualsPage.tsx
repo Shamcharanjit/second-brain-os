@@ -38,6 +38,7 @@ export default function ReviewRitualsPage() {
     captures, approveCapture, routeCapture, archiveCapture,
     completeCapture, updateIdeaStatus, convertIdeaToProject,
   } = useBrain();
+  const { routeToMemory } = useIntegrationActions();
   const { projects, getProjectHealth } = useProjects();
   const navigate = useNavigate();
   const [tab, setTab] = useState<ReviewTab>("weekly");
