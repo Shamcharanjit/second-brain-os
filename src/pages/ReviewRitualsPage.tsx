@@ -41,7 +41,7 @@ export default function ReviewRitualsPage() {
     completeCapture, updateIdeaStatus, convertIdeaToProject,
   } = useBrain();
   const { routeToMemory } = useIntegrationActions();
-  const { markDailyComplete: persistDaily, markWeeklyComplete: persistWeekly } = useReviewMeta();
+  const { markDailyComplete: persistDaily, markWeeklyComplete: persistWeekly, dailyStreak, lastWeeklyLabel, monthTotal } = useReviewMeta();
   const { projects, getProjectHealth } = useProjects();
   const navigate = useNavigate();
   const [tab, setTab] = useState<ReviewTab>("weekly");
