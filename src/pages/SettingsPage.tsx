@@ -168,6 +168,30 @@ export default function SettingsPage() {
             <Sparkles className="h-3 w-3" /> Upgrade to Pro
           </Button>
         )}
+        {isPro && billingEnabled && (
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={async () => {
+            try {
+              const result = await createPortalSession();
+              if (result?.url) { window.location.href = result.url; return; }
+              toast.info("Billing portal is not available yet.");
+            } catch { toast.error("Could not open billing portal."); }
+          }}>
+            <CreditCard className="h-3 w-3" /> Manage Subscription
+          </Button>
+        )}
+        {isPro && subscriptionStatus === "active" && currentPeriodEnd && (
+          <p className="text-[10px] text-muted-foreground">
+            Renews {new Date(currentPeriodEnd).toLocaleDateString()}
+          </p>
+        )}
+        {isPro && subscriptionStatus === "canceled" && (
+          <p className="text-[10px] text-destructive">
+            Canceled — access until {currentPeriodEnd ? new Date(currentPeriodEnd).toLocaleDateString() : "end of period"}
+          </p>
+        )}
+        {!billingEnabled && isPro && (
+          <p className="text-[10px] text-muted-foreground">Dev mode — billing not yet configured</p>
+        )}
       </section>
 
       {/* Export & Backup */}
