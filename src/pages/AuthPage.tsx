@@ -2,11 +2,19 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogIn, UserPlus, Loader2 } from "lucide-react";
+import { LogIn, UserPlus, Loader2, Shield, Smartphone, Cloud, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+
+const BENEFITS = [
+  { icon: Cloud, text: "Sync across all your devices" },
+  { icon: Shield, text: "Secure cloud backup of your data" },
+  { icon: Smartphone, text: "Pick up exactly where you left off" },
+];
 
 export default function AuthPage() {
   const { signIn, signUp, cloudAvailable } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,9 +28,9 @@ export default function AuthPage() {
           <p className="text-sm text-muted-foreground">
             Cloud sync is not configured. The app is running in local-only mode.
           </p>
-          <p className="text-[10px] text-muted-foreground">
-            To enable cloud sync, set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.
-          </p>
+          <Button variant="outline" size="sm" onClick={() => navigate("/")} className="gap-1.5">
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
+          </Button>
         </div>
       </div>
     );
@@ -40,19 +48,39 @@ export default function AuthPage() {
       toast.error(error.message);
     } else if (mode === "signup") {
       toast.success("Account created! Check your email to confirm.");
+    } else {
+      toast.success("Welcome back — your data is syncing.");
+      navigate("/");
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">InsightHalo</h1>
+      <div className="w-full max-w-sm space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight">
+            {mode === "login" ? "Welcome back" : "Create your account"}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            {mode === "login" ? "Sign in to sync your data" : "Create your account"}
+            {mode === "login"
+              ? "Sign in to access your second brain from anywhere"
+              : "Unlock cloud sync to protect and access your data everywhere"
+            }
           </p>
         </div>
 
+        {/* Benefits */}
+        <div className="space-y-2">
+          {BENEFITS.map((b) => (
+            <div key={b.text} className="flex items-center gap-2.5">
+              <b.icon className="h-3.5 w-3.5 text-primary/70" />
+              <span className="text-xs text-muted-foreground">{b.text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Input
@@ -70,6 +98,7 @@ export default function AuthPage() {
           </Button>
         </form>
 
+        {/* Toggle */}
         <div className="text-center">
           <button
             type="button"
@@ -80,10 +109,20 @@ export default function AuthPage() {
           </button>
         </div>
 
-        <div className="text-center">
-          <p className="text-[10px] text-muted-foreground">
-            You can also use InsightHalo without signing in — your data will be saved locally.
+        {/* Trust footer */}
+        <div className="rounded-lg border border-dashed bg-muted/30 p-3 text-center space-y-1">
+          <p className="text-[11px] text-muted-foreground">
+            Your existing local data will sync to your account automatically.
           </p>
+          <p className="text-[10px] text-muted-foreground/70">
+            No account required to use InsightHalo — you can always return to local-only mode.
+          </p>
+        </div>
+
+        <div className="text-center">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-xs text-muted-foreground gap-1.5">
+            <ArrowLeft className="h-3 w-3" /> Continue without signing in
+          </Button>
         </div>
       </div>
     </div>
