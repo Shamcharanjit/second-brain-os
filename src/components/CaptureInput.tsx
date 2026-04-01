@@ -122,11 +122,13 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     }
   }, [text, phase, addCapture, onComplete, canUseAITriage, recordAITriageUse]);
 
-  // Apply triage result
+  // Apply triage result — use addCaptureWithAI to preserve real AI data
   const handleApplyTriage = useCallback(() => {
     if (!triageResult || !capturedText) return;
 
-    const capture = addCapture(capturedText, "text");
+    const aiData = triageToAIData(triageResult.triage, capturedText);
+    const reviewStatus = triageResult.triage.confidence >= 0.8 ? "auto_approved" as const : "needs_review" as const;
+    const capture = addCaptureWithAI(capturedText, "text", aiData, reviewStatus);
     setText("");
     setLastResult(capture);
     setPhase("done");
@@ -144,7 +146,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       onComplete?.();
       textareaRef.current?.focus();
     }, 3000);
-  }, [triageResult, capturedText, addCapture, onComplete]);
+  }, [triageResult, capturedText, addCaptureWithAI, onComplete]);
 
   // Dismiss triage — save as-is
   const handleDismissTriage = useCallback(() => {
