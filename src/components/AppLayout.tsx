@@ -23,7 +23,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [captureOpen, setCaptureOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, cloudAvailable } = useAuth();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -65,21 +65,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Sync status + auth */}
         <div className="px-4 py-3 space-y-2 border-t border-sidebar-border">
           <div className="flex items-center gap-1.5 text-[10px] text-sidebar-foreground/50">
-            {user ? (
+            {!cloudAvailable ? (
+              <><HardDrive className="h-3 w-3" /> Local only (no cloud configured)</>
+            ) : user ? (
               <><Cloud className="h-3 w-3" /> Synced to cloud</>
             ) : (
               <><HardDrive className="h-3 w-3" /> Local only</>
             )}
           </div>
-          {user ? (
+          {cloudAvailable && user ? (
             <button onClick={() => signOut()} className="flex items-center gap-1.5 text-[10px] text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors">
               <LogOut className="h-3 w-3" /> Sign out
             </button>
-          ) : (
+          ) : cloudAvailable ? (
             <button onClick={() => navigate("/auth")} className="flex items-center gap-1.5 text-[10px] text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors">
               <LogIn className="h-3 w-3" /> Sign in to sync
             </button>
-          )}
+          ) : null}
         </div>
       </aside>
 

@@ -6,11 +6,27 @@ import { LogIn, UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AuthPage() {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, cloudAvailable } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  if (!cloudAvailable) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="w-full max-w-sm space-y-4 text-center">
+          <h1 className="text-2xl font-bold tracking-tight">InsightHalo</h1>
+          <p className="text-sm text-muted-foreground">
+            Cloud sync is not configured. The app is running in local-only mode.
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            To enable cloud sync, set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
