@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Project, ProjectStatus, ProjectPriority, ProjectHealth, NextAction, ProjectNote, ProjectEvent } from "@/types/project";
 import { saveState, loadState } from "@/lib/persistence";
-import { fetchProjects, upsertProjects } from "@/lib/supabase/data-layer";
+import { fetchProjects, upsertProjects, syncProjects } from "@/lib/supabase/data-layer";
 import { useCloudSync, useCloudHydration } from "@/hooks/useCloudSync";
 
 const STORAGE_KEY = "insighthalo_projects";
