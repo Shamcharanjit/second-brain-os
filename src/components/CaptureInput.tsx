@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, MicOff, Send, Sparkles, Check, Crown } from "lucide-react";
+import UploadPicker, { type PendingFile } from "@/components/capture/UploadPicker";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useSubscription } from "@/context/SubscriptionContext";
