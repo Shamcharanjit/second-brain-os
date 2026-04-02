@@ -77,6 +77,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     setTimeout(() => {
       const capture = addCapture(trimmed, "text");
       setText("");
+      setPendingFiles([]);
       setLastResult(capture);
       setPhase("done");
 
