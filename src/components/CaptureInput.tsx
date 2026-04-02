@@ -168,6 +168,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
 
     const capture = addCapture(capturedText, "text");
     setText("");
+    setPendingFiles([]);
     setLastResult(capture);
     setTriageResult(null);
     setPhase("done");
