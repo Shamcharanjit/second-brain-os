@@ -122,6 +122,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     } catch {
       const capture = addCapture(trimmed, "text");
       setText("");
+      setPendingFiles([]);
       setLastResult(capture);
       setPhase("done");
       toast.info("AI unavailable — captured with smart sort.");
