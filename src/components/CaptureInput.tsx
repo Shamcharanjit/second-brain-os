@@ -230,6 +230,29 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
           className={`w-full resize-none border-0 bg-transparent px-1 py-1 text-sm outline-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 disabled:cursor-not-allowed ${isModal ? "min-h-[120px]" : "min-h-[60px]"}`}
         />
 
+        {/* Pending file chips */}
+        {pendingFiles.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-2">
+            {pendingFiles.map((pf) => (
+              <div
+                key={pf.id}
+                className="flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/50 px-2 py-1 text-xs"
+              >
+                <span className="max-w-[120px] truncate text-foreground">{pf.file.name}</span>
+                <span className="text-muted-foreground">{pf.file.size < 1024 * 1024 ? `${(pf.file.size / 1024).toFixed(1)} KB` : `${(pf.file.size / (1024 * 1024)).toFixed(1)} MB`}</span>
+                <button
+                  type="button"
+                  onClick={() => setPendingFiles(pendingFiles.filter(f => f.id !== pf.id))}
+                  className="ml-0.5 rounded-sm p-0.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <span className="sr-only">Remove</span>
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-center justify-between pt-2 border-t border-border/50 mt-2">
           <div className="flex items-center gap-1.5">
             <Button
