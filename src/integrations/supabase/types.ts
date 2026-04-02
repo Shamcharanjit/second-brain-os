@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      capture_attachments: {
+        Row: {
+          bucket: string
+          capture_id: string
+          created_at: string
+          extracted_text: string | null
+          file_kind: string
+          file_name: string
+          file_size: number | null
+          id: string
+          metadata: Json
+          mime_type: string | null
+          status: string
+          storage_path: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bucket?: string
+          capture_id: string
+          created_at?: string
+          extracted_text?: string | null
+          file_kind: string
+          file_name: string
+          file_size?: number | null
+          id?: string
+          metadata?: Json
+          mime_type?: string | null
+          status?: string
+          storage_path: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bucket?: string
+          capture_id?: string
+          created_at?: string
+          extracted_text?: string | null
+          file_kind?: string
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          metadata?: Json
+          mime_type?: string | null
+          status?: string
+          storage_path?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capture_attachments_capture_id_fkey"
+            columns: ["capture_id"]
+            isOneToOne: false
+            referencedRelation: "user_captures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_captures: {
         Row: {
           ai_data: Json | null
