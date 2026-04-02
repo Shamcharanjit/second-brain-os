@@ -138,6 +138,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     const reviewStatus = triageResult.triage.confidence >= 0.8 ? "auto_approved" as const : "needs_review" as const;
     const capture = addCaptureWithAI(capturedText, "text", aiData, reviewStatus);
     setText("");
+    setPendingFiles([]);
     setLastResult(capture);
     setPhase("done");
 
