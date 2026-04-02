@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, MicOff, Send, Sparkles, Check, Crown } from "lucide-react";
+import UploadPicker, { type PendingFile } from "@/components/capture/UploadPicker";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useSubscription } from "@/context/SubscriptionContext";
@@ -47,6 +48,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   const { createProject, linkCapture: linkCaptureToProject } = useProjects();
   const { canUseAITriage, recordAITriageUse, shouldShowUpgradePrompt, aiTriageRemaining } = useSubscription();
   const [showCreateProject, setShowCreateProject] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
@@ -75,6 +77,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     setTimeout(() => {
       const capture = addCapture(trimmed, "text");
       setText("");
+      setPendingFiles([]);
       setLastResult(capture);
       setPhase("done");
 
@@ -119,6 +122,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     } catch {
       const capture = addCapture(trimmed, "text");
       setText("");
+      setPendingFiles([]);
       setLastResult(capture);
       setPhase("done");
       toast.info("AI unavailable — captured with smart sort.");
@@ -134,6 +138,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     const reviewStatus = triageResult.triage.confidence >= 0.8 ? "auto_approved" as const : "needs_review" as const;
     const capture = addCaptureWithAI(capturedText, "text", aiData, reviewStatus);
     setText("");
+    setPendingFiles([]);
     setLastResult(capture);
     setPhase("done");
 
@@ -163,6 +168,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
 
     const capture = addCapture(capturedText, "text");
     setText("");
+    setPendingFiles([]);
     setLastResult(capture);
     setTriageResult(null);
     setPhase("done");
@@ -224,6 +230,29 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
           className={`w-full resize-none border-0 bg-transparent px-1 py-1 text-sm outline-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 disabled:cursor-not-allowed ${isModal ? "min-h-[120px]" : "min-h-[60px]"}`}
         />
 
+        {/* Pending file chips */}
+        {pendingFiles.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-2">
+            {pendingFiles.map((pf) => (
+              <div
+                key={pf.id}
+                className="flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/50 px-2 py-1 text-xs"
+              >
+                <span className="max-w-[120px] truncate text-foreground">{pf.file.name}</span>
+                <span className="text-muted-foreground">{pf.file.size < 1024 * 1024 ? `${(pf.file.size / 1024).toFixed(1)} KB` : `${(pf.file.size / (1024 * 1024)).toFixed(1)} MB`}</span>
+                <button
+                  type="button"
+                  onClick={() => setPendingFiles(pendingFiles.filter(f => f.id !== pf.id))}
+                  className="ml-0.5 rounded-sm p-0.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <span className="sr-only">Remove</span>
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-center justify-between pt-2 border-t border-border/50 mt-2">
           <div className="flex items-center gap-1.5">
             <Button
@@ -239,6 +268,11 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
                 <><Mic className="h-3.5 w-3.5" /> Voice</>
               )}
             </Button>
+            <UploadPicker
+              files={pendingFiles}
+              onChange={setPendingFiles}
+              disabled={isBusy || phase === "done"}
+            />
           </div>
 
           <div className="flex items-center gap-1.5">
