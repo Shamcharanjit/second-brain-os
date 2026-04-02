@@ -245,6 +245,11 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
                 <><Mic className="h-3.5 w-3.5" /> Voice</>
               )}
             </Button>
+            <UploadPicker
+              files={pendingFiles}
+              onChange={setPendingFiles}
+              disabled={isBusy || phase === "done"}
+            />
           </div>
 
           <div className="flex items-center gap-1.5">
