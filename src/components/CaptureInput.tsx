@@ -346,7 +346,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
             <Button
               size="sm"
               onClick={handleSubmit}
-              disabled={!text.trim() || isBusy || phase === "done"}
+              disabled={(!text.trim() && pendingFiles.length === 0) || isBusy || phase === "done"}
               className="gap-1.5 text-xs"
             >
               <Send className="h-3.5 w-3.5" /> Capture
