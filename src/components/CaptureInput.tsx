@@ -12,6 +12,7 @@ import AIResultCard from "@/components/AIResultCard";
 import AITriageCard from "@/components/AITriageCard";
 import CreateProjectDialog from "@/components/projects/CreateProjectDialog";
 import { runAITriage, isAITriageAvailable, triageToAIData, type AITriageResult } from "@/lib/ai-triage";
+import { useUploadAttachments, type UploadResult } from "@/hooks/useUploadAttachments";
 
 const VOICE_TRANSCRIPTS = [
   "Remind me to send the project update to the team by tomorrow",
