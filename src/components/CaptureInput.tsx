@@ -68,35 +68,70 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
 
+  // Build fallback text when files present but no text
+  const buildCaptureText = useCallback((trimmed: string, files: PendingFile[]): string => {
+    if (trimmed) return trimmed;
+    if (files.length === 1) return `Uploaded file: ${files[0].file.name}`;
+    return `Uploaded ${files.length} files`;
+  }, []);
+
+  // Report upload results via toast
+  const reportUploadResults = useCallback((results: UploadResult[]) => {
+    const failed = results.filter((r) => !r.success);
+    if (failed.length === 0) return;
+    if (failed.length === results.length) {
+      toast.error("File upload failed.", { description: failed[0].error });
+    } else {
+      toast.warning(`${failed.length} of ${results.length} file(s) failed to upload.`);
+    }
+  }, []);
+
   // Quick capture (no AI triage — uses local mock-ai as before)
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const trimmed = text.trim();
-    if (!trimmed || phase !== "idle") return;
+    const hasFiles = pendingFiles.length > 0;
+    if (!trimmed && !hasFiles) return;
+    if (phase !== "idle") return;
 
     setPhase("processing");
     setLastResult(null);
     setTriageResult(null);
+
+    // Small delay for UX feedback
+    await new Promise((r) => setTimeout(r, 400));
+
+    const captureText = buildCaptureText(trimmed, pendingFiles);
+    const capture = addCapture(captureText, "text");
+    setText("");
+    setLastResult(capture);
+
+    // Upload files in background
+    const filesToUpload = [...pendingFiles];
+    setPendingFiles([]);
+
+    if (filesToUpload.length > 0) {
+      const results = await uploadFiles(capture.id, filesToUpload);
+      reportUploadResults(results);
+      const failedFiles = filesToUpload.filter((pf) => results.find((r) => r.fileId === pf.id && !r.success));
+      if (failedFiles.length > 0) {
+        setPendingFiles(failedFiles);
+      }
+    }
+
+    setPhase("done");
+    const dest = capture.ai_data?.destination_suggestion;
+    const destLabel = dest === "today" ? "Today" : dest === "ideas" ? "Ideas Vault" : dest === "projects" ? "Projects" : dest === "someday" ? "Someday" : "Inbox";
+    const fileNote = filesToUpload.length > 0 ? ` + ${filesToUpload.length} file(s)` : "";
+    toast.success("Thought captured.", {
+      description: `Routed to ${destLabel} as ${capture.ai_data?.category?.replace("_", " ")}${fileNote}`,
+    });
+
     setTimeout(() => {
-      const capture = addCapture(trimmed, "text");
-      setText("");
-      setPendingFiles([]);
-      setLastResult(capture);
-      setPhase("done");
-
-      const dest = capture.ai_data?.destination_suggestion;
-      const destLabel = dest === "today" ? "Today" : dest === "ideas" ? "Ideas Vault" : dest === "projects" ? "Projects" : dest === "someday" ? "Someday" : "Inbox";
-
-      toast.success("Thought captured.", {
-        description: `Routed to ${destLabel} as ${capture.ai_data?.category?.replace("_", " ")}`,
-      });
-
-      setTimeout(() => {
-        setPhase("idle");
-        onComplete?.();
-        textareaRef.current?.focus();
-      }, 3000);
-    }, 600);
-  }, [text, phase, addCapture, onComplete]);
+      setPhase("idle");
+      onComplete?.();
+      textareaRef.current?.focus();
+    }, 3000);
+  }, [text, phase, pendingFiles, addCapture, onComplete, buildCaptureText, uploadFiles, reportUploadResults]);
 
   // AI triage flow
   const handleAITriage = useCallback(async () => {
