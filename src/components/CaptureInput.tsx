@@ -207,15 +207,22 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   }, []);
 
   // Dismiss triage — save as-is
-  const handleDismissTriage = useCallback(() => {
+  const handleDismissTriage = useCallback(async () => {
     if (!capturedText) return;
 
     const capture = addCapture(capturedText, "text");
     setText("");
+
+    const filesToUpload = [...pendingFiles];
     setPendingFiles([]);
     setLastResult(capture);
     setTriageResult(null);
     setPhase("done");
+
+    if (filesToUpload.length > 0) {
+      const results = await uploadFiles(capture.id, filesToUpload);
+      reportUploadResults(results);
+    }
 
     toast.success("Thought captured as-is.");
 
@@ -224,7 +231,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       onComplete?.();
       textareaRef.current?.focus();
     }, 3000);
-  }, [capturedText, addCapture, onComplete]);
+  }, [capturedText, pendingFiles, addCapture, onComplete, uploadFiles, reportUploadResults]);
 
   const handleVoice = () => {
     if (phase === "recording") {
