@@ -50,6 +50,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   const { canUseAITriage, recordAITriageUse, shouldShowUpgradePrompt, aiTriageRemaining } = useSubscription();
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const { uploadFiles } = useUploadAttachments();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
