@@ -168,16 +168,23 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   }, [text, phase, addCapture, onComplete, canUseAITriage, recordAITriageUse]);
 
   // Apply triage result — use addCaptureWithAI to preserve real AI data
-  const handleApplyTriage = useCallback(() => {
+  const handleApplyTriage = useCallback(async () => {
     if (!triageResult || !capturedText) return;
 
     const aiData = triageToAIData(triageResult.triage, capturedText);
     const reviewStatus = triageResult.triage.confidence >= 0.8 ? "auto_approved" as const : "needs_review" as const;
     const capture = addCaptureWithAI(capturedText, "text", aiData, reviewStatus);
     setText("");
+
+    const filesToUpload = [...pendingFiles];
     setPendingFiles([]);
     setLastResult(capture);
     setPhase("done");
+
+    if (filesToUpload.length > 0) {
+      const results = await uploadFiles(capture.id, filesToUpload);
+      reportUploadResults(results);
+    }
 
     const dest = triageResult.triage.recommendedDestination;
     const destLabel = dest === "today" ? "Today" : dest === "ideas" ? "Ideas Vault" : dest === "projects" ? "Projects" : dest === "someday" ? "Someday" : dest === "memory" ? "Memory" : "Inbox";
@@ -192,7 +199,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       onComplete?.();
       textareaRef.current?.focus();
     }, 3000);
-  }, [triageResult, capturedText, addCaptureWithAI, onComplete]);
+  }, [triageResult, capturedText, pendingFiles, addCaptureWithAI, onComplete, uploadFiles, reportUploadResults]);
 
   // Create project from triage
   const handleCreateProjectFromTriage = useCallback(() => {
