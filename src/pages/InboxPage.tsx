@@ -178,7 +178,7 @@ export default function InboxPage() {
         ) : (
           <div className="space-y-4">
             {pendingReview.map((c) => (
-              <InboxCard key={c.id} capture={c} />
+              <InboxCard key={c.id} capture={c} attachmentCount={attachmentCounts[c.id] ?? 0} onOpenDetail={setDetailCapture} />
             ))}
           </div>
         )}
