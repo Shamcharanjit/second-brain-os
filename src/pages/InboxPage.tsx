@@ -1,6 +1,8 @@
 import InboxCard from "@/components/InboxCard";
+import CaptureDetailDrawer from "@/components/capture/CaptureDetailDrawer";
 import { useBrain } from "@/context/BrainContext";
-import { CaptureCategory } from "@/types/brain";
+import { useCaptureAttachmentCounts } from "@/hooks/useCaptureAttachments";
+import { CaptureCategory, Capture } from "@/types/brain";
 import { useState, useMemo } from "react";
 import {
   Inbox, AlertTriangle, Lightbulb, Clock, Search,
@@ -37,6 +39,11 @@ export default function InboxPage() {
   const [filter, setFilter] = useState<FilterValue>("all");
   const [sort, setSort] = useState<SortValue>("needs_decision");
   const [search, setSearch] = useState("");
+  const [detailCapture, setDetailCapture] = useState<Capture | null>(null);
+
+  // Attachment counts (lightweight — only capture_id column fetched)
+  const captureIds = useMemo(() => captures.map((c) => c.id), [captures]);
+  const attachmentCounts = useCaptureAttachmentCounts(captureIds);
 
   // Inbox = everything not archived
   const active = captures.filter((c) => c.status !== "archived");
@@ -171,7 +178,7 @@ export default function InboxPage() {
         ) : (
           <div className="space-y-4">
             {pendingReview.map((c) => (
-              <InboxCard key={c.id} capture={c} />
+              <InboxCard key={c.id} capture={c} attachmentCount={attachmentCounts[c.id] ?? 0} onOpenDetail={setDetailCapture} />
             ))}
           </div>
         )}
@@ -187,11 +194,17 @@ export default function InboxPage() {
           </div>
           <div className="space-y-2">
             {reviewed.slice(0, 8).map((c) => (
-              <InboxCard key={c.id} capture={c} />
+              <InboxCard key={c.id} capture={c} attachmentCount={attachmentCounts[c.id] ?? 0} onOpenDetail={setDetailCapture} />
             ))}
           </div>
         </section>
       )}
+
+      <CaptureDetailDrawer
+        capture={detailCapture}
+        open={!!detailCapture}
+        onOpenChange={(open) => { if (!open) setDetailCapture(null); }}
+      />
     </div>
   );
 }
