@@ -1,13 +1,14 @@
 /**
  * Attachment gallery for capture detail view.
  * Fetches signed URLs on demand, shows image previews,
- * and provides open/download actions for other file types.
+ * and provides open/download/delete actions for file types.
  */
 
 import { useState, useCallback } from "react";
 import { CaptureAttachment } from "@/lib/uploads";
 import { getSignedUrl } from "@/lib/storage";
 import { formatFileSize, getAttachmentKind } from "@/lib/format-file";
+import { useDeleteCaptureAttachment } from "@/hooks/useDeleteCaptureAttachment";
 import { toast } from "sonner";
 import {
   Image as ImageIcon,
@@ -17,7 +18,7 @@ import {
   Download,
   Eye,
   Loader2,
-  X,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,11 +26,22 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Props {
   attachments: CaptureAttachment[];
   loading?: boolean;
   error?: string | null;
+  onDeleted?: () => void;
 }
 
 const kindIcon = {
@@ -46,10 +58,13 @@ const kindLabel = {
   other: "File",
 };
 
-export default function AttachmentGallery({ attachments, loading, error }: Props) {
+export default function AttachmentGallery({ attachments, loading, error, onDeleted }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<CaptureAttachment | null>(null);
+
+  const { deletingId, deleteAttachment } = useDeleteCaptureAttachment();
 
   const openSignedUrl = useCallback(async (att: CaptureAttachment, action: "preview" | "open") => {
     setLoadingId(att.id);
@@ -71,6 +86,14 @@ export default function AttachmentGallery({ attachments, loading, error }: Props
     }
   }, []);
 
+  const handleConfirmDelete = useCallback(() => {
+    if (!confirmTarget) return;
+    deleteAttachment(confirmTarget, () => {
+      setConfirmTarget(null);
+      onDeleted?.();
+    });
+  }, [confirmTarget, deleteAttachment, onDeleted]);
+
   if (loading) {
     return (
       <div className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
@@ -88,7 +111,13 @@ export default function AttachmentGallery({ attachments, loading, error }: Props
     );
   }
 
-  if (attachments.length === 0) return null;
+  if (attachments.length === 0) {
+    return (
+      <div className="py-3 text-xs text-muted-foreground text-center">
+        No attachments
+      </div>
+    );
+  }
 
   return (
     <>
@@ -101,6 +130,7 @@ export default function AttachmentGallery({ attachments, loading, error }: Props
             const kind = getAttachmentKind(att.mime_type);
             const Icon = kindIcon[kind];
             const isLoading = loadingId === att.id;
+            const isDeleting = deletingId === att.id;
 
             return (
               <div
@@ -122,7 +152,7 @@ export default function AttachmentGallery({ attachments, loading, error }: Props
                       size="sm"
                       variant="ghost"
                       className="h-7 w-7 p-0"
-                      disabled={isLoading}
+                      disabled={isLoading || isDeleting}
                       onClick={() => openSignedUrl(att, "preview")}
                       title="Preview"
                     >
@@ -130,13 +160,13 @@ export default function AttachmentGallery({ attachments, loading, error }: Props
                     </Button>
                   )}
                   {kind === "audio" && att.mime_type && (
-                    <InlineAudioPlayer att={att} />
+                    <InlineAudioPlayer att={att} disabled={isDeleting} />
                   )}
                   <Button
                     size="sm"
                     variant="ghost"
                     className="h-7 w-7 p-0"
-                    disabled={isLoading}
+                    disabled={isLoading || isDeleting}
                     onClick={() => openSignedUrl(att, "open")}
                     title="Open / Download"
                   >
@@ -144,6 +174,20 @@ export default function AttachmentGallery({ attachments, loading, error }: Props
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <Download className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                    disabled={isDeleting}
+                    onClick={() => setConfirmTarget(att)}
+                    title="Remove attachment"
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
                     )}
                   </Button>
                 </div>
@@ -168,17 +212,40 @@ export default function AttachmentGallery({ attachments, loading, error }: Props
           <p className="text-xs text-muted-foreground text-center pt-1 truncate">{previewName}</p>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!confirmTarget} onOpenChange={(open) => !open && setConfirmTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove attachment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove <span className="font-medium">{confirmTarget?.file_name}</span> from this capture.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingId}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={!!deletingId}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingId ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
 
 /** Tiny inline audio player — fetches signed URL on play */
-function InlineAudioPlayer({ att }: { att: CaptureAttachment }) {
+function InlineAudioPlayer({ att, disabled }: { att: CaptureAttachment; disabled?: boolean }) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handlePlay = async () => {
-    if (audioUrl) return; // already loaded
+    if (audioUrl) return;
     setLoading(true);
     const { url, error } = await getSignedUrl(att.storage_path);
     setLoading(false);
@@ -200,7 +267,7 @@ function InlineAudioPlayer({ att }: { att: CaptureAttachment }) {
       size="sm"
       variant="ghost"
       className="h-7 text-[10px] gap-1 px-2"
-      disabled={loading}
+      disabled={loading || disabled}
       onClick={handlePlay}
     >
       {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Music className="h-3 w-3" />}
