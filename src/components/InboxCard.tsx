@@ -149,12 +149,20 @@ export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail }
       sent_to_projects: "→ Projects", sent_to_someday: "→ Someday", sent_to_memory: "→ Memory",
     };
     return (
-      <div className="flex items-center gap-3 rounded-xl border bg-card/60 px-4 py-3 opacity-70">
+      <div
+        className="flex items-center gap-3 rounded-xl border bg-card/60 px-4 py-3 opacity-70 cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={() => onOpenDetail?.(capture)}
+      >
         <Check className="h-4 w-4 text-primary shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{ai.title}</p>
           <p className="text-[10px] text-muted-foreground truncate">{ai.summary}</p>
         </div>
+        {attachmentCount > 0 && (
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
+            <Paperclip className="h-3 w-3" /> {attachmentCount}
+          </span>
+        )}
         <Badge variant="outline" className="text-[10px] shrink-0">{statusLabels[capture.status] ?? capture.status}</Badge>
         {capture.manually_adjusted && (
           <Badge variant="secondary" className="text-[10px] shrink-0 gap-1">
