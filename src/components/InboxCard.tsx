@@ -64,7 +64,7 @@ interface InboxCardProps {
   onOpenDetail?: (capture: Capture) => void;
 }
 
-export default function InboxCard({ capture }: InboxCardProps) {
+export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail }: InboxCardProps) {
   const ai = capture.ai_data;
   const { approveCapture, editAndApproveCapture, archiveCapture, routeCapture } = useBrain();
   const { linkCapture } = useProjects();
