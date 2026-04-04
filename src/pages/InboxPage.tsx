@@ -39,6 +39,11 @@ export default function InboxPage() {
   const [filter, setFilter] = useState<FilterValue>("all");
   const [sort, setSort] = useState<SortValue>("needs_decision");
   const [search, setSearch] = useState("");
+  const [detailCapture, setDetailCapture] = useState<Capture | null>(null);
+
+  // Attachment counts (lightweight — only capture_id column fetched)
+  const captureIds = useMemo(() => captures.map((c) => c.id), [captures]);
+  const attachmentCounts = useCaptureAttachmentCounts(captureIds);
 
   // Inbox = everything not archived
   const active = captures.filter((c) => c.status !== "archived");
