@@ -60,6 +60,8 @@ const destLabel: Record<string, string> = {
 
 interface InboxCardProps {
   capture: Capture;
+  attachmentCount?: number;
+  onOpenDetail?: (capture: Capture) => void;
 }
 
 export default function InboxCard({ capture }: InboxCardProps) {
