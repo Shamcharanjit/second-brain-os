@@ -11,7 +11,7 @@ import {
   Mic, Type, ArrowRight, FolderOpen, Check, X,
   CalendarCheck, Lightbulb, Archive, Clock, Sparkles, Pencil,
   ShieldCheck, ShieldAlert, ShieldQuestion, Gauge, FolderKanban, Hourglass,
-  ChevronDown, ChevronUp, Inbox, Brain,
+  ChevronDown, ChevronUp, Inbox, Brain, Paperclip,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
