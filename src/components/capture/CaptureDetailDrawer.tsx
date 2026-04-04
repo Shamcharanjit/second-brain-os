@@ -26,7 +26,7 @@ interface Props {
 }
 
 export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Props) {
-  const { attachments, loading, error } = useCaptureAttachmentDetails(
+  const { attachments, loading, error, refetch } = useCaptureAttachmentDetails(
     open && capture ? capture.id : null
   );
 
@@ -95,6 +95,7 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
             attachments={attachments}
             loading={loading}
             error={error}
+            onDeleted={refetch}
           />
         </div>
       </SheetContent>
