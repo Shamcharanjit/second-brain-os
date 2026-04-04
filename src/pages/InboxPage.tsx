@@ -199,6 +199,12 @@ export default function InboxPage() {
           </div>
         </section>
       )}
+
+      <CaptureDetailDrawer
+        capture={detailCapture}
+        open={!!detailCapture}
+        onOpenChange={(open) => { if (!open) setDetailCapture(null); }}
+      />
     </div>
   );
 }
