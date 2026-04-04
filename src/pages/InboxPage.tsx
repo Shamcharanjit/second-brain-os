@@ -194,7 +194,7 @@ export default function InboxPage() {
           </div>
           <div className="space-y-2">
             {reviewed.slice(0, 8).map((c) => (
-              <InboxCard key={c.id} capture={c} />
+              <InboxCard key={c.id} capture={c} attachmentCount={attachmentCounts[c.id] ?? 0} onOpenDetail={setDetailCapture} />
             ))}
           </div>
         </section>
