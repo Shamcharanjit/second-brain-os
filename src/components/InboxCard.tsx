@@ -199,6 +199,14 @@ export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail }
             </span>
           </div>
           <div className="flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
+            {attachmentCount > 0 && (
+              <button
+                onClick={() => onOpenDetail?.(capture)}
+                className="inline-flex items-center gap-1 mr-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/20 transition-colors"
+              >
+                <Paperclip className="h-3 w-3" /> {attachmentCount}
+              </button>
+            )}
             <Clock className="h-3 w-3" />
             {formatDistanceToNow(new Date(capture.created_at), { addSuffix: true })}
           </div>
