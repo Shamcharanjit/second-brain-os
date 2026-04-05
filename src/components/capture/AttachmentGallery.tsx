@@ -63,7 +63,7 @@ const kindLabel = {
   other: "File",
 };
 
-export default function AttachmentGallery({ attachments, loading, error, extractions, onDeleted }: Props) {
+export default function AttachmentGallery({ attachments, captureId, loading, error, extractions, onDeleted, onRetryTriggered }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
