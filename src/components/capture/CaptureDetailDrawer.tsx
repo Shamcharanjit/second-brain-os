@@ -97,10 +97,12 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
           {/* Attachments */}
           <AttachmentGallery
             attachments={attachments}
+            captureId={capture.id}
             loading={loading}
             error={error}
             extractions={extractions}
             onDeleted={() => { refetch(); refetchExtractions(); }}
+            onRetryTriggered={() => { setTimeout(refetchExtractions, 2000); }}
           />
         </div>
       </SheetContent>
