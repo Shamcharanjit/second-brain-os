@@ -42,6 +42,7 @@ interface Props {
   attachments: CaptureAttachment[];
   loading?: boolean;
   error?: string | null;
+  extractions?: ExtractionRow[];
   onDeleted?: () => void;
 }
 
