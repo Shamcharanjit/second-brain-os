@@ -41,10 +41,12 @@ import {
 
 interface Props {
   attachments: CaptureAttachment[];
+  captureId?: string;
   loading?: boolean;
   error?: string | null;
   extractions?: ExtractionRow[];
   onDeleted?: () => void;
+  onRetryTriggered?: () => void;
 }
 
 const kindIcon = {
