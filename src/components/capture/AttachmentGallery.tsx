@@ -133,6 +133,7 @@ export default function AttachmentGallery({ attachments, loading, error, extract
             const Icon = kindIcon[kind];
             const isLoading = loadingId === att.id;
             const isDeleting = deletingId === att.id;
+            const extraction = extractions?.find((e) => e.attachment_id === att.id);
 
             return (
               <div
@@ -144,9 +145,12 @@ export default function AttachmentGallery({ attachments, loading, error, extract
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{att.file_name}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {kindLabel[kind]} · {formatFileSize(att.file_size)}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[10px] text-muted-foreground">
+                      {kindLabel[kind]} · {formatFileSize(att.file_size)}
+                    </p>
+                    {extraction && <ExtractionStatusBadge status={extraction.status} />}
+                  </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   {kind === "image" && (
