@@ -99,7 +99,8 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
             attachments={attachments}
             loading={loading}
             error={error}
-            onDeleted={refetch}
+            extractions={extractions}
+            onDeleted={() => { refetch(); refetchExtractions(); }}
           />
         </div>
       </SheetContent>
