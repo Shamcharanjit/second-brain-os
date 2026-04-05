@@ -5,6 +5,7 @@
 
 import { Capture } from "@/types/brain";
 import { useCaptureAttachmentDetails } from "@/hooks/useCaptureAttachments";
+import { useCaptureExtractions } from "@/hooks/useCaptureExtractions";
 import AttachmentGallery from "@/components/capture/AttachmentGallery";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,9 @@ interface Props {
 
 export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Props) {
   const { attachments, loading, error, refetch } = useCaptureAttachmentDetails(
+    open && capture ? capture.id : null
+  );
+  const { extractions, refetch: refetchExtractions } = useCaptureExtractions(
     open && capture ? capture.id : null
   );
 
@@ -95,7 +99,8 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
             attachments={attachments}
             loading={loading}
             error={error}
-            onDeleted={refetch}
+            extractions={extractions}
+            onDeleted={() => { refetch(); refetchExtractions(); }}
           />
         </div>
       </SheetContent>

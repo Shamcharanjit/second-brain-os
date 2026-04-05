@@ -9,6 +9,7 @@ import { CaptureAttachment } from "@/lib/uploads";
 import { getSignedUrl } from "@/lib/storage";
 import { formatFileSize, getAttachmentKind } from "@/lib/format-file";
 import { useDeleteCaptureAttachment } from "@/hooks/useDeleteCaptureAttachment";
+import type { ExtractionRow } from "@/hooks/useCaptureExtractions";
 import { toast } from "sonner";
 import {
   Image as ImageIcon,
@@ -41,6 +42,7 @@ interface Props {
   attachments: CaptureAttachment[];
   loading?: boolean;
   error?: string | null;
+  extractions?: ExtractionRow[];
   onDeleted?: () => void;
 }
 
@@ -58,7 +60,7 @@ const kindLabel = {
   other: "File",
 };
 
-export default function AttachmentGallery({ attachments, loading, error, onDeleted }: Props) {
+export default function AttachmentGallery({ attachments, loading, error, extractions, onDeleted }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -131,6 +133,7 @@ export default function AttachmentGallery({ attachments, loading, error, onDelet
             const Icon = kindIcon[kind];
             const isLoading = loadingId === att.id;
             const isDeleting = deletingId === att.id;
+            const extraction = extractions?.find((e) => e.attachment_id === att.id);
 
             return (
               <div
@@ -142,9 +145,12 @@ export default function AttachmentGallery({ attachments, loading, error, onDelet
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{att.file_name}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {kindLabel[kind]} · {formatFileSize(att.file_size)}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[10px] text-muted-foreground">
+                      {kindLabel[kind]} · {formatFileSize(att.file_size)}
+                    </p>
+                    {extraction && <ExtractionStatusBadge status={extraction.status} />}
+                  </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   {kind === "image" && (
@@ -274,4 +280,18 @@ function InlineAudioPlayer({ att, disabled }: { att: CaptureAttachment; disabled
       Play
     </Button>
   );
+}
+
+/** Tiny extraction status badge */
+function ExtractionStatusBadge({ status }: { status: string }) {
+  const config: Record<string, { label: string; className: string }> = {
+    pending: { label: "Pending analysis", className: "text-muted-foreground" },
+    processing: { label: "Analyzing…", className: "text-primary animate-pulse" },
+    completed: { label: "✓ Analyzed", className: "text-[hsl(var(--brain-teal))]" },
+    failed: { label: "Analysis failed", className: "text-destructive" },
+    unsupported: { label: "", className: "" },
+  };
+  const c = config[status] ?? config.unsupported;
+  if (!c.label) return null;
+  return <span className={`text-[9px] font-medium ${c.className}`}>{c.label}</span>;
 }

@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      capture_attachment_extractions: {
+        Row: {
+          attachment_id: string
+          capture_id: string
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          extracted_text: string | null
+          id: string
+          kind: string
+          model: string | null
+          provider: string | null
+          started_at: string | null
+          status: string
+          structured_json: Json | null
+          summary: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attachment_id: string
+          capture_id: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          extracted_text?: string | null
+          id?: string
+          kind: string
+          model?: string | null
+          provider?: string | null
+          started_at?: string | null
+          status?: string
+          structured_json?: Json | null
+          summary?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attachment_id?: string
+          capture_id?: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          extracted_text?: string | null
+          id?: string
+          kind?: string
+          model?: string | null
+          provider?: string | null
+          started_at?: string | null
+          status?: string
+          structured_json?: Json | null
+          summary?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capture_attachment_extractions_attachment_id_fkey"
+            columns: ["attachment_id"]
+            isOneToOne: false
+            referencedRelation: "capture_attachments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capture_attachment_extractions_capture_id_fkey"
+            columns: ["capture_id"]
+            isOneToOne: false
+            referencedRelation: "user_captures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       capture_attachments: {
         Row: {
           bucket: string
