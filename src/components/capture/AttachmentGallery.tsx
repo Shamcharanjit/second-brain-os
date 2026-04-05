@@ -10,6 +10,7 @@ import { getSignedUrl } from "@/lib/storage";
 import { formatFileSize, getAttachmentKind } from "@/lib/format-file";
 import { useDeleteCaptureAttachment } from "@/hooks/useDeleteCaptureAttachment";
 import type { ExtractionRow } from "@/hooks/useCaptureExtractions";
+import ExtractionResultPanel from "@/components/capture/ExtractionResultPanel";
 import { toast } from "sonner";
 import {
   Image as ImageIcon,
