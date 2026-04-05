@@ -30,6 +30,9 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
   const { attachments, loading, error, refetch } = useCaptureAttachmentDetails(
     open && capture ? capture.id : null
   );
+  const { extractions, refetch: refetchExtractions } = useCaptureExtractions(
+    open && capture ? capture.id : null
+  );
 
   if (!capture) return null;
 
