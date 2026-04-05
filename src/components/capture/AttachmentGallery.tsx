@@ -138,69 +138,77 @@ export default function AttachmentGallery({ attachments, captureId, loading, err
             const isDeleting = deletingId === att.id;
             const extraction = extractions?.find((e) => e.attachment_id === att.id);
 
-            return (
-              <div
-                key={att.id}
-                className="flex items-center gap-3 rounded-lg border bg-secondary/40 px-3 py-2.5 group"
-              >
-                <div className="flex items-center justify-center h-8 w-8 rounded-md bg-primary/10 shrink-0">
-                  <Icon className="h-4 w-4 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{att.file_name}</p>
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-[10px] text-muted-foreground">
-                      {kindLabel[kind]} · {formatFileSize(att.file_size)}
-                    </p>
-                    {extraction && <ExtractionStatusBadge status={extraction.status} />}
+              return (
+                <div key={att.id} className="space-y-0">
+                  <div
+                    className="flex items-center gap-3 rounded-lg border bg-secondary/40 px-3 py-2.5 group"
+                  >
+                    <div className="flex items-center justify-center h-8 w-8 rounded-md bg-primary/10 shrink-0">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{att.file_name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[10px] text-muted-foreground">
+                          {kindLabel[kind]} · {formatFileSize(att.file_size)}
+                        </p>
+                        {extraction && <ExtractionStatusBadge status={extraction.status} />}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {kind === "image" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0"
+                          disabled={isLoading || isDeleting}
+                          onClick={() => openSignedUrl(att, "preview")}
+                          title="Preview"
+                        >
+                          {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
+                        </Button>
+                      )}
+                      {kind === "audio" && att.mime_type && (
+                        <InlineAudioPlayer att={att} disabled={isDeleting} />
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        disabled={isLoading || isDeleting}
+                        onClick={() => openSignedUrl(att, "open")}
+                        title="Open / Download"
+                      >
+                        {isLoading && kind !== "image" ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Download className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                        disabled={isDeleting}
+                        onClick={() => setConfirmTarget(att)}
+                        title="Remove attachment"
+                      >
+                        {isDeleting ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {kind === "image" && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0"
-                      disabled={isLoading || isDeleting}
-                      onClick={() => openSignedUrl(att, "preview")}
-                      title="Preview"
-                    >
-                      {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
-                    </Button>
+                  {extraction && captureId && (
+                    <ExtractionResultPanel
+                      extraction={extraction}
+                      captureId={captureId}
+                      onRetryTriggered={onRetryTriggered}
+                    />
                   )}
-                  {kind === "audio" && att.mime_type && (
-                    <InlineAudioPlayer att={att} disabled={isDeleting} />
-                  )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0"
-                    disabled={isLoading || isDeleting}
-                    onClick={() => openSignedUrl(att, "open")}
-                    title="Open / Download"
-                  >
-                    {isLoading && kind !== "image" ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Download className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                    disabled={isDeleting}
-                    onClick={() => setConfirmTarget(att)}
-                    title="Remove attachment"
-                  >
-                    {isDeleting ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
                 </div>
-              </div>
             );
           })}
         </div>
