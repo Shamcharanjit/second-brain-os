@@ -5,6 +5,7 @@
 
 import { Capture } from "@/types/brain";
 import { useCaptureAttachmentDetails } from "@/hooks/useCaptureAttachments";
+import { useCaptureExtractions } from "@/hooks/useCaptureExtractions";
 import AttachmentGallery from "@/components/capture/AttachmentGallery";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
