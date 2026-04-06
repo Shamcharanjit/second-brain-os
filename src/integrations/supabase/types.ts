@@ -396,6 +396,8 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          invite_sent_at: string | null
+          invite_token: string | null
           invited: boolean
           name: string
           notes: string | null
@@ -407,6 +409,8 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          invite_sent_at?: string | null
+          invite_token?: string | null
           invited?: boolean
           name: string
           notes?: string | null
@@ -418,6 +422,8 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          invite_sent_at?: string | null
+          invite_token?: string | null
           invited?: boolean
           name?: string
           notes?: string | null
