@@ -57,6 +57,7 @@ const App = () => (
                     {/* Public pages — no app chrome */}
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/waitlist" element={<WaitlistPage />} />
+                    <Route path="/invite" element={<InvitePage />} />
                     <Route path="/terms" element={<TermsPage />} />
                     <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />
