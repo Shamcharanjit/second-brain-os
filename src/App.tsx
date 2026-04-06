@@ -57,6 +57,7 @@ const App = () => (
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/waitlist" element={<WaitlistPage />} />
                     <Route path="/terms" element={<TermsPage />} />
+                    <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />
 
                     {/* App routes — wrapped in sidebar layout */}

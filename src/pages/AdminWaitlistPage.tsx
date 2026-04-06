@@ -54,18 +54,6 @@ export default function AdminWaitlistPage() {
 
   useEffect(() => { if (cloudAvailable && user) fetchEntries(); }, [cloudAvailable, user]);
 
-  // Gate: must be authenticated
-  if (!cloudAvailable || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="text-center space-y-4">
-          <p className="text-muted-foreground">Sign in to access this page.</p>
-          <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>Sign In</Button>
-        </div>
-      </div>
-    );
-  }
-
   const filtered = useMemo(() => {
     let result = entries;
     if (search) {
@@ -79,6 +67,18 @@ export default function AdminWaitlistPage() {
     if (filterStatus !== "all") result = result.filter((e) => e.status === filterStatus);
     return result;
   }, [entries, search, filterInvited, filterStatus]);
+
+  // Gate: must be authenticated
+  if (!cloudAvailable || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="text-center space-y-4">
+          <p className="text-muted-foreground">Sign in to access this page.</p>
+          <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>Sign In</Button>
+        </div>
+      </div>
+    );
+  }
 
   const toggleInvited = async (entry: WaitlistEntry) => {
     const newVal = !entry.invited;
