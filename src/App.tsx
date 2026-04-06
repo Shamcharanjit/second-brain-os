@@ -10,6 +10,7 @@ import { MemoryProvider } from "@/context/MemoryContext";
 import { ReviewMetaProvider } from "@/context/ReviewMetaContext";
 import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import AppLayout from "@/components/AppLayout";
+import LandingPage from "@/pages/LandingPage";
 import Dashboard from "@/pages/Dashboard";
 import InboxPage from "@/pages/InboxPage";
 import TodayPage from "@/pages/TodayPage";
@@ -39,24 +40,14 @@ const App = () => (
             <MemoryProvider>
               <ReviewMetaProvider>
                 <BrowserRouter>
-                  <AppLayout>
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/inbox" element={<InboxPage />} />
-                      <Route path="/today" element={<TodayPage />} />
-                      <Route path="/projects" element={<ProjectsPage />} />
-                      <Route path="/ai-review" element={<AIReviewPage />} />
-                      <Route path="/voice" element={<VoiceCapturePage />} />
-                      <Route path="/capture-gateway" element={<CaptureGatewayPage />} />
-                      <Route path="/review" element={<ReviewRitualsPage />} />
-                      <Route path="/memory" element={<MemoryPage />} />
-                      <Route path="/ideas" element={<IdeasVaultPage />} />
-                      <Route path="/auth" element={<AuthPage />} />
-                      <Route path="/settings" element={<SettingsPage />} />
-                      <Route path="/upgrade" element={<UpgradePage />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </AppLayout>
+                  <Routes>
+                    {/* Public landing page — no app shell */}
+                    <Route path="/" element={<LandingPage />} />
+
+                    {/* App routes — wrapped in AppLayout */}
+                    <Route element={<AppLayout><Routes><Route path="/app" element={<Dashboard />} /><Route path="/inbox" element={<InboxPage />} /><Route path="/today" element={<TodayPage />} /><Route path="/projects" element={<ProjectsPage />} /><Route path="/ai-review" element={<AIReviewPage />} /><Route path="/voice" element={<VoiceCapturePage />} /><Route path="/capture-gateway" element={<CaptureGatewayPage />} /><Route path="/review" element={<ReviewRitualsPage />} /><Route path="/memory" element={<MemoryPage />} /><Route path="/ideas" element={<IdeasVaultPage />} /><Route path="/auth" element={<AuthPage />} /><Route path="/settings" element={<SettingsPage />} /><Route path="/upgrade" element={<UpgradePage />} /><Route path="*" element={<NotFound />} /></Routes></AppLayout>}>
+                    </Route>
+                  </Routes>
                 </BrowserRouter>
               </ReviewMetaProvider>
             </MemoryProvider>
