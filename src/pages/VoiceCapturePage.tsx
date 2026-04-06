@@ -115,18 +115,18 @@ export default function VoiceCapturePage() {
 
   const handleSave = useCallback(() => {
     const trimmed = transcript.trim();
-    if (!trimmed) return;
+    if (!trimmed || phase !== "editing") return;
     setPhase("processing");
     setTimeout(() => {
       addCapture(trimmed, "voice");
       setPhase("done");
-      toast.success("Voice capture saved", { description: "AI organized your thought." });
+      toast.success("Voice capture saved.", { description: "Organized and ready in your Inbox." });
       setTimeout(() => {
         setPhase("idle");
         setTranscript("");
       }, drivingMode ? 1500 : 1000);
     }, 1200);
-  }, [transcript, addCapture, drivingMode]);
+  }, [transcript, phase, addCapture, drivingMode]);
 
   const handleDiscard = () => {
     setPhase("idle");
