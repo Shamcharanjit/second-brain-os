@@ -1,12 +1,13 @@
 /**
  * Expandable panel showing extraction results (summary, extracted text)
- * for a single attachment. Includes retry/re-run actions and quality indicators.
+ * for a single attachment. Includes retry/re-run actions with cooldown and quality indicators.
  */
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import type { ExtractionRow } from "@/hooks/useCaptureExtractions";
 import { triggerAttachmentExtraction } from "@/lib/extraction";
 import { evaluateExtractionQuality, QUALITY_BAND_CONFIG } from "@/lib/attachment-extraction-quality";
+import { EXTRACTION_RETRY_COOLDOWN_MS } from "@/lib/attachment-limits";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,28 +46,51 @@ export default function ExtractionResultPanel({ extraction, captureId, onRetryTr
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [cooldownActive, setCooldownActive] = useState(false);
+  const cooldownTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  const handleRetry = async () => {
-    if (!user?.id) return;
+  // Clean up cooldown timer
+  useEffect(() => {
+    return () => {
+      if (cooldownTimer.current) clearTimeout(cooldownTimer.current);
+    };
+  }, []);
+
+  const isProcessing = extraction.status === "pending" || extraction.status === "processing";
+
+  const handleRetry = useCallback(async () => {
+    if (!user?.id || retrying || cooldownActive || isProcessing) return;
+
     setRetrying(true);
     try {
       await triggerAttachmentExtraction(extraction.attachment_id, captureId, user.id);
       toast.success("Re-analysis triggered");
       onRetryTriggered?.();
+
+      // Start cooldown
+      setCooldownActive(true);
+      cooldownTimer.current = setTimeout(() => {
+        setCooldownActive(false);
+      }, EXTRACTION_RETRY_COOLDOWN_MS);
     } catch {
       toast.error("Failed to trigger re-analysis");
     } finally {
       setRetrying(false);
     }
-  };
+  }, [user?.id, retrying, cooldownActive, isProcessing, extraction.attachment_id, captureId, onRetryTriggered]);
+
+  const retryDisabled = retrying || cooldownActive || isProcessing;
+  const retryTitle = isProcessing
+    ? "This attachment is already being analyzed."
+    : cooldownActive
+    ? "Please wait a few seconds before retrying analysis."
+    : "Re-run analysis";
 
   // Unsupported — nothing to show
   if (extraction.status === "unsupported") return null;
 
-  // Pending / processing — minimal
-  if (extraction.status === "pending" || extraction.status === "processing") {
-    return null; // badge already shows status
-  }
+  // Pending / processing — nothing (badge handles it)
+  if (isProcessing) return null;
 
   // Failed state
   if (extraction.status === "failed") {
@@ -85,11 +109,12 @@ export default function ExtractionResultPanel({ extraction, captureId, onRetryTr
           size="sm"
           variant="outline"
           className="h-6 text-[10px] gap-1 px-2"
-          disabled={retrying}
+          disabled={retryDisabled}
+          title={retryTitle}
           onClick={handleRetry}
         >
           {retrying ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-          Retry
+          {cooldownActive ? "Wait…" : "Retry"}
         </Button>
       </div>
     );
@@ -103,7 +128,7 @@ export default function ExtractionResultPanel({ extraction, captureId, onRetryTr
   const hasSummary = !!extraction.summary;
   const hasText = !!extraction.extracted_text;
 
-  // Completed but empty/weak — show quality message instead of hiding
+  // Completed but empty/weak
   if (quality.band === "empty") {
     return (
       <div className="mt-1.5 rounded-md border border-border/50 bg-secondary/40 px-3 py-2 space-y-1.5">
@@ -118,11 +143,12 @@ export default function ExtractionResultPanel({ extraction, captureId, onRetryTr
           size="sm"
           variant="outline"
           className="h-6 text-[10px] gap-1 px-2"
-          disabled={retrying}
+          disabled={retryDisabled}
+          title={retryTitle}
           onClick={handleRetry}
         >
           {retrying ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-          Re-run
+          {cooldownActive ? "Wait…" : "Re-run"}
         </Button>
       </div>
     );
@@ -151,8 +177,8 @@ export default function ExtractionResultPanel({ extraction, captureId, onRetryTr
           variant="ghost"
           size="sm"
           className="h-5 w-5 p-0 text-muted-foreground hover:text-primary"
-          title="Re-run analysis"
-          disabled={retrying}
+          title={retryTitle}
+          disabled={retryDisabled}
           onClick={handleRetry}
         >
           {retrying ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <RefreshCw className="h-2.5 w-2.5" />}
@@ -160,7 +186,6 @@ export default function ExtractionResultPanel({ extraction, captureId, onRetryTr
       </div>
 
       <CollapsibleContent className="mt-1.5 space-y-2">
-        {/* Low quality warning */}
         {quality.band === "low" && (
           <p className="text-[10px] text-muted-foreground italic px-1">
             {quality.reason}
