@@ -74,12 +74,29 @@ const kindLabel = {
 };
 
 export default function AttachmentGallery({ attachments, captureId, loading, error, extractions, onDeleted, onRetryTriggered }: Props) {
+  const { user } = useAuth();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<CaptureAttachment | null>(null);
+  const [triggeringId, setTriggeringId] = useState<string | null>(null);
 
   const { deletingId, deleteAttachment } = useDeleteCaptureAttachment();
+
+  /** Trigger extraction for an attachment that has no extraction row. */
+  const handleTriggerAnalysis = useCallback(async (att: CaptureAttachment) => {
+    if (!user?.id || !captureId) return;
+    setTriggeringId(att.id);
+    try {
+      await triggerAttachmentExtraction(att.id, captureId, user.id);
+      toast.success("Analysis triggered");
+      onRetryTriggered?.();
+    } catch {
+      toast.error("Failed to trigger analysis");
+    } finally {
+      setTriggeringId(null);
+    }
+  }, [user?.id, captureId, onRetryTriggered]);
 
   const openSignedUrl = useCallback(async (att: CaptureAttachment, action: "preview" | "open") => {
     setLoadingId(att.id);
