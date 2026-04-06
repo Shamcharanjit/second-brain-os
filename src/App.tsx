@@ -28,6 +28,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import UpgradePage from "@/pages/UpgradePage";
 import WaitlistPage from "@/pages/WaitlistPage";
 import AdminWaitlistPage from "@/pages/AdminWaitlistPage";
+import InvitePage from "@/pages/InvitePage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
                     {/* Public pages — no app chrome */}
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/waitlist" element={<WaitlistPage />} />
+                    <Route path="/invite" element={<InvitePage />} />
                     <Route path="/terms" element={<TermsPage />} />
                     <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />

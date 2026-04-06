@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Brain, ArrowLeft, Download, RefreshCw, CheckCircle2, Clock,
-  Search, Filter, Loader2, X, Users, UserCheck, ChevronDown,
+  Search, Filter, Loader2, X, Users, UserCheck, Copy, Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -20,10 +20,22 @@ type WaitlistEntry = {
   notes: string | null;
   status: string;
   invited: boolean;
+  invite_token: string | null;
+  invite_sent_at: string | null;
   created_at: string;
 };
 
 const STATUS_OPTIONS = ["pending", "invited", "reviewed"] as const;
+
+function generateToken(): string {
+  const arr = new Uint8Array(24);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function getInviteLink(token: string): string {
+  return `${window.location.origin}/invite?token=${token}`;
+}
 
 export default function AdminWaitlistPage() {
   const { user, cloudAvailable } = useAuth();
@@ -68,7 +80,6 @@ export default function AdminWaitlistPage() {
     return result;
   }, [entries, search, filterInvited, filterStatus]);
 
-  // Gate: must be authenticated
   if (!cloudAvailable || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -82,16 +93,46 @@ export default function AdminWaitlistPage() {
 
   const toggleInvited = async (entry: WaitlistEntry) => {
     const newVal = !entry.invited;
+    const token = newVal && !entry.invite_token ? generateToken() : entry.invite_token;
+    const updatePayload: any = {
+      invited: newVal,
+      status: newVal ? "invited" : "pending",
+      ...(newVal && !entry.invite_token ? { invite_token: token } : {}),
+    };
+
     const { error } = await supabase
       .from("waitlist_signups" as any)
-      .update({ invited: newVal, status: newVal ? "invited" : "pending" } as any)
+      .update(updatePayload)
       .eq("id", entry.id);
 
     if (error) { toast.error("Update failed"); return; }
     setEntries((prev) =>
-      prev.map((e) => e.id === entry.id ? { ...e, invited: newVal, status: newVal ? "invited" : "pending" } : e)
+      prev.map((e) =>
+        e.id === entry.id
+          ? { ...e, invited: newVal, status: newVal ? "invited" : "pending", invite_token: newVal ? (token ?? e.invite_token) : e.invite_token }
+          : e
+      )
     );
-    toast.success(newVal ? "Marked as invited" : "Invite removed");
+    toast.success(newVal ? "Marked as invited — token generated" : "Invite removed");
+  };
+
+  const copyInviteLink = (entry: WaitlistEntry) => {
+    if (!entry.invite_token) return;
+    navigator.clipboard.writeText(getInviteLink(entry.invite_token));
+    toast.success("Invite link copied!");
+  };
+
+  const markInviteSent = async (entry: WaitlistEntry) => {
+    const { error } = await supabase
+      .from("waitlist_signups" as any)
+      .update({ invite_sent_at: new Date().toISOString() } as any)
+      .eq("id", entry.id);
+
+    if (error) { toast.error("Update failed"); return; }
+    setEntries((prev) =>
+      prev.map((e) => e.id === entry.id ? { ...e, invite_sent_at: new Date().toISOString() } : e)
+    );
+    toast.success("Marked as sent");
   };
 
   const updateStatus = async (entry: WaitlistEntry, status: string) => {
@@ -121,7 +162,7 @@ export default function AdminWaitlistPage() {
   };
 
   const exportCSV = () => {
-    const headers = ["name", "email", "use_case", "notes", "status", "invited", "created_at"];
+    const headers = ["name", "email", "use_case", "notes", "status", "invited", "invite_token", "invite_link", "invite_sent_at", "created_at"];
     const escape = (v: string | null | boolean) => {
       if (v === null || v === undefined) return "";
       const s = String(v);
@@ -130,7 +171,10 @@ export default function AdminWaitlistPage() {
         : s;
     };
     const rows = filtered.map((e) =>
-      headers.map((h) => escape((e as any)[h])).join(",")
+      headers.map((h) => {
+        if (h === "invite_link") return escape(e.invite_token ? getInviteLink(e.invite_token) : null);
+        return escape((e as any)[h]);
+      }).join(",")
     );
     const csv = [headers.join(","), ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -148,7 +192,6 @@ export default function AdminWaitlistPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="mx-auto max-w-6xl px-5 md:px-8 flex items-center justify-between h-14">
           <div className="flex items-center gap-3">
@@ -255,6 +298,7 @@ export default function AdminWaitlistPage() {
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Notes</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Status</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invited</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invite Link</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Signed Up</th>
                   </tr>
                 </thead>
@@ -324,6 +368,32 @@ export default function AdminWaitlistPage() {
                           {entry.invited ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
                           {entry.invited ? "Yes" : "No"}
                         </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        {entry.invited && entry.invite_token ? (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => copyInviteLink(entry)}
+                              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border bg-card hover:border-primary/30 transition-colors text-muted-foreground hover:text-foreground"
+                              title={getInviteLink(entry.invite_token)}
+                            >
+                              <Copy className="h-3 w-3" /> Copy
+                            </button>
+                            {!entry.invite_sent_at ? (
+                              <button
+                                onClick={() => markInviteSent(entry)}
+                                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border bg-card hover:border-primary/30 transition-colors text-muted-foreground hover:text-foreground"
+                                title="Mark invite as sent"
+                              >
+                                <Send className="h-3 w-3" />
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-primary/70">Sent</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/40">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                         {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
