@@ -160,6 +160,7 @@ export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail, 
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{ai.title}</p>
           <p className="text-[10px] text-muted-foreground truncate">{ai.summary}</p>
+          {searchMatch && <SearchMatchSnippet match={searchMatch} />}
         </div>
         {attachmentCount > 0 && (
           <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
