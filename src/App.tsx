@@ -22,6 +22,8 @@ import CaptureGatewayPage from "@/pages/CaptureGatewayPage";
 import ReviewRitualsPage from "@/pages/ReviewRitualsPage";
 import MemoryPage from "@/pages/MemoryPage";
 import AuthPage from "@/pages/AuthPage";
+import TermsPage from "@/pages/TermsPage";
+import PrivacyPage from "@/pages/PrivacyPage";
 import SettingsPage from "@/pages/SettingsPage";
 import UpgradePage from "@/pages/UpgradePage";
 import NotFound from "@/pages/NotFound";
@@ -49,8 +51,10 @@ const App = () => (
               <ReviewMetaProvider>
                 <BrowserRouter>
                   <Routes>
-                    {/* Public landing page — no app chrome */}
+                    {/* Public pages — no app chrome */}
                     <Route path="/" element={<LandingPage />} />
+                    <Route path="/terms" element={<TermsPage />} />
+                    <Route path="/privacy" element={<PrivacyPage />} />
 
                     {/* App routes — wrapped in sidebar layout */}
                     <Route element={<AppShell />}>
