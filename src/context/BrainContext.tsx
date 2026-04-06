@@ -24,6 +24,8 @@ interface BrainContextType {
   editCaptureAI: (id: string, updates: Partial<AIProcessedData>) => void;
   updateIdeaStatus: (id: string, status: IdeaStatus) => void;
   convertIdeaToProject: (id: string) => void;
+  /** Replace AI data on an existing capture (used by re-analyze with enrichment) */
+  replaceCaptureAI: (id: string, aiData: AIProcessedData, reviewStatus: ReviewStatus) => void;
 }
 
 const BrainContext = createContext<BrainContextType | null>(null);
@@ -213,12 +215,20 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const replaceCaptureAI = useCallback((id: string, aiData: AIProcessedData, reviewStatus: ReviewStatus) => {
+    setCaptures((prev) => prev.map((c) => {
+      if (c.id !== id) return c;
+      const status = reviewStatus === "needs_review" ? c.status : autoRouteStatus(aiData.destination_suggestion);
+      return { ...c, ai_data: aiData, review_status: reviewStatus, status, processed: true };
+    }));
+  }, []);
+
   return (
     <BrainContext.Provider value={{
       captures, addCapture, addCaptureWithAI, addCaptureFromAction, updateCaptureStatus, updateReviewStatus,
       approveCapture, editAndApproveCapture, archiveCapture, routeCapture,
       completeCapture, uncompleteCapture, togglePinToday, editCaptureAI,
-      updateIdeaStatus, convertIdeaToProject,
+      updateIdeaStatus, convertIdeaToProject, replaceCaptureAI,
     }}>
       {children}
     </BrainContext.Provider>
