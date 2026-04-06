@@ -95,6 +95,14 @@ export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  /* Force dark mode on the landing page */
+  useEffect(() => {
+    const html = document.documentElement;
+    const hadDark = html.classList.contains("dark");
+    html.classList.add("dark");
+    return () => { if (!hadDark) html.classList.remove("dark"); };
+  }, []);
+
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handler, { passive: true });
@@ -124,8 +132,8 @@ export default function LandingPage() {
             <button onClick={() => scrollTo("why")} className="hover:text-foreground transition-colors">Why InsightHalo</button>
           </nav>
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/app")} className="text-sm hover:bg-muted">Open App</Button>
-            <Button size="sm" onClick={() => navigate("/app")} className="gap-1.5 text-sm">Get Started <ArrowRight className="h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/auth")} className="text-sm hover:bg-muted">Sign In</Button>
+            <Button size="sm" onClick={() => navigate("/auth")} className="gap-1.5 text-sm">Get Started <ArrowRight className="h-3.5 w-3.5" /></Button>
           </div>
           <button className="md:hidden p-1.5" onClick={() => setMenuOpen(!menuOpen)}>
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -137,8 +145,8 @@ export default function LandingPage() {
             <button onClick={() => scrollTo("how")} className="block text-sm text-muted-foreground hover:text-foreground py-1.5 w-full text-left">How It Works</button>
             <button onClick={() => scrollTo("why")} className="block text-sm text-muted-foreground hover:text-foreground py-1.5 w-full text-left">Why InsightHalo</button>
             <div className="flex gap-2 pt-2">
-              <SecondaryCTA onClick={() => navigate("/app")} className="flex-1 text-sm h-9 px-3">Open App</SecondaryCTA>
-              <Button size="sm" onClick={() => navigate("/app")} className="flex-1 text-sm">Get Started</Button>
+              <SecondaryCTA onClick={() => navigate("/auth")} className="flex-1 text-sm h-9 px-3">Sign In</SecondaryCTA>
+              <Button size="sm" onClick={() => navigate("/auth")} className="flex-1 text-sm">Get Started</Button>
             </div>
           </div>
         )}
@@ -174,7 +182,7 @@ export default function LandingPage() {
 
             <Reveal delay={300}>
               <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Button size="lg" onClick={() => navigate("/app")} className="gap-2 text-base px-7 h-11 shadow-lg shadow-primary/20 w-full sm:w-auto">
+                <Button size="lg" onClick={() => navigate("/auth")} className="gap-2 text-base px-7 h-11 shadow-lg shadow-primary/20 w-full sm:w-auto">
                   Get Started Free <ArrowRight className="h-4 w-4" />
                 </Button>
                 <SecondaryCTA onClick={() => scrollTo("how")}>See How It Works</SecondaryCTA>
@@ -426,7 +434,7 @@ export default function LandingPage() {
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">Start capturing before good ideas disappear.</h2>
                 <p className="text-base md:text-lg text-muted-foreground">Build your second brain with less friction. No credit card required.</p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
-                  <Button size="lg" onClick={() => navigate("/app")} className="gap-2 text-base px-7 h-11 shadow-lg shadow-primary/20 w-full sm:w-auto">
+                  <Button size="lg" onClick={() => navigate("/auth")} className="gap-2 text-base px-7 h-11 shadow-lg shadow-primary/20 w-full sm:w-auto">
                     Get Started Free <ArrowRight className="h-4 w-4" />
                   </Button>
                   <SecondaryCTA onClick={() => navigate("/app")}>Open App</SecondaryCTA>
