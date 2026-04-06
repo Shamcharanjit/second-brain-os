@@ -139,7 +139,9 @@ export default function AuthPage() {
           <div className="space-y-2">
             <Input
               type="email" placeholder="Email" value={email}
-              onChange={(e) => { setEmail(e.target.value); setBlocked(false); }} required
+              onChange={(e) => { setEmail(e.target.value); setBlocked(false); if (inviteLocked) setInviteLocked(false); }}
+              required readOnly={inviteLocked}
+              className={inviteLocked ? "bg-muted cursor-not-allowed" : ""}
             />
             <Input
               type="password" placeholder="Password" value={password}
