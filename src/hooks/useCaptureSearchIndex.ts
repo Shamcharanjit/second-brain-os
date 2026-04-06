@@ -39,7 +39,7 @@ export function useCaptureSearchIndex(
 ): CaptureSearchIndex {
   const { user } = useAuth();
   const [attachments, setAttachments] = useState<CaptureAttachment[]>([]);
-  const [extractions, setExtractions] = useState<ExtractionRow[]>([]);
+  const [extractions, setExtractions] = useState<SearchExtractionRow[]>([]);
   const [enrichedReady, setEnrichedReady] = useState(false);
 
   const hasQuery = activeQuery.trim().length > 0;
@@ -71,7 +71,7 @@ export function useCaptureSearchIndex(
       if (cancelled) return;
 
       setAttachments((attRes.data ?? []) as CaptureAttachment[]);
-      setExtractions((extRes.data ?? []) as ExtractionRow[]);
+      setExtractions((extRes.data ?? []) as SearchExtractionRow[]);
       setEnrichedReady(true);
     })();
 
@@ -89,7 +89,7 @@ export function useCaptureSearchIndex(
       attByCaptureId.set(att.capture_id, list);
     }
 
-    const extByCaptureId = new Map<string, ExtractionRow[]>();
+    const extByCaptureId = new Map<string, SearchExtractionRow[]>();
     for (const ext of extractions) {
       const list = extByCaptureId.get(ext.capture_id) ?? [];
       list.push(ext);
