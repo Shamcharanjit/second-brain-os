@@ -1,6 +1,6 @@
 /**
  * InsightHalo Logo — Brain mark + wordmark combination.
- * Supports multiple variants for different contexts.
+ * Uses the official Lucide Brain icon as the single source of truth.
  */
 
 import InsightHaloIcon from "./InsightHaloIcon";
@@ -46,8 +46,7 @@ export default function InsightHaloLogo({
             "font-semibold tracking-tight select-none",
             textSizeMap[textSize],
             variant === "header" && "text-sidebar-accent-foreground",
-            variant === "splash" && "bg-gradient-to-r from-[hsl(168,55%,45%)] to-[hsl(187,80%,57%)] bg-clip-text text-transparent",
-            variant === "auth" && "bg-gradient-to-r from-[hsl(168,55%,45%)] to-[hsl(187,80%,57%)] bg-clip-text text-transparent",
+            (variant === "splash" || variant === "auth") && "text-primary",
             (variant === "default" || !variant) && "text-foreground"
           )}
         >

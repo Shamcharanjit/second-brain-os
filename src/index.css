@@ -62,11 +62,6 @@
   50% { transform: scale(1.35); opacity: 0.8; }
 }
 
-@keyframes brain-fill-pulse {
-  0%, 100% { fill: url(#brain-grad); }
-  50% { fill: url(#brain-grad-glow); }
-}
-
 @layer base {
   * {
     @apply border-border;
