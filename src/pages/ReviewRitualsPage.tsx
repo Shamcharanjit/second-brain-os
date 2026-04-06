@@ -263,7 +263,7 @@ export default function ReviewRitualsPage() {
           )}
           <div className="flex items-center justify-center gap-2 pt-1">
             <Button variant="outline" size="sm" onClick={() => setDailyComplete(false)}>Review Again</Button>
-            <Button size="sm" onClick={() => navigate("/")}>Back to Dashboard</Button>
+            <Button size="sm" onClick={() => navigate("/app")}>Back to Dashboard</Button>
           </div>
         </div>
       )}
@@ -333,7 +333,7 @@ export default function ReviewRitualsPage() {
           <p className="text-sm text-muted-foreground">You've reset and planned. Your second brain is in sync.</p>
           <div className="flex items-center justify-center gap-2 pt-1">
             <Button variant="outline" size="sm" onClick={() => { setWeeklyComplete(false); setCompletedSteps(new Set()); setWeeklyStep("inbox"); }}>Review Again</Button>
-            <Button size="sm" onClick={() => navigate("/")}>Back to Dashboard</Button>
+            <Button size="sm" onClick={() => navigate("/app")}>Back to Dashboard</Button>
           </div>
         </div>
       )}
