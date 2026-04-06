@@ -4,7 +4,8 @@ import { useBrain } from "@/context/BrainContext";
 import { useCaptureAttachmentCounts } from "@/hooks/useCaptureAttachments";
 import { useCaptureSearchIndex } from "@/hooks/useCaptureSearchIndex";
 import { CaptureCategory, Capture } from "@/types/brain";
-import { useState, useMemo } from "react";
+import type { CaptureSearchMatchResult } from "@/lib/capture-search-match";
+import { useState, useMemo, useCallback } from "react";
 import {
   Inbox, AlertTriangle, Lightbulb, Clock, Search,
   ArrowUpDown, CheckCircle2, BrainCircuit, Sparkles,
@@ -48,6 +49,7 @@ export default function InboxPage() {
 
   // Enriched search index — fetches extraction data only when search is active
   const searchIndex = useCaptureSearchIndex(captures, search);
+  const activeSearchQuery = search.trim();
 
   // Inbox = everything not archived
   const active = captures.filter((c) => c.status !== "archived");
@@ -176,7 +178,7 @@ export default function InboxPage() {
         ) : (
           <div className="space-y-4">
             {pendingReview.map((c) => (
-              <InboxCard key={c.id} capture={c} attachmentCount={attachmentCounts[c.id] ?? 0} onOpenDetail={setDetailCapture} />
+              <InboxCard key={c.id} capture={c} attachmentCount={attachmentCounts[c.id] ?? 0} onOpenDetail={setDetailCapture} searchMatch={activeSearchQuery ? searchIndex.getMatchInfo(c, activeSearchQuery) : undefined} />
             ))}
           </div>
         )}
@@ -192,7 +194,7 @@ export default function InboxPage() {
           </div>
           <div className="space-y-2">
             {reviewed.slice(0, 8).map((c) => (
-              <InboxCard key={c.id} capture={c} attachmentCount={attachmentCounts[c.id] ?? 0} onOpenDetail={setDetailCapture} />
+              <InboxCard key={c.id} capture={c} attachmentCount={attachmentCounts[c.id] ?? 0} onOpenDetail={setDetailCapture} searchMatch={activeSearchQuery ? searchIndex.getMatchInfo(c, activeSearchQuery) : undefined} />
             ))}
           </div>
         </section>
