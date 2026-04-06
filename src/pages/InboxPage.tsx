@@ -146,15 +146,15 @@ export default function InboxPage() {
             <button
               key={f.value}
               onClick={() => setFilter(f.value)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium border transition-all ${
                 filter === f.value
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted/50"
               }`}
             >
               {f.label}
               {f.value === "pending_review" && totalPending > 0 && (
-                <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-primary-foreground/20 px-1.5 text-[10px]">
+                <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-primary/20 px-1.5 text-[10px]">
                   {totalPending}
                 </span>
               )}
