@@ -3,6 +3,7 @@
  * Opens as a sheet/drawer from right side.
  */
 
+import { useState } from "react";
 import { Capture } from "@/types/brain";
 import { useCaptureAttachmentDetails } from "@/hooks/useCaptureAttachments";
 import { useCaptureExtractions } from "@/hooks/useCaptureExtractions";
