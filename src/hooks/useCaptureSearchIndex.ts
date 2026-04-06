@@ -25,6 +25,7 @@ interface SearchExtractionRow {
   summary: string | null;
   error_message: string | null;
   completed_at: string | null;
+  updated_at: string;
 }
 
 interface CaptureSearchIndex {
