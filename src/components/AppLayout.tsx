@@ -1,12 +1,14 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Brain, Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings, Crown } from "lucide-react";
+import { Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings, Crown } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import QuickCaptureModal from "@/components/QuickCaptureModal";
+import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
+import InsightHaloIcon from "@/components/branding/InsightHaloIcon";
 
 const NAV_LINKS = [
-  { to: "/", label: "Dashboard", icon: Brain },
+  { to: "/", label: "Dashboard", icon: () => <InsightHaloIcon size="xs" /> },
   { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/today", label: "Today", icon: CalendarDays },
   { to: "/projects", label: "Projects", icon: FolderKanban },
@@ -31,9 +33,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-60 flex-col bg-sidebar border-r border-sidebar-border">
-        <div className="flex items-center gap-2 px-5 py-5">
-          <Brain className="h-6 w-6 text-sidebar-primary" />
-          <span className="text-sm font-semibold tracking-tight text-sidebar-accent-foreground">InsightHalo</span>
+        <div className="px-5 py-5">
+          <InsightHaloLogo variant="header" />
         </div>
 
         <div className="px-3 mb-3">
@@ -90,10 +91,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile header */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="md:hidden flex items-center justify-between border-b px-4 py-3 bg-background">
-          <div className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-primary" />
-            <span className="text-sm font-semibold">InsightHalo</span>
-          </div>
+          <InsightHaloLogo variant="header" className="text-foreground" />
           <button onClick={() => setMobileOpen(!mobileOpen)} className="p-1">
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>

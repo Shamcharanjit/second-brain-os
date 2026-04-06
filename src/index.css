@@ -51,6 +51,22 @@
   }
 }
 
+/* InsightHalo branding animations */
+@keyframes brain-pulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.02); filter: brightness(1.12); }
+}
+
+@keyframes halo-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.35); opacity: 0.8; }
+}
+
+@keyframes brain-fill-pulse {
+  0%, 100% { fill: url(#brain-grad); }
+  50% { fill: url(#brain-grad-glow); }
+}
+
 @layer base {
   * {
     @apply border-border;

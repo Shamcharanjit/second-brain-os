@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { LogIn, UserPlus, Loader2, Shield, Smartphone, Cloud, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
 
 const BENEFITS = [
   { icon: Cloud, text: "Sync across all your devices" },
@@ -24,6 +25,7 @@ export default function AuthPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="w-full max-w-sm space-y-4 text-center">
+          <InsightHaloLogo variant="auth" />
           <h1 className="text-2xl font-bold tracking-tight">InsightHalo</h1>
           <p className="text-sm text-muted-foreground">
             Cloud sync is not configured. The app is running in local-only mode.
@@ -57,8 +59,9 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-2">
+        {/* Header with animated logo */}
+        <div className="text-center space-y-4">
+          <InsightHaloLogo variant="auth" />
           <h1 className="text-2xl font-bold tracking-tight">
             {mode === "login" ? "Welcome back" : "Create your account"}
           </h1>
