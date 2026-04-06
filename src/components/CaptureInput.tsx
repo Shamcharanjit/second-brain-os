@@ -80,9 +80,9 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     const failed = results.filter((r) => !r.success);
     if (failed.length === 0) return;
     if (failed.length === results.length) {
-      toast.error("File upload failed.", { description: failed[0].error });
+      toast.error("Couldn't upload files.", { description: "Please try again." });
     } else {
-      toast.warning(`${failed.length} of ${results.length} file(s) failed to upload.`);
+      toast.warning(`${failed.length} of ${results.length} file(s) couldn't be uploaded.`);
     }
   }, []);
 
@@ -196,7 +196,8 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       description: `Organized as ${triageResult.triage.type.replace("_", " ")} → ${destLabel}`,
     });
 
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
+      timerRef.current = undefined;
       setPhase("idle");
       setTriageResult(null);
       onComplete?.();
@@ -229,7 +230,8 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
 
     toast.success("Thought captured as-is.");
 
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
+      timerRef.current = undefined;
       setPhase("idle");
       onComplete?.();
       textareaRef.current?.focus();
