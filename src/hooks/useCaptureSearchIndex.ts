@@ -6,12 +6,13 @@
  * to avoid unnecessary DB calls on idle inbox views.
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import type { Capture } from "@/types/brain";
 import type { CaptureAttachment } from "@/lib/uploads";
 import { buildCaptureSearchText, captureMatchesQuery } from "@/lib/capture-search-text";
+import { findCaptureSearchMatch, type CaptureSearchMatchResult } from "@/lib/capture-search-match";
 
 /** Extended extraction row with capture_id for indexing */
 interface SearchExtractionRow {
@@ -31,6 +32,8 @@ interface CaptureSearchIndex {
   enrichedReady: boolean;
   /** Check if a capture matches the current search query (enriched when available) */
   matches: (capture: Capture, query: string) => boolean;
+  /** Get match source + snippet for a capture (memoized per query) */
+  getMatchInfo: (capture: Capture, query: string) => CaptureSearchMatchResult | null;
 }
 
 export function useCaptureSearchIndex(
@@ -55,7 +58,6 @@ export function useCaptureSearchIndex(
     let cancelled = false;
 
     (async () => {
-      // Fetch attachments and extractions in parallel
       const [attRes, extRes] = await Promise.all([
         supabase
           .from("capture_attachments")
@@ -108,14 +110,10 @@ export function useCaptureSearchIndex(
   const matches = useMemo(() => {
     return (capture: Capture, query: string): boolean => {
       if (!query.trim()) return true;
-
-      // If enriched data is available, use the full search text
       const searchText = searchTextMap.get(capture.id);
       if (searchText) {
         return captureMatchesQuery(searchText, query);
       }
-
-      // Fallback: original client-side matching
       const q = query.toLowerCase();
       return (
         capture.raw_input.toLowerCase().includes(q) ||
@@ -125,5 +123,20 @@ export function useCaptureSearchIndex(
     };
   }, [searchTextMap]);
 
-  return { enrichedReady, matches };
+  // Match info — memoized cache to avoid recomputation per render
+  const matchInfoCache = useMemo(() => new Map<string, CaptureSearchMatchResult | null>(), [activeQuery, attachments, extractions]);
+
+  const getMatchInfo = useCallback(
+    (capture: Capture, query: string): CaptureSearchMatchResult | null => {
+      if (!query.trim()) return null;
+      const cacheKey = capture.id;
+      if (matchInfoCache.has(cacheKey)) return matchInfoCache.get(cacheKey)!;
+      const result = findCaptureSearchMatch(capture, query, attachments, extractions);
+      matchInfoCache.set(cacheKey, result);
+      return result;
+    },
+    [attachments, extractions, matchInfoCache]
+  );
+
+  return { enrichedReady, matches, getMatchInfo };
 }

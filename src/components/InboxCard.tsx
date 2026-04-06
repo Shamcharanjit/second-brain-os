@@ -11,10 +11,12 @@ import {
   Mic, Type, ArrowRight, FolderOpen, Check, X,
   CalendarCheck, Lightbulb, Archive, Clock, Sparkles, Pencil,
   ShieldCheck, ShieldAlert, ShieldQuestion, Gauge, FolderKanban, Hourglass,
-  ChevronDown, ChevronUp, Inbox, Brain, Paperclip,
+  ChevronDown, ChevronUp, Inbox, Brain, Paperclip, FileSearch,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import type { CaptureSearchMatchResult } from "@/lib/capture-search-match";
+import { splitForHighlight } from "@/lib/capture-search-match";
 
 const categoryColors: Record<CaptureCategory, string> = {
   task: "bg-[hsl(var(--brain-teal))]/15 text-[hsl(var(--brain-teal))]",
@@ -62,9 +64,10 @@ interface InboxCardProps {
   capture: Capture;
   attachmentCount?: number;
   onOpenDetail?: (capture: Capture) => void;
+  searchMatch?: CaptureSearchMatchResult | null;
 }
 
-export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail }: InboxCardProps) {
+export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail, searchMatch }: InboxCardProps) {
   const ai = capture.ai_data;
   const { approveCapture, editAndApproveCapture, archiveCapture, routeCapture } = useBrain();
   const { linkCapture } = useProjects();
@@ -157,6 +160,7 @@ export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail }
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{ai.title}</p>
           <p className="text-[10px] text-muted-foreground truncate">{ai.summary}</p>
+          {searchMatch && <SearchMatchSnippet match={searchMatch} />}
         </div>
         {attachmentCount > 0 && (
           <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
@@ -345,6 +349,9 @@ export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail }
           </div>
         )}
 
+        {/* Search match snippet */}
+        {!editing && searchMatch && <SearchMatchSnippet match={searchMatch} />}
+
         {/* Review reason banner */}
         {!editing && ai.review_reason && (
           <div className="flex items-center gap-2 rounded-lg bg-[hsl(var(--brain-amber))]/8 border border-[hsl(var(--brain-amber))]/15 px-3 py-2 text-[11px]">
@@ -397,6 +404,38 @@ export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail }
           initialNextAction={ai.next_action}
         />
       )}
+    </div>
+  );
+}
+
+/* ── Search match snippet sub-component ─────────── */
+
+function SearchMatchSnippet({ match }: { match: CaptureSearchMatchResult }) {
+  const parts = splitForHighlight(match.snippet, match.matchTerm);
+  // Skip label for capture_text / ai_title since those are already visible
+  const showLabel = match.source !== "capture_text" && match.source !== "ai_title";
+
+  return (
+    <div className="flex items-start gap-1.5 mt-1">
+      <FileSearch className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+      <div className="min-w-0">
+        {showLabel && (
+          <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground mr-1.5">
+            {match.label}
+          </span>
+        )}
+        <span className="text-[11px] text-muted-foreground leading-snug">
+          {parts.map((part, i) =>
+            part.isMatch ? (
+              <mark key={i} className="bg-primary/15 text-foreground rounded-sm px-0.5 font-medium">
+                {part.text}
+              </mark>
+            ) : (
+              <span key={i}>{part.text}</span>
+            )
+          )}
+        </span>
+      </div>
     </div>
   );
 }
