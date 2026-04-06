@@ -10,7 +10,15 @@ import { getSignedUrl } from "@/lib/storage";
 import { formatFileSize, getAttachmentKind } from "@/lib/format-file";
 import { useDeleteCaptureAttachment } from "@/hooks/useDeleteCaptureAttachment";
 import type { ExtractionRow } from "@/hooks/useCaptureExtractions";
+import {
+  getExtractionDisplayState,
+  getExtractionStatusLabel,
+  getExtractionStatusClassName,
+  getExtractionRecoveryMessage,
+} from "@/lib/attachment-extraction-state";
 import ExtractionResultPanel from "@/components/capture/ExtractionResultPanel";
+import { triggerAttachmentExtraction } from "@/lib/extraction";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import {
   Image as ImageIcon,
@@ -21,6 +29,8 @@ import {
   Eye,
   Loader2,
   Trash2,
+  Play,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
