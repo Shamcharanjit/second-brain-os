@@ -62,7 +62,7 @@ export default function AuthPage() {
     setLoading(true);
     setBlocked(false);
 
-    if (mode === "signup") {
+    if (mode === "signup" && !inviteLocked) {
       const invited = await checkInvite(email);
       if (!invited) {
         setBlocked(true);
