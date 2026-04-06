@@ -15,6 +15,7 @@ export interface ExtractionRow {
   summary: string | null;
   error_message: string | null;
   completed_at: string | null;
+  updated_at: string;
 }
 
 export function useCaptureExtractions(captureId: string | null) {
@@ -31,7 +32,7 @@ export function useCaptureExtractions(captureId: string | null) {
 
     const { data, error } = await supabase
       .from("capture_attachment_extractions")
-      .select("id, attachment_id, status, kind, extracted_text, summary, error_message, completed_at")
+      .select("id, attachment_id, status, kind, extracted_text, summary, error_message, completed_at, updated_at")
       .eq("capture_id", captureId)
       .order("created_at", { ascending: true });
 

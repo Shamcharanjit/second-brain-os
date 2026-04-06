@@ -25,6 +25,7 @@ interface SearchExtractionRow {
   summary: string | null;
   error_message: string | null;
   completed_at: string | null;
+  updated_at: string;
 }
 
 interface CaptureSearchIndex {
@@ -65,7 +66,7 @@ export function useCaptureSearchIndex(
           .in("capture_id", captureIds),
         supabase
           .from("capture_attachment_extractions")
-          .select("id, attachment_id, capture_id, status, kind, extracted_text, summary, error_message, completed_at")
+          .select("id, attachment_id, capture_id, status, kind, extracted_text, summary, error_message, completed_at, updated_at")
           .in("capture_id", captureIds)
           .eq("status", "completed"),
       ]);

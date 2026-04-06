@@ -10,7 +10,15 @@ import { getSignedUrl } from "@/lib/storage";
 import { formatFileSize, getAttachmentKind } from "@/lib/format-file";
 import { useDeleteCaptureAttachment } from "@/hooks/useDeleteCaptureAttachment";
 import type { ExtractionRow } from "@/hooks/useCaptureExtractions";
+import {
+  getExtractionDisplayState,
+  getExtractionStatusLabel,
+  getExtractionStatusClassName,
+  getExtractionRecoveryMessage,
+} from "@/lib/attachment-extraction-state";
 import ExtractionResultPanel from "@/components/capture/ExtractionResultPanel";
+import { triggerAttachmentExtraction } from "@/lib/extraction";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import {
   Image as ImageIcon,
@@ -21,6 +29,8 @@ import {
   Eye,
   Loader2,
   Trash2,
+  Play,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,12 +74,29 @@ const kindLabel = {
 };
 
 export default function AttachmentGallery({ attachments, captureId, loading, error, extractions, onDeleted, onRetryTriggered }: Props) {
+  const { user } = useAuth();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<CaptureAttachment | null>(null);
+  const [triggeringId, setTriggeringId] = useState<string | null>(null);
 
   const { deletingId, deleteAttachment } = useDeleteCaptureAttachment();
+
+  /** Trigger extraction for an attachment that has no extraction row. */
+  const handleTriggerAnalysis = useCallback(async (att: CaptureAttachment) => {
+    if (!user?.id || !captureId) return;
+    setTriggeringId(att.id);
+    try {
+      await triggerAttachmentExtraction(att.id, captureId, user.id);
+      toast.success("Analysis triggered");
+      onRetryTriggered?.();
+    } catch {
+      toast.error("Failed to trigger analysis");
+    } finally {
+      setTriggeringId(null);
+    }
+  }, [user?.id, captureId, onRetryTriggered]);
 
   const openSignedUrl = useCallback(async (att: CaptureAttachment, action: "preview" | "open") => {
     setLoadingId(att.id);
@@ -137,6 +164,11 @@ export default function AttachmentGallery({ attachments, captureId, loading, err
             const isLoading = loadingId === att.id;
             const isDeleting = deletingId === att.id;
             const extraction = extractions?.find((e) => e.attachment_id === att.id);
+            const displayState = getExtractionDisplayState(extraction ?? null);
+            const stateLabel = getExtractionStatusLabel(displayState);
+            const stateClass = getExtractionStatusClassName(displayState);
+            const recoveryMsg = getExtractionRecoveryMessage(displayState);
+            const isMissingOrStale = displayState === "missing" || displayState === "stale";
 
               return (
                 <div key={att.id} className="space-y-0">
@@ -152,7 +184,9 @@ export default function AttachmentGallery({ attachments, captureId, loading, err
                         <p className="text-[10px] text-muted-foreground">
                           {kindLabel[kind]} · {formatFileSize(att.file_size)}
                         </p>
-                        {extraction && <ExtractionStatusBadge status={extraction.status} />}
+                        {stateLabel && (
+                          <span className={`text-[9px] font-medium ${stateClass}`}>{stateLabel}</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -201,7 +235,26 @@ export default function AttachmentGallery({ attachments, captureId, loading, err
                       </Button>
                     </div>
                   </div>
-                  {extraction && captureId && (
+
+                  {/* Missing / stale recovery block */}
+                  {isMissingOrStale && captureId && (
+                    <div className="mt-1 rounded-md border border-border/50 bg-secondary/30 px-3 py-2 space-y-1">
+                      <p className="text-[10px] text-muted-foreground">{recoveryMsg}</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[10px] gap-1 px-2"
+                        disabled={triggeringId === att.id}
+                        onClick={() => handleTriggerAnalysis(att)}
+                      >
+                        {triggeringId === att.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                        {displayState === "stale" ? "Try again" : "Run analysis"}
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Normal extraction results */}
+                  {extraction && captureId && !isMissingOrStale && (
                     <ExtractionResultPanel
                       extraction={extraction}
                       captureId={captureId}
@@ -291,18 +344,4 @@ function InlineAudioPlayer({ att, disabled }: { att: CaptureAttachment; disabled
       Play
     </Button>
   );
-}
-
-/** Tiny extraction status badge */
-function ExtractionStatusBadge({ status }: { status: string }) {
-  const config: Record<string, { label: string; className: string }> = {
-    pending: { label: "Pending analysis", className: "text-muted-foreground" },
-    processing: { label: "Analyzing…", className: "text-primary animate-pulse" },
-    completed: { label: "✓ Analyzed", className: "text-[hsl(var(--brain-teal))]" },
-    failed: { label: "Analysis failed", className: "text-destructive" },
-    unsupported: { label: "", className: "" },
-  };
-  const c = config[status] ?? config.unsupported;
-  if (!c.label) return null;
-  return <span className={`text-[9px] font-medium ${c.className}`}>{c.label}</span>;
 }
