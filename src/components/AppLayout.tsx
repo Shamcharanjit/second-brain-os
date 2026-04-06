@@ -1,4 +1,4 @@
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings, Crown } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
 import InsightHaloIcon from "@/components/branding/InsightHaloIcon";
 
 const NAV_LINKS = [
-  { to: "/", label: "Dashboard", icon: () => <InsightHaloIcon size="xs" animated={false} /> },
+  { to: "/app", label: "Dashboard", icon: () => <InsightHaloIcon size="xs" animated={false} /> },
   { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/today", label: "Today", icon: CalendarDays },
   { to: "/projects", label: "Projects", icon: FolderKanban },
@@ -22,7 +22,7 @@ const NAV_LINKS = [
   { to: "/upgrade", label: "Upgrade", icon: Crown },
 ];
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children }: { children?: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
   const location = useLocation();
@@ -122,7 +122,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-3xl px-4 py-6 md:px-8 md:py-10">
-            {children}
+            {children ?? <Outlet />}
           </div>
         </main>
       </div>
