@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LogIn, UserPlus, Loader2, Shield, Smartphone, Cloud, ArrowLeft, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
 import { supabase } from "@/lib/supabase/client";
 
@@ -17,11 +17,15 @@ const BENEFITS = [
 export default function AuthPage() {
   const { signIn, signUp, cloudAvailable } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const [email, setEmail] = useState("");
+  const [searchParams] = useSearchParams();
+  const inviteEmail = searchParams.get("email") || "";
+  const isInviteFlow = searchParams.get("invite") === "true";
+  const [mode, setMode] = useState<"login" | "signup">(isInviteFlow ? "signup" : "login");
+  const [email, setEmail] = useState(inviteEmail);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const [inviteLocked, setInviteLocked] = useState(isInviteFlow && !!inviteEmail);
 
   if (!cloudAvailable) {
     return (
