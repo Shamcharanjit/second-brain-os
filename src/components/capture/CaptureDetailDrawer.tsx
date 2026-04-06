@@ -40,6 +40,8 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
   const { extractions, refetch: refetchExtractions } = useCaptureExtractions(
     open && capture ? capture.id : null
   );
+  const enrichment = useCaptureEnrichedContext({ capture, attachments, extractions });
+  const [ctxOpen, setCtxOpen] = useState(false);
 
   if (!capture) return null;
 
