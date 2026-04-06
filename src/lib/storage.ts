@@ -4,27 +4,22 @@
  */
 
 import { supabase, isSupabaseEnabled } from "@/lib/supabase/client";
+import {
+  SUPPORTED_MIME_TYPES,
+  ALL_SUPPORTED_MIMES,
+  resolveFileKind as resolveKind,
+  getMaxSizeForKind,
+  MAX_FILE_SIZE_BY_KIND,
+} from "@/lib/attachment-limits";
 
-// ── Constants ──
+// ── Constants (re-exported for backward compat) ──
 
 export const CAPTURE_UPLOADS_BUCKET = "capture-uploads";
 
-export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+/** @deprecated Use per-type limits from attachment-limits.ts */
+export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
-export const SUPPORTED_MIME_TYPES: Record<string, string[]> = {
-  image: ["image/jpeg", "image/png", "image/webp", "image/gif"],
-  audio: ["audio/mpeg", "audio/wav", "audio/mp4", "audio/webm", "audio/ogg"],
-  document: [
-    "application/pdf",
-    "text/plain",
-    "text/markdown",
-    "text/csv",
-    "application/json",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ],
-};
-
-const ALL_SUPPORTED = Object.values(SUPPORTED_MIME_TYPES).flat();
+export { SUPPORTED_MIME_TYPES };
 
 // ── Helpers ──
 
@@ -32,23 +27,24 @@ const ALL_SUPPORTED = Object.values(SUPPORTED_MIME_TYPES).flat();
 export function resolveFileKind(
   mimeType: string | undefined | null
 ): "image" | "audio" | "document" | "other" {
-  if (!mimeType) return "other";
-  for (const [kind, types] of Object.entries(SUPPORTED_MIME_TYPES)) {
-    if (types.includes(mimeType)) return kind as "image" | "audio" | "document";
-  }
-  return "other";
+  return resolveKind(mimeType);
 }
 
-/** Validate a file against size and type constraints. */
+/** Validate a file against per-type size limits and supported types. */
 export function validateFile(file: File): { valid: boolean; error?: string } {
-  if (file.size > MAX_FILE_SIZE_BYTES) {
+  if (!file.size || file.size === 0) {
+    return { valid: false, error: "This file appears to be empty." };
+  }
+  if (!file.type || !ALL_SUPPORTED_MIMES.includes(file.type)) {
+    return { valid: false, error: "This file type isn't supported yet." };
+  }
+  const kind = resolveKind(file.type);
+  const maxSize = getMaxSizeForKind(kind);
+  if (file.size > maxSize) {
     return {
       valid: false,
-      error: `File exceeds ${MAX_FILE_SIZE_BYTES / (1024 * 1024)} MB limit`,
+      error: `File too large (max ${maxSize / (1024 * 1024)} MB for ${kind} files).`,
     };
-  }
-  if (!ALL_SUPPORTED.includes(file.type)) {
-    return { valid: false, error: `Unsupported file type: ${file.type}` };
   }
   return { valid: true };
 }
