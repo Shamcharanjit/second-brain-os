@@ -4,7 +4,7 @@ import { useProjects } from "@/context/ProjectContext";
 import { useMemory } from "@/context/MemoryContext";
 import { useReviewMeta } from "@/context/ReviewMetaContext";
 
-/** Returns true when the user has no meaningful data (only seed or empty). */
+/** Returns true when the user has no meaningful data. */
 export function useFirstRun() {
   const { captures } = useBrain();
   const { projects } = useProjects();
@@ -12,12 +12,9 @@ export function useFirstRun() {
   const { last_daily_review_at, last_weekly_review_at } = useReviewMeta();
 
   return useMemo(() => {
-    const userCaptures = captures.filter((c) => !c.id.startsWith("seed-"));
-    const userProjects = projects.filter((p) => !p.id.startsWith("proj-"));
-    const userMemories = memories.filter((m) => !m.id.startsWith("mem-"));
     const hasReview = !!(last_daily_review_at || last_weekly_review_at);
 
-    return userCaptures.length === 0 && userProjects.length === 0 && userMemories.length === 0 && !hasReview;
+    return captures.length === 0 && projects.length === 0 && memories.length === 0 && !hasReview;
   }, [captures, projects, memories, last_daily_review_at, last_weekly_review_at]);
 }
 
@@ -28,10 +25,7 @@ export function useEngagementLevel() {
   const { memories } = useMemory();
 
   return useMemo(() => {
-    const userCaptures = captures.filter((c) => !c.id.startsWith("seed-"));
-    const userProjects = projects.filter((p) => !p.id.startsWith("proj-"));
-    const userMemories = memories.filter((m) => !m.id.startsWith("mem-"));
-    const total = userCaptures.length + userProjects.length + userMemories.length;
-    return { total, captures: userCaptures.length, projects: userProjects.length, memories: userMemories.length };
+    const total = captures.length + projects.length + memories.length;
+    return { total, captures: captures.length, projects: projects.length, memories: memories.length };
   }, [captures, projects, memories]);
 }

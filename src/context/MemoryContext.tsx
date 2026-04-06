@@ -26,92 +26,29 @@ const MemoryContext = createContext<MemoryContextType | null>(null);
 
 const now = () => new Date().toISOString();
 
-const SEED_MEMORIES: MemoryEntry[] = [
-  {
-    id: "mem-1", title: "API Rate Limit Documentation",
-    raw_text: "The API rate limit is 1000 requests per minute for the free tier. Premium tier allows 10,000 req/min.",
-    summary: "Free tier: 1000 req/min. Premium: 10,000 req/min. Important for capacity planning.",
-    memory_type: "reference", tags: ["api", "infrastructure", "pricing"],
-    created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-    is_pinned: true, is_archived: false,
-    linked_project_ids: ["proj-2"], linked_idea_ids: [],
-    source_capture_id: "seed-16", last_reviewed_at: null, importance_score: 75,
-  },
-  {
-    id: "mem-2", title: "Series A Timeline Decision",
-    raw_text: "Decided to target Q3 for Series A conversations. Need traction metrics by Q2 end.",
-    summary: "Series A target: Q3. Must have traction metrics ready by end of Q2.",
-    memory_type: "decision", tags: ["fundraising", "timeline", "strategy"],
-    created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    is_pinned: true, is_archived: false,
-    linked_project_ids: [], linked_idea_ids: [],
-    source_capture_id: null, last_reviewed_at: null, importance_score: 90,
-  },
-  {
-    id: "mem-3", title: "GST Compliance Requirements",
-    raw_text: "Must resolve GST issue before end of quarter. Accountant mentioned new rules for SaaS businesses.",
-    summary: "GST compliance deadline is end of quarter. New SaaS-specific rules apply.",
-    memory_type: "note", tags: ["finance", "compliance", "deadline"],
-    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    is_pinned: false, is_archived: false,
-    linked_project_ids: ["proj-3"], linked_idea_ids: [],
-    source_capture_id: null, last_reviewed_at: null, importance_score: 70,
-  },
-  {
-    id: "mem-4", title: "Free Tier Conversion Insight",
-    raw_text: "Industry average free-to-paid conversion is 2-5%. Best-in-class SaaS products achieve 7-10% with strong onboarding.",
-    summary: "Free-to-paid benchmarks: avg 2-5%, best 7-10%. Onboarding quality is the key differentiator.",
-    memory_type: "insight", tags: ["pricing", "conversion", "benchmarks"],
-    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    is_pinned: false, is_archived: false,
-    linked_project_ids: ["proj-4"], linked_idea_ids: [],
-    source_capture_id: null, last_reviewed_at: null, importance_score: 80,
-  },
-  {
-    id: "mem-5", title: "Competitor Analysis: Notion AI",
-    raw_text: "Notion AI charges $10/user/month on top of base plan. Focus is on writing assistance rather than capture intelligence.",
-    summary: "Notion AI: $10/user/month add-on. Writing-focused, not capture-focused — different positioning opportunity.",
-    memory_type: "research", tags: ["competitors", "pricing", "positioning"],
-    created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 10 * 86400000).toISOString(),
-    is_pinned: false, is_archived: false,
-    linked_project_ids: [], linked_idea_ids: [],
-    source_capture_id: null, last_reviewed_at: new Date(Date.now() - 4 * 86400000).toISOString(), importance_score: 65,
-  },
-  {
-    id: "mem-6", title: "\"Ship fast, learn faster\"",
-    raw_text: "Ship fast, learn faster. The best products are built by founders who talk to users every single week.",
-    summary: "Core operating principle: speed of shipping + weekly user conversations.",
-    memory_type: "quote", tags: ["mindset", "product"],
-    created_at: new Date(Date.now() - 14 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 14 * 86400000).toISOString(),
-    is_pinned: true, is_archived: false,
-    linked_project_ids: [], linked_idea_ids: [],
-    source_capture_id: null, last_reviewed_at: null, importance_score: 60,
-  },
-  {
-    id: "mem-7", title: "Client Onboarding SOP Draft",
-    raw_text: "Step 1: Discovery call. Step 2: Proposal within 48h. Step 3: Kickoff meeting. Step 4: Weekly check-ins for first month.",
-    summary: "4-step client onboarding: Discovery → 48h Proposal → Kickoff → Weekly check-ins (month 1).",
-    memory_type: "sop", tags: ["clients", "process", "onboarding"],
-    created_at: new Date(Date.now() - 8 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 6 * 86400000).toISOString(),
-    is_pinned: false, is_archived: false,
-    linked_project_ids: ["proj-1"], linked_idea_ids: [],
-    source_capture_id: null, last_reviewed_at: null, importance_score: 72,
-  },
-];
+function sanitizeMemories(items: MemoryEntry[]): MemoryEntry[] {
+  return items
+    .filter((item) => !item.id.startsWith("mem-"))
+    .map((item) => ({
+      ...item,
+      linked_project_ids: item.linked_project_ids.filter((id) => !id.startsWith("proj-")),
+      source_capture_id: item.source_capture_id?.startsWith("seed-") ? null : item.source_capture_id,
+    }));
+}
 
 export function MemoryProvider({ children }: { children: React.ReactNode }) {
-  const [memories, setMemories] = useState<MemoryEntry[]>(() => loadState(STORAGE_KEY, SEED_MEMORIES));
+  const [memories, setMemories] = useState<MemoryEntry[]>(() => sanitizeMemories(loadState<MemoryEntry[]>(STORAGE_KEY, [])));
 
   useEffect(() => { saveState(STORAGE_KEY, memories); }, [memories]);
 
-  useCloudHydration(memories, setMemories, STORAGE_KEY, fetchMemories, upsertMemories, (d) => d.length === 0);
+  useCloudHydration(
+    memories,
+    setMemories,
+    STORAGE_KEY,
+    async (userId) => sanitizeMemories(await fetchMemories(userId)),
+    upsertMemories,
+    (d) => d.length === 0,
+  );
   useCloudSync(memories, syncMemories);
 
   const getMemory = useCallback((id: string) => memories.find((m) => m.id === id), [memories]);

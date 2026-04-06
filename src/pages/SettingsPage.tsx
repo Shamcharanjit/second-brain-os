@@ -74,7 +74,7 @@ export default function SettingsPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className="gap-1.5 text-xs" onClick={() => navigate("/")}>
+        <Button variant="ghost" size="sm" className="gap-1.5 text-xs" onClick={() => navigate("/app")}>
           <ArrowLeft className="h-3.5 w-3.5" /> Dashboard
         </Button>
       </div>

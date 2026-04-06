@@ -59,8 +59,9 @@ const App = () => (
                     <Route path="/waitlist" element={<WaitlistPage />} />
                     <Route path="/invite" element={<InvitePage />} />
                     <Route path="/terms" element={<TermsPage />} />
-                    <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />
+                    <Route path="/auth" element={<AuthPage />} />
+                    <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
 
                     {/* App routes — wrapped in sidebar layout */}
                     <Route element={<AppShell />}>
@@ -74,11 +75,11 @@ const App = () => (
                       <Route path="/review" element={<ReviewRitualsPage />} />
                       <Route path="/memory" element={<MemoryPage />} />
                       <Route path="/ideas" element={<IdeasVaultPage />} />
-                      <Route path="/auth" element={<AuthPage />} />
                       <Route path="/settings" element={<SettingsPage />} />
                       <Route path="/upgrade" element={<UpgradePage />} />
-                      <Route path="*" element={<NotFound />} />
                     </Route>
+
+                    <Route path="*" element={<NotFound />} />
                   </Routes>
                 </BrowserRouter>
               </ReviewMetaProvider>

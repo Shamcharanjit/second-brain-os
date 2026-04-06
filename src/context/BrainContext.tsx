@@ -52,46 +52,29 @@ function destinationToStatus(dest: string): CaptureStatus {
   }
 }
 
-function makeSeed(id: string, raw: string, type: "text" | "voice", hoursAgo: number, statusOverride?: CaptureStatus): Capture {
-  const { aiData, reviewStatus } = mockAIProcess(raw);
-  const status = statusOverride ?? autoRouteStatus(aiData.destination_suggestion);
-  return {
-    id, raw_input: raw, input_type: type,
-    created_at: new Date(Date.now() - hoursAgo * 3600000).toISOString(),
-    processed: true, status, review_status: reviewStatus, ai_data: aiData,
-    reviewed_at: null, manually_adjusted: false,
-    is_completed: false, completed_at: null, is_pinned_today: false,
-    idea_status: "new", converted_to_project_at: null,
-    source_project_id: null, source_action_id: null,
-  };
+function sanitizeCaptures(items: Capture[]): Capture[] {
+  return items
+    .filter((item) => !item.id.startsWith("seed-"))
+    .map((item) => ({
+      ...item,
+      source_project_id: item.source_project_id?.startsWith("proj-") ? null : item.source_project_id,
+    }));
 }
 
-const SEED_DATA: Capture[] = [
-  makeSeed("seed-1", "Call the dentist to reschedule appointment for next week", "text", 1),
-  makeSeed("seed-2", "What if we built a mobile app that tracks water intake with smart bottle integration?", "text", 2),
-  makeSeed("seed-3", "Remind me to send the Q4 report to Sarah by tomorrow", "voice", 0.5),
-  makeSeed("seed-4", "Maybe later: learn Rust programming language for systems work", "text", 3),
-  makeSeed("seed-5", "Follow up with Mike about the partnership proposal he mentioned last Friday", "text", 1.5),
-  makeSeed("seed-6", "Build a landing page for the new SaaS product launch next month", "text", 4),
-  makeSeed("seed-7", "Need to ask accountant about GST issue before end of quarter — urgent", "voice", 0.7),
-  makeSeed("seed-8", "Book flight for Toronto trip next month", "text", 1.2),
-  makeSeed("seed-9", "What if we offered a free tier with limited captures per month?", "text", 2.5),
-  makeSeed("seed-10", "Reply to investor email about Series A timeline today", "voice", 1.7),
-  makeSeed("seed-11", "Set up analytics tracking on the new landing page", "text", 5),
-  makeSeed("seed-12", "Need to handle that issue with the vendor", "text", 0.3),
-  makeSeed("seed-13", "Client proposal maybe next week or the week after", "text", 0.8),
-  makeSeed("seed-14", "Need to do something for tax before deadline", "voice", 0.4),
-  makeSeed("seed-15", "Goal: grow monthly active users to 10,000 by Q3 this year", "text", 6),
-  makeSeed("seed-16", "Note to self: the API rate limit is 1000 requests per minute for the free tier", "text", 3.5),
-];
-
 export function BrainProvider({ children }: { children: React.ReactNode }) {
-  const [captures, setCaptures] = useState<Capture[]>(() => loadState(STORAGE_KEY, SEED_DATA));
+  const [captures, setCaptures] = useState<Capture[]>(() => sanitizeCaptures(loadState<Capture[]>(STORAGE_KEY, [])));
 
   useEffect(() => { saveState(STORAGE_KEY, captures); }, [captures]);
 
   // Cloud sync
-  useCloudHydration(captures, setCaptures, STORAGE_KEY, fetchCaptures, upsertCaptures, (d) => d.length === 0);
+  useCloudHydration(
+    captures,
+    setCaptures,
+    STORAGE_KEY,
+    async (userId) => sanitizeCaptures(await fetchCaptures(userId)),
+    upsertCaptures,
+    (d) => d.length === 0,
+  );
   useCloudSync(captures, syncCaptures);
 
   const addCapture = useCallback((text: string, type: "text" | "voice"): Capture => {

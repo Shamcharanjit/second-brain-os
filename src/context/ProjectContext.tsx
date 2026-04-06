@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { Project, ProjectStatus, ProjectPriority, ProjectHealth, NextAction, ProjectNote, ProjectEvent } from "@/types/project";
 import { saveState, loadState } from "@/lib/persistence";
 import { fetchProjects, upsertProjects, syncProjects } from "@/lib/supabase/data-layer";
@@ -24,86 +24,14 @@ function computeHealth(p: Project): ProjectHealth {
   return "healthy";
 }
 
-const SEED_PROJECTS: Project[] = [
-  {
-    id: "proj-1", name: "Client Work",
-    description: "Active client engagements, deliverables, and relationship management across all accounts.",
-    status: "active", priority: "critical", progress: 65, color: "--brain-teal",
-    source_idea_id: null, linked_capture_ids: [], due_date: null,
-    created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-    last_updated: new Date(Date.now() - 2 * 3600000).toISOString(),
-    next_actions: [
-      { id: "na-1", text: "Sign contract renewal with Acme Corp", is_primary: true, is_completed: false, completed_at: null, created_at: new Date(Date.now() - 86400000).toISOString(), sent_to_today: false },
-      { id: "na-2", text: "Schedule client review meeting", is_primary: false, is_completed: false, completed_at: null, created_at: new Date(Date.now() - 2 * 86400000).toISOString(), sent_to_today: false },
-      { id: "na-3", text: "Send Q4 report to Sarah", is_primary: false, is_completed: true, completed_at: new Date(Date.now() - 5 * 3600000).toISOString(), created_at: new Date(Date.now() - 3 * 86400000).toISOString(), sent_to_today: false },
-    ],
-    notes: [{ id: "pn-1", text: "Sarah mentioned wanting monthly check-ins starting Q1.", created_at: new Date(Date.now() - 5 * 86400000).toISOString() }],
-    timeline: [
-      { id: "te-1", type: "created", description: "Project created", timestamp: new Date(Date.now() - 30 * 86400000).toISOString() },
-      { id: "te-2", type: "action_completed", description: "Completed: Send Q4 report to Sarah", timestamp: new Date(Date.now() - 5 * 3600000).toISOString() },
-    ],
-  },
-  {
-    id: "proj-2", name: "Product Development",
-    description: "Building and shipping the core product — features, design, and technical infrastructure.",
-    status: "active", priority: "high", progress: 40, color: "--brain-blue",
-    source_idea_id: null, linked_capture_ids: [], due_date: null,
-    created_at: new Date(Date.now() - 45 * 86400000).toISOString(),
-    last_updated: new Date(Date.now() - 5 * 3600000).toISOString(),
-    next_actions: [
-      { id: "na-4", text: "Launch landing page", is_primary: true, is_completed: false, completed_at: null, created_at: new Date(Date.now() - 2 * 86400000).toISOString(), sent_to_today: false },
-      { id: "na-5", text: "Set up analytics tracking", is_primary: false, is_completed: false, completed_at: null, created_at: new Date(Date.now() - 86400000).toISOString(), sent_to_today: false },
-    ],
-    notes: [],
-    timeline: [
-      { id: "te-3", type: "created", description: "Project created", timestamp: new Date(Date.now() - 45 * 86400000).toISOString() },
-    ],
-  },
-  {
-    id: "proj-3", name: "Finance & Admin",
-    description: "Accounting, taxes, invoicing, and operational compliance across the business.",
-    status: "active", priority: "medium", progress: 50, color: "--brain-amber",
-    source_idea_id: null, linked_capture_ids: [], due_date: null,
-    created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
-    last_updated: new Date(Date.now() - 8 * 3600000).toISOString(),
-    next_actions: [
-      { id: "na-6", text: "Resolve GST issue with accountant", is_primary: true, is_completed: false, completed_at: null, created_at: new Date(Date.now() - 3 * 86400000).toISOString(), sent_to_today: false },
-    ],
-    notes: [{ id: "pn-2", text: "Deadline is end of quarter — don't delay.", created_at: new Date(Date.now() - 2 * 86400000).toISOString() }],
-    timeline: [
-      { id: "te-4", type: "created", description: "Project created", timestamp: new Date(Date.now() - 20 * 86400000).toISOString() },
-    ],
-  },
-  {
-    id: "proj-4", name: "Growth Experiments",
-    description: "Pricing tests, acquisition channels, content strategy, and conversion experiments.",
-    status: "planning", priority: "medium", progress: 20, color: "--brain-purple",
-    source_idea_id: null, linked_capture_ids: [], due_date: null,
-    created_at: new Date(Date.now() - 14 * 86400000).toISOString(),
-    last_updated: new Date(Date.now() - 4 * 86400000).toISOString(),
-    next_actions: [],
-    notes: [],
-    timeline: [
-      { id: "te-5", type: "created", description: "Project created", timestamp: new Date(Date.now() - 14 * 86400000).toISOString() },
-    ],
-  },
-  {
-    id: "proj-5", name: "Personal Operations",
-    description: "Health, travel, personal admin, and life logistics that keep everything running.",
-    status: "active", priority: "low", progress: 75, color: "--brain-rose",
-    source_idea_id: null, linked_capture_ids: [], due_date: null,
-    created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-    last_updated: new Date(Date.now() - 3 * 3600000).toISOString(),
-    next_actions: [
-      { id: "na-7", text: "Reschedule dentist appointment", is_primary: true, is_completed: false, completed_at: null, created_at: new Date(Date.now() - 86400000).toISOString(), sent_to_today: false },
-      { id: "na-8", text: "Book Toronto flight", is_primary: false, is_completed: false, completed_at: null, created_at: new Date(Date.now() - 2 * 86400000).toISOString(), sent_to_today: false },
-    ],
-    notes: [],
-    timeline: [
-      { id: "te-6", type: "created", description: "Project created", timestamp: new Date(Date.now() - 60 * 86400000).toISOString() },
-    ],
-  },
-];
+function sanitizeProjects(items: Project[]): Project[] {
+  return items
+    .filter((item) => !item.id.startsWith("proj-"))
+    .map((item) => ({
+      ...item,
+      linked_capture_ids: item.linked_capture_ids.filter((id) => !id.startsWith("seed-")),
+    }));
+}
 
 interface ProjectContextType {
   projects: Project[];
@@ -127,11 +55,18 @@ interface ProjectContextType {
 const ProjectContext = createContext<ProjectContextType | null>(null);
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
-  const [projects, setProjects] = useState<Project[]>(() => loadState(STORAGE_KEY, SEED_PROJECTS));
+  const [projects, setProjects] = useState<Project[]>(() => sanitizeProjects(loadState<Project[]>(STORAGE_KEY, [])));
 
   useEffect(() => { saveState(STORAGE_KEY, projects); }, [projects]);
 
-  useCloudHydration(projects, setProjects, STORAGE_KEY, fetchProjects, upsertProjects, (d) => d.length === 0);
+  useCloudHydration(
+    projects,
+    setProjects,
+    STORAGE_KEY,
+    async (userId) => sanitizeProjects(await fetchProjects(userId)),
+    upsertProjects,
+    (d) => d.length === 0,
+  );
   useCloudSync(projects, syncProjects);
 
   const getProject = useCallback((id: string) => projects.find((p) => p.id === id), [projects]);

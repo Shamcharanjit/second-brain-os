@@ -36,7 +36,7 @@ export default function AuthPage() {
           <p className="text-sm text-muted-foreground">
             Cloud sync is not configured. The app is running in local-only mode.
           </p>
-          <Button variant="outline" size="sm" onClick={() => navigate("/")} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={() => navigate("/app")} className="gap-1.5">
             <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
           </Button>
         </div>
@@ -81,7 +81,7 @@ export default function AuthPage() {
       toast.success("Account created! Check your email to confirm.");
     } else {
       toast.success("Welcome back — your data is syncing.");
-      navigate("/");
+      navigate("/app");
     }
   };
 
