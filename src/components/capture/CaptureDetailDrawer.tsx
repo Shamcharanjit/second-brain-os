@@ -3,9 +3,11 @@
  * Opens as a sheet/drawer from right side.
  */
 
+import { useState } from "react";
 import { Capture } from "@/types/brain";
 import { useCaptureAttachmentDetails } from "@/hooks/useCaptureAttachments";
 import { useCaptureExtractions } from "@/hooks/useCaptureExtractions";
+import { useCaptureEnrichedContext } from "@/hooks/useCaptureEnrichedContext";
 import AttachmentGallery from "@/components/capture/AttachmentGallery";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +19,13 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import {
-  Mic, Type, Sparkles, Clock, ArrowRight,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
+import {
+  Mic, Type, Sparkles, Clock, ArrowRight, ChevronDown, ChevronRight, Brain,
 } from "lucide-react";
 
 interface Props {
@@ -33,6 +41,8 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
   const { extractions, refetch: refetchExtractions } = useCaptureExtractions(
     open && capture ? capture.id : null
   );
+  const enrichment = useCaptureEnrichedContext({ capture, attachments, extractions });
+  const [ctxOpen, setCtxOpen] = useState(false);
 
   if (!capture) return null;
 
@@ -104,6 +114,31 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
             onDeleted={() => { refetch(); refetchExtractions(); }}
             onRetryTriggered={() => { setTimeout(refetchExtractions, 2000); }}
           />
+
+          {/* Enrichment context preview */}
+          {enrichment.hasEnrichment && (
+            <Collapsible open={ctxOpen} onOpenChange={setCtxOpen}>
+              <div className="flex items-center gap-1.5">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1 px-2 text-primary hover:text-primary">
+                    {ctxOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                    <Brain className="h-3 w-3" />
+                    AI Context Preview
+                  </Button>
+                </CollapsibleTrigger>
+                <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
+                  Uses {enrichment.completedExtractionCount} analysis{enrichment.completedExtractionCount !== 1 ? "es" : ""}
+                </Badge>
+              </div>
+              <CollapsibleContent className="mt-2">
+                <div className="rounded-md bg-secondary/40 border border-border/40 px-3 py-2 max-h-48 overflow-y-auto">
+                  <p className="text-[10px] text-muted-foreground whitespace-pre-wrap leading-relaxed font-mono">
+                    {enrichment.enrichedContextText}
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </div>
       </SheetContent>
     </Sheet>
