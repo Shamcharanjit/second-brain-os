@@ -26,6 +26,7 @@ import TermsPage from "@/pages/TermsPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import SettingsPage from "@/pages/SettingsPage";
 import UpgradePage from "@/pages/UpgradePage";
+import WaitlistPage from "@/pages/WaitlistPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const App = () => (
                   <Routes>
                     {/* Public pages — no app chrome */}
                     <Route path="/" element={<LandingPage />} />
+                    <Route path="/waitlist" element={<WaitlistPage />} />
                     <Route path="/terms" element={<TermsPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />
 
