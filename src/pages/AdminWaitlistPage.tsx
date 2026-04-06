@@ -36,18 +36,6 @@ export default function AdminWaitlistPage() {
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [editNotesValue, setEditNotesValue] = useState("");
 
-  // Gate: must be authenticated
-  if (!cloudAvailable || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="text-center space-y-4">
-          <p className="text-muted-foreground">Sign in to access this page.</p>
-          <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>Sign In</Button>
-        </div>
-      </div>
-    );
-  }
-
   const fetchEntries = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -64,7 +52,19 @@ export default function AdminWaitlistPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchEntries(); }, []);
+  useEffect(() => { if (cloudAvailable && user) fetchEntries(); }, [cloudAvailable, user]);
+
+  // Gate: must be authenticated
+  if (!cloudAvailable || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="text-center space-y-4">
+          <p className="text-muted-foreground">Sign in to access this page.</p>
+          <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>Sign In</Button>
+        </div>
+      </div>
+    );
+  }
 
   const filtered = useMemo(() => {
     let result = entries;
