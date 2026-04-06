@@ -73,7 +73,7 @@ serve(async (req) => {
   }
 
   try {
-    const { rawInput } = await req.json();
+    const { rawInput, enrichedContext } = await req.json();
     if (!rawInput || typeof rawInput !== "string") {
       return new Response(JSON.stringify({ error: "rawInput is required" }), {
         status: 400,
@@ -89,6 +89,13 @@ serve(async (req) => {
       });
     }
 
+    // Build user message: use enriched context if available, otherwise raw input
+    const hasEnrichment = enrichedContext && typeof enrichedContext === "string" && enrichedContext !== rawInput;
+    let userMessage = rawInput;
+    if (hasEnrichment) {
+      userMessage = enrichedContext + "\n\nIMPORTANT: The user's original typed text is the primary intent signal. Attachment-derived content is supporting context only. Do not hallucinate beyond what is explicitly present in the text or extracted content.";
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -99,7 +106,7 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: rawInput },
+          { role: "user", content: userMessage },
         ],
         tools: [TRIAGE_TOOL],
         tool_choice: { type: "function", function: { name: "triage_capture" } },

@@ -25,7 +25,7 @@ export function isAITriageAvailable(): boolean {
 }
 
 /** Call the real AI triage edge function */
-async function callAITriage(rawInput: string): Promise<AITriageResult> {
+async function callAITriage(rawInput: string, enrichedContext?: string): Promise<AITriageResult> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error("AI not configured");
   }
@@ -36,7 +36,7 @@ async function callAITriage(rawInput: string): Promise<AITriageResult> {
       "Content-Type": "application/json",
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
     },
-    body: JSON.stringify({ rawInput }),
+    body: JSON.stringify({ rawInput, enrichedContext }),
   });
 
   if (!resp.ok) {
@@ -85,21 +85,31 @@ export function triageToAIData(triage: AITriageResult, rawInput: string): AIProc
 
 /**
  * Run AI triage: tries real AI, falls back to mock.
- * Returns { triage, aiData, source } where source indicates what was used.
+ * Returns { triage, aiData, source, usedEnrichedContext } where source indicates what was used.
+ *
+ * @param rawInput - original capture text
+ * @param enrichedContext - optional enriched context from buildCaptureAIInput()
  */
 export async function runAITriage(
-  rawInput: string
+  rawInput: string,
+  enrichedContext?: string
 ): Promise<{
   triage: AITriageResult;
   aiData: AIProcessedData;
   source: "ai" | "local";
+  usedEnrichedContext: boolean;
 }> {
+  const hasEnrichment = !!enrichedContext && enrichedContext !== rawInput;
+
   // Try real AI first
   if (isAITriageAvailable()) {
     try {
-      const triage = await callAITriage(rawInput);
+      const triage = await callAITriage(rawInput, hasEnrichment ? enrichedContext : undefined);
       const aiData = triageToAIData(triage, rawInput);
-      return { triage, aiData, source: "ai" };
+      if (hasEnrichment) {
+        console.debug("[AI Triage] Used enriched context for triage");
+      }
+      return { triage, aiData, source: "ai", usedEnrichedContext: hasEnrichment };
     } catch (err) {
       console.warn("AI triage failed, falling back to local:", err);
     }
@@ -119,5 +129,5 @@ export async function runAITriage(
     suggestedNextAction: aiData.next_action,
     confidence: aiData.confidence === "high" ? 0.9 : aiData.confidence === "medium" ? 0.65 : 0.3,
   };
-  return { triage, aiData, source: "local" };
+  return { triage, aiData, source: "local", usedEnrichedContext: false };
 }

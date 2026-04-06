@@ -3,14 +3,18 @@
  * Opens as a sheet/drawer from right side.
  */
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Capture } from "@/types/brain";
 import { useCaptureAttachmentDetails } from "@/hooks/useCaptureAttachments";
 import { useCaptureExtractions } from "@/hooks/useCaptureExtractions";
 import { useCaptureEnrichedContext } from "@/hooks/useCaptureEnrichedContext";
+import { buildCaptureAIInput } from "@/lib/capture-enrichment";
+import { runAITriage, triageToAIData } from "@/lib/ai-triage";
+import { useBrain } from "@/context/BrainContext";
 import AttachmentGallery from "@/components/capture/AttachmentGallery";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import {
   Sheet,
   SheetContent,
@@ -25,7 +29,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import {
-  Mic, Type, Sparkles, Clock, ArrowRight, ChevronDown, ChevronRight, Brain,
+  Mic, Type, Sparkles, Clock, ArrowRight, ChevronDown, ChevronRight, Brain, RefreshCw, Loader2,
 } from "lucide-react";
 
 interface Props {
@@ -42,11 +46,37 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
     open && capture ? capture.id : null
   );
   const enrichment = useCaptureEnrichedContext({ capture, attachments, extractions });
+  const { replaceCaptureAI } = useBrain();
   const [ctxOpen, setCtxOpen] = useState(false);
+  const [reanalyzing, setReanalyzing] = useState(false);
+
+  const handleReanalyze = useCallback(async () => {
+    if (!capture || reanalyzing) return;
+    setReanalyzing(true);
+    try {
+      const aiInput = buildCaptureAIInput({
+        captureText: capture.raw_input,
+        enrichedContextText: enrichment.enrichedContextText,
+      });
+      const result = await runAITriage(capture.raw_input, aiInput);
+      const reviewStatus = result.triage.confidence >= 0.8 ? "auto_approved" as const : "needs_review" as const;
+      replaceCaptureAI(capture.id, result.aiData, reviewStatus);
+      toast.success("Re-analyzed with attachment intelligence", {
+        description: result.usedEnrichedContext
+          ? `Used ${enrichment.completedExtractionCount} attachment analysis${enrichment.completedExtractionCount !== 1 ? "es" : ""}`
+          : "Analyzed with original text",
+      });
+    } catch {
+      toast.error("Re-analysis failed. Please try again.");
+    } finally {
+      setReanalyzing(false);
+    }
+  }, [capture, enrichment, reanalyzing, replaceCaptureAI]);
 
   if (!capture) return null;
 
   const ai = capture.ai_data;
+  const canReanalyze = enrichment.hasEnrichment && !reanalyzing;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -82,9 +112,23 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
           {/* AI summary */}
           {ai && (
             <div className="rounded-lg bg-primary/5 border border-primary/10 px-4 py-3 space-y-3">
-              <p className="text-[10px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1">
-                <Sparkles className="h-3 w-3" /> AI Analysis
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" /> AI Analysis
+                </p>
+                {canReanalyze && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-[10px] gap-1 px-2 text-primary hover:text-primary"
+                    onClick={handleReanalyze}
+                    disabled={reanalyzing}
+                  >
+                    {reanalyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    Re-analyze with attachments
+                  </Button>
+                )}
+              </div>
               <p className="text-sm text-foreground/80 leading-relaxed">{ai.summary}</p>
 
               {ai.next_action && (
@@ -102,6 +146,20 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
                 </div>
               )}
             </div>
+          )}
+
+          {/* Re-analyze button when no AI data yet but enrichment available */}
+          {!ai && canReanalyze && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-1.5 text-xs"
+              onClick={handleReanalyze}
+              disabled={reanalyzing}
+            >
+              {reanalyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+              Analyze with attachment intelligence
+            </Button>
           )}
 
           {/* Attachments */}
