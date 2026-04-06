@@ -11,10 +11,12 @@ import {
   Mic, Type, ArrowRight, FolderOpen, Check, X,
   CalendarCheck, Lightbulb, Archive, Clock, Sparkles, Pencil,
   ShieldCheck, ShieldAlert, ShieldQuestion, Gauge, FolderKanban, Hourglass,
-  ChevronDown, ChevronUp, Inbox, Brain, Paperclip,
+  ChevronDown, ChevronUp, Inbox, Brain, Paperclip, FileSearch,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import type { CaptureSearchMatchResult } from "@/lib/capture-search-match";
+import { splitForHighlight } from "@/lib/capture-search-match";
 
 const categoryColors: Record<CaptureCategory, string> = {
   task: "bg-[hsl(var(--brain-teal))]/15 text-[hsl(var(--brain-teal))]",
@@ -62,9 +64,10 @@ interface InboxCardProps {
   capture: Capture;
   attachmentCount?: number;
   onOpenDetail?: (capture: Capture) => void;
+  searchMatch?: CaptureSearchMatchResult | null;
 }
 
-export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail }: InboxCardProps) {
+export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail, searchMatch }: InboxCardProps) {
   const ai = capture.ai_data;
   const { approveCapture, editAndApproveCapture, archiveCapture, routeCapture } = useBrain();
   const { linkCapture } = useProjects();
