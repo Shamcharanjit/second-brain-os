@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, Sparkles, CalendarCheck, Lightbulb, BookOpen, ArrowRight, Shield } from "lucide-react";
+import { Sparkles, CalendarCheck, Lightbulb, BookOpen, ArrowRight, Shield } from "lucide-react";
+import InsightHaloIcon from "@/components/branding/InsightHaloIcon";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import CaptureInput from "@/components/CaptureInput";
@@ -22,7 +23,7 @@ export default function DashboardWelcome() {
       {/* Hero welcome */}
       <div className="rounded-2xl border bg-card p-8 space-y-3">
         <div className="flex items-center gap-2.5">
-          <Brain className="h-7 w-7 text-primary" />
+          <InsightHaloIcon size="md" />
           <h1 className="text-2xl font-bold tracking-tight">Welcome to InsightHalo</h1>
         </div>
         <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">

@@ -8,7 +8,7 @@ import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
 import InsightHaloIcon from "@/components/branding/InsightHaloIcon";
 
 const NAV_LINKS = [
-  { to: "/", label: "Dashboard", icon: () => <InsightHaloIcon size="xs" /> },
+  { to: "/", label: "Dashboard", icon: () => <InsightHaloIcon size="xs" animated={false} /> },
   { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/today", label: "Today", icon: CalendarDays },
   { to: "/projects", label: "Projects", icon: FolderKanban },
