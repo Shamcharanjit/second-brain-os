@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,6 +28,14 @@ import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function AppShell() {
+  return (
+    <AppLayout>
+      <Outlet />
+    </AppLayout>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -41,11 +49,25 @@ const App = () => (
               <ReviewMetaProvider>
                 <BrowserRouter>
                   <Routes>
-                    {/* Public landing page — no app shell */}
+                    {/* Public landing page — no app chrome */}
                     <Route path="/" element={<LandingPage />} />
 
-                    {/* App routes — wrapped in AppLayout */}
-                    <Route element={<AppLayout><Routes><Route path="/app" element={<Dashboard />} /><Route path="/inbox" element={<InboxPage />} /><Route path="/today" element={<TodayPage />} /><Route path="/projects" element={<ProjectsPage />} /><Route path="/ai-review" element={<AIReviewPage />} /><Route path="/voice" element={<VoiceCapturePage />} /><Route path="/capture-gateway" element={<CaptureGatewayPage />} /><Route path="/review" element={<ReviewRitualsPage />} /><Route path="/memory" element={<MemoryPage />} /><Route path="/ideas" element={<IdeasVaultPage />} /><Route path="/auth" element={<AuthPage />} /><Route path="/settings" element={<SettingsPage />} /><Route path="/upgrade" element={<UpgradePage />} /><Route path="*" element={<NotFound />} /></Routes></AppLayout>}>
+                    {/* App routes — wrapped in sidebar layout */}
+                    <Route element={<AppShell />}>
+                      <Route path="/app" element={<Dashboard />} />
+                      <Route path="/inbox" element={<InboxPage />} />
+                      <Route path="/today" element={<TodayPage />} />
+                      <Route path="/projects" element={<ProjectsPage />} />
+                      <Route path="/ai-review" element={<AIReviewPage />} />
+                      <Route path="/voice" element={<VoiceCapturePage />} />
+                      <Route path="/capture-gateway" element={<CaptureGatewayPage />} />
+                      <Route path="/review" element={<ReviewRitualsPage />} />
+                      <Route path="/memory" element={<MemoryPage />} />
+                      <Route path="/ideas" element={<IdeasVaultPage />} />
+                      <Route path="/auth" element={<AuthPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/upgrade" element={<UpgradePage />} />
+                      <Route path="*" element={<NotFound />} />
                     </Route>
                   </Routes>
                 </BrowserRouter>
