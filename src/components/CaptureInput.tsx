@@ -92,6 +92,8 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     const hasFiles = pendingFiles.length > 0;
     if (!trimmed && !hasFiles) return;
     if (phase !== "idle") return;
+    // Guard: prevent rapid double-submit
+    if (timerRef.current) return;
 
     setPhase("processing");
     setLastResult(null);
@@ -123,10 +125,11 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     const destLabel = dest === "today" ? "Today" : dest === "ideas" ? "Ideas Vault" : dest === "projects" ? "Projects" : dest === "someday" ? "Someday" : "Inbox";
     const fileNote = filesToUpload.length > 0 ? ` + ${filesToUpload.length} file(s)` : "";
     toast.success("Thought captured.", {
-      description: `Routed to ${destLabel} as ${capture.ai_data?.category?.replace("_", " ")}${fileNote}`,
+      description: `Sorted to ${destLabel} as ${capture.ai_data?.category?.replace("_", " ")}${fileNote}`,
     });
 
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
+      timerRef.current = undefined;
       setPhase("idle");
       onComplete?.();
       textareaRef.current?.focus();
