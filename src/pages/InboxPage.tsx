@@ -55,13 +55,7 @@ export default function InboxPage() {
   const filtered = useMemo(() => {
     let list = active;
     if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (c) =>
-          c.raw_input.toLowerCase().includes(q) ||
-          c.ai_data?.title.toLowerCase().includes(q) ||
-          c.ai_data?.tags.some((t) => t.toLowerCase().includes(q))
-      );
+      list = list.filter((c) => searchIndex.matches(c, search));
     }
     switch (filter) {
       case "all": break;
