@@ -114,6 +114,31 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
             onDeleted={() => { refetch(); refetchExtractions(); }}
             onRetryTriggered={() => { setTimeout(refetchExtractions, 2000); }}
           />
+
+          {/* Enrichment context preview */}
+          {enrichment.hasEnrichment && (
+            <Collapsible open={ctxOpen} onOpenChange={setCtxOpen}>
+              <div className="flex items-center gap-1.5">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1 px-2 text-primary hover:text-primary">
+                    {ctxOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                    <Brain className="h-3 w-3" />
+                    AI Context Preview
+                  </Button>
+                </CollapsibleTrigger>
+                <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
+                  Uses {enrichment.completedExtractionCount} analysis{enrichment.completedExtractionCount !== 1 ? "es" : ""}
+                </Badge>
+              </div>
+              <CollapsibleContent className="mt-2">
+                <div className="rounded-md bg-secondary/40 border border-border/40 px-3 py-2 max-h-48 overflow-y-auto">
+                  <p className="text-[10px] text-muted-foreground whitespace-pre-wrap leading-relaxed font-mono">
+                    {enrichment.enrichedContextText}
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </div>
       </SheetContent>
     </Sheet>
