@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogIn, UserPlus, Loader2, Shield, Smartphone, Cloud, ArrowLeft } from "lucide-react";
+import { LogIn, UserPlus, Loader2, Shield, Smartphone, Cloud, ArrowLeft, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
+import { supabase } from "@/lib/supabase/client";
 
 const BENEFITS = [
   { icon: Cloud, text: "Sync across all your devices" },
@@ -20,6 +21,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [blocked, setBlocked] = useState(false);
 
   if (!cloudAvailable) {
     return (
@@ -38,10 +40,33 @@ export default function AuthPage() {
     );
   }
 
+  const checkInvite = async (emailToCheck: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.functions.invoke("check-invite", {
+        body: { email: emailToCheck.trim().toLowerCase() },
+      });
+      if (error) return false;
+      return data?.invited === true;
+    } catch {
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
     setLoading(true);
+    setBlocked(false);
+
+    if (mode === "signup") {
+      const invited = await checkInvite(email);
+      if (!invited) {
+        setBlocked(true);
+        setLoading(false);
+        return;
+      }
+    }
+
     const { error } = mode === "login"
       ? await signIn(email, password)
       : await signUp(email, password);
@@ -59,7 +84,7 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8">
-        {/* Header with animated logo */}
+        {/* Header */}
         <div className="text-center space-y-4">
           <InsightHaloLogo variant="auth" />
           <h1 className="text-2xl font-bold tracking-tight">
@@ -71,24 +96,46 @@ export default function AuthPage() {
               : "Unlock cloud sync to protect and access your data everywhere"
             }
           </p>
+          {/* Early access badge */}
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1">
+            <Lock className="h-3 w-3 text-primary" />
+            <span className="text-[11px] font-medium text-primary">Early Access · Invite Only</span>
+          </div>
         </div>
 
+        {/* Blocked state */}
+        {blocked && (
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3 text-center">
+            <p className="text-sm font-medium text-foreground">
+              InsightHalo is currently in controlled early access.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              This email hasn't been invited yet. Join the waitlist to be considered for access.
+            </p>
+            <Button size="sm" onClick={() => navigate("/waitlist")} className="gap-1.5">
+              Join the Waitlist
+            </Button>
+          </div>
+        )}
+
         {/* Benefits */}
-        <div className="space-y-2">
-          {BENEFITS.map((b) => (
-            <div key={b.text} className="flex items-center gap-2.5">
-              <b.icon className="h-3.5 w-3.5 text-primary/70" />
-              <span className="text-xs text-muted-foreground">{b.text}</span>
-            </div>
-          ))}
-        </div>
+        {!blocked && (
+          <div className="space-y-2">
+            {BENEFITS.map((b) => (
+              <div key={b.text} className="flex items-center gap-2.5">
+                <b.icon className="h-3.5 w-3.5 text-primary/70" />
+                <span className="text-xs text-muted-foreground">{b.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Input
               type="email" placeholder="Email" value={email}
-              onChange={(e) => setEmail(e.target.value)} required
+              onChange={(e) => { setEmail(e.target.value); setBlocked(false); }} required
             />
             <Input
               type="password" placeholder="Password" value={password}
@@ -105,7 +152,7 @@ export default function AuthPage() {
         <div className="text-center">
           <button
             type="button"
-            onClick={() => setMode(mode === "login" ? "signup" : "login")}
+            onClick={() => { setMode(mode === "login" ? "signup" : "login"); setBlocked(false); }}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
@@ -115,16 +162,16 @@ export default function AuthPage() {
         {/* Trust footer */}
         <div className="rounded-lg border border-dashed bg-muted/30 p-3 text-center space-y-1">
           <p className="text-[11px] text-muted-foreground">
-            Your existing local data will sync to your account automatically.
+            Access is currently by invitation only during early access.
           </p>
           <p className="text-[10px] text-muted-foreground/70">
-            No account required to use InsightHalo — you can always return to local-only mode.
+            Join the waitlist and we'll invite you as we open access in batches.
           </p>
         </div>
 
         <div className="text-center">
           <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-xs text-muted-foreground gap-1.5">
-            <ArrowLeft className="h-3 w-3" /> Continue without signing in
+            <ArrowLeft className="h-3 w-3" /> Back to home
           </Button>
         </div>
       </div>
