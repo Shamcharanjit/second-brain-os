@@ -11,8 +11,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import type { Capture } from "@/types/brain";
 import type { CaptureAttachment } from "@/lib/uploads";
-import type { ExtractionRow } from "@/hooks/useCaptureExtractions";
 import { buildCaptureSearchText, captureMatchesQuery } from "@/lib/capture-search-text";
+
+/** Extended extraction row with capture_id for indexing */
+interface SearchExtractionRow {
+  id: string;
+  attachment_id: string;
+  capture_id: string;
+  status: string;
+  kind: string;
+  extracted_text: string | null;
+  summary: string | null;
+  error_message: string | null;
+  completed_at: string | null;
+}
 
 interface CaptureSearchIndex {
   /** Whether enriched data has been loaded */
