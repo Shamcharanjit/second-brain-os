@@ -345,17 +345,3 @@ function InlineAudioPlayer({ att, disabled }: { att: CaptureAttachment; disabled
     </Button>
   );
 }
-
-/** Tiny extraction status badge */
-function ExtractionStatusBadge({ status }: { status: string }) {
-  const config: Record<string, { label: string; className: string }> = {
-    pending: { label: "Pending analysis", className: "text-muted-foreground" },
-    processing: { label: "Analyzing…", className: "text-primary animate-pulse" },
-    completed: { label: "✓ Analyzed", className: "text-[hsl(var(--brain-teal))]" },
-    failed: { label: "Analysis failed", className: "text-destructive" },
-    unsupported: { label: "", className: "" },
-  };
-  const c = config[status] ?? config.unsupported;
-  if (!c.label) return null;
-  return <span className={`text-[9px] font-medium ${c.className}`}>{c.label}</span>;
-}
