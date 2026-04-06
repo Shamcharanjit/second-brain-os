@@ -46,6 +46,9 @@ export default function InboxPage() {
   const captureIds = useMemo(() => captures.map((c) => c.id), [captures]);
   const attachmentCounts = useCaptureAttachmentCounts(captureIds);
 
+  // Enriched search index — fetches extraction data only when search is active
+  const searchIndex = useCaptureSearchIndex(captures, search);
+
   // Inbox = everything not archived
   const active = captures.filter((c) => c.status !== "archived");
 
