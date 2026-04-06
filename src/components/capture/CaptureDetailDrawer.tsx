@@ -6,6 +6,7 @@
 import { Capture } from "@/types/brain";
 import { useCaptureAttachmentDetails } from "@/hooks/useCaptureAttachments";
 import { useCaptureExtractions } from "@/hooks/useCaptureExtractions";
+import { useCaptureEnrichedContext } from "@/hooks/useCaptureEnrichedContext";
 import AttachmentGallery from "@/components/capture/AttachmentGallery";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,13 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import {
-  Mic, Type, Sparkles, Clock, ArrowRight,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
+import {
+  Mic, Type, Sparkles, Clock, ArrowRight, ChevronDown, ChevronRight, Brain,
 } from "lucide-react";
 
 interface Props {
