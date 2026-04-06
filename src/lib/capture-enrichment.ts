@@ -8,6 +8,7 @@
 
 import type { ExtractionRow } from "@/hooks/useCaptureExtractions";
 import type { CaptureAttachment } from "@/lib/uploads";
+import { evaluateExtractionQuality } from "@/lib/attachment-extraction-quality";
 
 /* ── Limits ─────────────────────────────────────── */
 const MAX_SUMMARY_CHARS = 500;
@@ -41,8 +42,13 @@ function buildSingleAttachmentContext(item: AttachmentWithExtraction): string | 
   const { attachment, extraction } = item;
   if (!extraction || extraction.status !== "completed") return null;
 
+  // Evaluate quality — skip empty extractions from AI context
+  const quality = evaluateExtractionQuality(extraction);
+  if (quality.band === "empty") return null;
+
   const parts: string[] = [];
-  parts.push(`[${kindLabel(extraction.kind)}: ${attachment.file_name}]`);
+  const qualityHint = quality.band === "low" ? " (limited quality)" : quality.band === "medium" ? " (partial)" : "";
+  parts.push(`[${kindLabel(extraction.kind)}: ${attachment.file_name}${qualityHint}]`);
 
   if (extraction.summary) {
     parts.push(`Summary: ${truncateText(extraction.summary, MAX_SUMMARY_CHARS)}`);
