@@ -2,6 +2,7 @@ import InboxCard from "@/components/InboxCard";
 import CaptureDetailDrawer from "@/components/capture/CaptureDetailDrawer";
 import { useBrain } from "@/context/BrainContext";
 import { useCaptureAttachmentCounts } from "@/hooks/useCaptureAttachments";
+import { useCaptureSearchIndex } from "@/hooks/useCaptureSearchIndex";
 import { CaptureCategory, Capture } from "@/types/brain";
 import { useState, useMemo } from "react";
 import {
