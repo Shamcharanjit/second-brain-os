@@ -2,6 +2,7 @@ import InboxCard from "@/components/InboxCard";
 import CaptureDetailDrawer from "@/components/capture/CaptureDetailDrawer";
 import { useBrain } from "@/context/BrainContext";
 import { useCaptureAttachmentCounts } from "@/hooks/useCaptureAttachments";
+import { useCaptureSearchIndex } from "@/hooks/useCaptureSearchIndex";
 import { CaptureCategory, Capture } from "@/types/brain";
 import { useState, useMemo } from "react";
 import {
@@ -45,19 +46,16 @@ export default function InboxPage() {
   const captureIds = useMemo(() => captures.map((c) => c.id), [captures]);
   const attachmentCounts = useCaptureAttachmentCounts(captureIds);
 
+  // Enriched search index — fetches extraction data only when search is active
+  const searchIndex = useCaptureSearchIndex(captures, search);
+
   // Inbox = everything not archived
   const active = captures.filter((c) => c.status !== "archived");
 
   const filtered = useMemo(() => {
     let list = active;
     if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (c) =>
-          c.raw_input.toLowerCase().includes(q) ||
-          c.ai_data?.title.toLowerCase().includes(q) ||
-          c.ai_data?.tags.some((t) => t.toLowerCase().includes(q))
-      );
+      list = list.filter((c) => searchIndex.matches(c, search));
     }
     switch (filter) {
       case "all": break;
