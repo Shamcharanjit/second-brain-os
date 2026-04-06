@@ -174,7 +174,10 @@ export default function InboxPage() {
         </div>
 
         {pendingReview.length === 0 ? (
-          <EmptyState message="All caught up! No items need review." />
+          <EmptyState
+            message={activeSearchQuery ? "No captures match this search." : "All caught up! No items need review."}
+            isSearch={!!activeSearchQuery}
+          />
         ) : (
           <div className="space-y-4">
             {pendingReview.map((c) => (
@@ -223,11 +226,18 @@ function KPICard({ icon, label, value, accent, highlight }: {
   );
 }
 
-function EmptyState({ message }: { message: string }) {
+function EmptyState({ message, isSearch }: { message: string; isSearch?: boolean }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <CheckCircle2 className="h-10 w-10 text-muted-foreground/30 mb-3" />
+    <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
+      {isSearch ? (
+        <Search className="h-10 w-10 text-muted-foreground/30 mb-1" />
+      ) : (
+        <CheckCircle2 className="h-10 w-10 text-muted-foreground/30 mb-1" />
+      )}
       <p className="text-sm font-medium text-muted-foreground">{message}</p>
+      {isSearch && (
+        <p className="text-xs text-muted-foreground/70">Try a different keyword or clear filters.</p>
+      )}
     </div>
   );
 }
