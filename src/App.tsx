@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +10,7 @@ import { MemoryProvider } from "@/context/MemoryContext";
 import { ReviewMetaProvider } from "@/context/ReviewMetaContext";
 import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import AppLayout from "@/components/AppLayout";
+import LandingPage from "@/pages/LandingPage";
 import Dashboard from "@/pages/Dashboard";
 import InboxPage from "@/pages/InboxPage";
 import TodayPage from "@/pages/TodayPage";
@@ -27,6 +28,14 @@ import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function AppShell() {
+  return (
+    <AppLayout>
+      <Outlet />
+    </AppLayout>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -39,9 +48,13 @@ const App = () => (
             <MemoryProvider>
               <ReviewMetaProvider>
                 <BrowserRouter>
-                  <AppLayout>
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
+                  <Routes>
+                    {/* Public landing page — no app chrome */}
+                    <Route path="/" element={<LandingPage />} />
+
+                    {/* App routes — wrapped in sidebar layout */}
+                    <Route element={<AppShell />}>
+                      <Route path="/app" element={<Dashboard />} />
                       <Route path="/inbox" element={<InboxPage />} />
                       <Route path="/today" element={<TodayPage />} />
                       <Route path="/projects" element={<ProjectsPage />} />
@@ -55,8 +68,8 @@ const App = () => (
                       <Route path="/settings" element={<SettingsPage />} />
                       <Route path="/upgrade" element={<UpgradePage />} />
                       <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </AppLayout>
+                    </Route>
+                  </Routes>
                 </BrowserRouter>
               </ReviewMetaProvider>
             </MemoryProvider>
