@@ -133,7 +133,7 @@ export default function LandingPage() {
           </nav>
           <div className="hidden md:flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate("/auth")} className="text-sm hover:bg-muted">Sign In</Button>
-            <Button size="sm" onClick={() => navigate("/auth")} className="gap-1.5 text-sm">Get Started <ArrowRight className="h-3.5 w-3.5" /></Button>
+            <Button size="sm" onClick={() => navigate("/waitlist")} className="gap-1.5 text-sm">Join Waitlist <ArrowRight className="h-3.5 w-3.5" /></Button>
           </div>
           <button className="md:hidden p-1.5" onClick={() => setMenuOpen(!menuOpen)}>
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -146,7 +146,7 @@ export default function LandingPage() {
             <button onClick={() => scrollTo("why")} className="block text-sm text-muted-foreground hover:text-foreground py-1.5 w-full text-left">Why InsightHalo</button>
             <div className="flex gap-2 pt-2">
               <SecondaryCTA onClick={() => navigate("/auth")} className="flex-1 text-sm h-9 px-3">Sign In</SecondaryCTA>
-              <Button size="sm" onClick={() => navigate("/auth")} className="flex-1 text-sm">Get Started</Button>
+              <Button size="sm" onClick={() => navigate("/waitlist")} className="flex-1 text-sm">Join Waitlist</Button>
             </div>
           </div>
         )}
@@ -182,8 +182,8 @@ export default function LandingPage() {
 
             <Reveal delay={300}>
               <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Button size="lg" onClick={() => navigate("/auth")} className="gap-2 text-base px-7 h-11 shadow-lg shadow-primary/20 w-full sm:w-auto">
-                  Get Started Free <ArrowRight className="h-4 w-4" />
+                <Button size="lg" onClick={() => navigate("/waitlist")} className="gap-2 text-base px-7 h-11 shadow-lg shadow-primary/20 w-full sm:w-auto">
+                  Join the Waitlist <ArrowRight className="h-4 w-4" />
                 </Button>
                 <SecondaryCTA onClick={() => scrollTo("how")}>See How It Works</SecondaryCTA>
               </div>
@@ -431,13 +431,13 @@ export default function LandingPage() {
             <div className="relative max-w-2xl mx-auto text-center space-y-5">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-primary/[0.03] rounded-full blur-3xl pointer-events-none" />
               <div className="relative space-y-4">
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">Start capturing before good ideas disappear.</h2>
-                <p className="text-base md:text-lg text-muted-foreground">Build your second brain with less friction. No credit card required.</p>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">Don't let your best ideas disappear.</h2>
+                <p className="text-base md:text-lg text-muted-foreground">Request early access to InsightHalo — your AI-powered second brain.</p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
-                  <Button size="lg" onClick={() => navigate("/auth")} className="gap-2 text-base px-7 h-11 shadow-lg shadow-primary/20 w-full sm:w-auto">
-                    Get Started Free <ArrowRight className="h-4 w-4" />
+                  <Button size="lg" onClick={() => navigate("/waitlist")} className="gap-2 text-base px-7 h-11 shadow-lg shadow-primary/20 w-full sm:w-auto">
+                    Join the Waitlist <ArrowRight className="h-4 w-4" />
                   </Button>
-                  <SecondaryCTA onClick={() => navigate("/app")}>Open App</SecondaryCTA>
+                  <SecondaryCTA onClick={() => navigate("/auth")}>Sign In</SecondaryCTA>
                 </div>
               </div>
             </div>
@@ -455,7 +455,8 @@ export default function LandingPage() {
               <span className="text-xs text-muted-foreground">— Built for clarity</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <button onClick={() => navigate("/app")} className="hover:text-foreground transition-colors">Open App</button>
+              <button onClick={() => navigate("/waitlist")} className="hover:text-foreground transition-colors">Join Waitlist</button>
+              <button onClick={() => navigate("/auth")} className="hover:text-foreground transition-colors">Sign In</button>
               <button onClick={() => navigate("/privacy")} className="hover:text-foreground transition-colors">Privacy</button>
               <button onClick={() => navigate("/terms")} className="hover:text-foreground transition-colors">Terms</button>
             </div>
