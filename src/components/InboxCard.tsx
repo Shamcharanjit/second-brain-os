@@ -349,6 +349,9 @@ export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail, 
           </div>
         )}
 
+        {/* Search match snippet */}
+        {!editing && searchMatch && <SearchMatchSnippet match={searchMatch} />}
+
         {/* Review reason banner */}
         {!editing && ai.review_reason && (
           <div className="flex items-center gap-2 rounded-lg bg-[hsl(var(--brain-amber))]/8 border border-[hsl(var(--brain-amber))]/15 px-3 py-2 text-[11px]">
@@ -401,6 +404,38 @@ export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail, 
           initialNextAction={ai.next_action}
         />
       )}
+    </div>
+  );
+}
+
+/* ── Search match snippet sub-component ─────────── */
+
+function SearchMatchSnippet({ match }: { match: CaptureSearchMatchResult }) {
+  const parts = splitForHighlight(match.snippet, match.matchTerm);
+  // Skip label for capture_text / ai_title since those are already visible
+  const showLabel = match.source !== "capture_text" && match.source !== "ai_title";
+
+  return (
+    <div className="flex items-start gap-1.5 mt-1">
+      <FileSearch className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+      <div className="min-w-0">
+        {showLabel && (
+          <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground mr-1.5">
+            {match.label}
+          </span>
+        )}
+        <span className="text-[11px] text-muted-foreground leading-snug">
+          {parts.map((part, i) =>
+            part.isMatch ? (
+              <mark key={i} className="bg-primary/15 text-foreground rounded-sm px-0.5 font-medium">
+                {part.text}
+              </mark>
+            ) : (
+              <span key={i}>{part.text}</span>
+            )
+          )}
+        </span>
+      </div>
     </div>
   );
 }
