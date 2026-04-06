@@ -161,10 +161,10 @@ export default function IdeasVaultPage() {
             <button
               key={f.value}
               onClick={() => setFilter(f.value)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium border transition-all ${
                 filter === f.value
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted/50"
               }`}
             >
               {f.label}
@@ -251,9 +251,10 @@ function KPICard({ icon, label, value, accent, highlight }: {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <Lightbulb className="h-10 w-10 text-muted-foreground/30 mb-3" />
+    <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
+      <Lightbulb className="h-10 w-10 text-muted-foreground/30 mb-1" />
       <p className="text-sm font-medium text-muted-foreground">{message}</p>
+      <p className="text-xs text-muted-foreground/70">Capture a thought and it may end up here.</p>
     </div>
   );
 }

@@ -146,15 +146,15 @@ export default function InboxPage() {
             <button
               key={f.value}
               onClick={() => setFilter(f.value)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium border transition-all ${
                 filter === f.value
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted/50"
               }`}
             >
               {f.label}
               {f.value === "pending_review" && totalPending > 0 && (
-                <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-primary-foreground/20 px-1.5 text-[10px]">
+                <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-primary/20 px-1.5 text-[10px]">
                   {totalPending}
                 </span>
               )}
@@ -174,7 +174,10 @@ export default function InboxPage() {
         </div>
 
         {pendingReview.length === 0 ? (
-          <EmptyState message="All caught up! No items need review." />
+          <EmptyState
+            message={activeSearchQuery ? "No captures match this search." : "All caught up! No items need review."}
+            isSearch={!!activeSearchQuery}
+          />
         ) : (
           <div className="space-y-4">
             {pendingReview.map((c) => (
@@ -223,11 +226,18 @@ function KPICard({ icon, label, value, accent, highlight }: {
   );
 }
 
-function EmptyState({ message }: { message: string }) {
+function EmptyState({ message, isSearch }: { message: string; isSearch?: boolean }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <CheckCircle2 className="h-10 w-10 text-muted-foreground/30 mb-3" />
+    <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
+      {isSearch ? (
+        <Search className="h-10 w-10 text-muted-foreground/30 mb-1" />
+      ) : (
+        <CheckCircle2 className="h-10 w-10 text-muted-foreground/30 mb-1" />
+      )}
       <p className="text-sm font-medium text-muted-foreground">{message}</p>
+      {isSearch && (
+        <p className="text-xs text-muted-foreground/70">Try a different keyword or clear filters.</p>
+      )}
     </div>
   );
 }

@@ -151,7 +151,11 @@ export default function AIReviewPage() {
         <p className="text-xs text-muted-foreground -mt-2">AI routed these automatically with high confidence.</p>
 
         {autoApproved.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">No auto-approved items yet.</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center space-y-1">
+            <ShieldCheck className="h-8 w-8 text-muted-foreground/20 mb-1" />
+            <p className="text-sm text-muted-foreground">No auto-approved items yet.</p>
+            <p className="text-xs text-muted-foreground/60">High-confidence captures will appear here automatically.</p>
+          </div>
         ) : (
           <div className="space-y-2">
             {autoApproved.map((c) => {

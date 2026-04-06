@@ -91,7 +91,7 @@ export default function TodayPage() {
     const capture = captures.find((c) => c.id === id);
     completeCapture(id);
     if (capture) syncCompletionToProject(capture);
-    toast.success("Marked complete ✓");
+    toast.success("Marked complete");
   };
 
   const handleUncomplete = (id: string) => {

@@ -115,18 +115,18 @@ export default function VoiceCapturePage() {
 
   const handleSave = useCallback(() => {
     const trimmed = transcript.trim();
-    if (!trimmed) return;
+    if (!trimmed || phase !== "editing") return;
     setPhase("processing");
     setTimeout(() => {
       addCapture(trimmed, "voice");
       setPhase("done");
-      toast.success("Voice capture saved", { description: "AI organized your thought." });
+      toast.success("Voice capture saved.", { description: "Organized and ready in your Inbox." });
       setTimeout(() => {
         setPhase("idle");
         setTranscript("");
       }, drivingMode ? 1500 : 1000);
     }, 1200);
-  }, [transcript, addCapture, drivingMode]);
+  }, [transcript, phase, addCapture, drivingMode]);
 
   const handleDiscard = () => {
     setPhase("idle");
@@ -384,7 +384,11 @@ export default function VoiceCapturePage() {
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Recent Voice Captures</h2>
         </div>
         {voiceCaptures.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">No voice captures yet. Try speaking a thought!</p>
+          <div className="flex flex-col items-center justify-center py-10 text-center space-y-2">
+            <Mic className="h-10 w-10 text-muted-foreground/30" />
+            <p className="text-sm font-medium text-muted-foreground">No voice captures yet.</p>
+            <p className="text-xs text-muted-foreground/70">Tap the mic above to capture your first thought.</p>
+          </div>
         ) : (
           <div className="space-y-2">
             {voiceCaptures.map((c) => {
