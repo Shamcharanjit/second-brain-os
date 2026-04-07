@@ -65,6 +65,14 @@ export default function WaitlistPage() {
         }
       } else {
         setSubmitted(true);
+        // Fire-and-forget: send confirmation email (don't block UI)
+        supabase.functions
+          .invoke("send-waitlist-confirmation-email", {
+            body: { email: email.trim().toLowerCase(), name: name.trim() },
+          })
+          .then(({ error: fnErr }) => {
+            if (fnErr) console.error("Confirmation email error:", fnErr);
+          });
       }
     } catch {
       toast.error("Something went wrong. Please try again.");
