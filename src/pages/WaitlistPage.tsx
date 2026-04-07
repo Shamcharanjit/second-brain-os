@@ -47,12 +47,12 @@ export default function WaitlistPage() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("waitlist_signups" as any).insert({
+      const { error } = await supabase.from("waitlist_signups").insert({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         use_case: useCase || null,
         notes: notes.trim() || null,
-      } as any);
+      });
 
       if (error) {
         if (error.code === "23505") {
