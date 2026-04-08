@@ -40,6 +40,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "pending_first", label: "Pending first" },
   { value: "invited_first", label: "Invited first" },
   { value: "reviewed_first", label: "Reviewed first" },
+  { value: "most_referrals", label: "Most referrals" },
 ];
 
 function generateToken(): string {
