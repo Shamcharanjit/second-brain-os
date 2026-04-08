@@ -52,12 +52,13 @@ export default function WaitlistPage() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("waitlist_signups").insert({
+      const { data, error } = await supabase.from("waitlist_signups").insert({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         use_case: useCase || null,
         notes: notes.trim() || null,
-      });
+        ...(refParam ? { referred_by: refParam } : {}),
+      }).select("referral_code, referral_count").single();
 
       if (error) {
         if (error.code === "23505") {
