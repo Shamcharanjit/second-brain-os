@@ -173,11 +173,13 @@ export default function UpgradePage() {
               <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
             </Button>
           ) : !isPro ? (
-            <Button className="w-full gap-2" onClick={handleUpgrade} disabled={checkoutLoading}>
+            <Button className="w-full gap-2" onClick={handleUpgrade} disabled={checkoutLoading || !billingEnabled}>
               {checkoutLoading ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Starting checkout…</>
+              ) : billingEnabled ? (
+                <><Sparkles className="h-4 w-4" /> Upgrade to Pro</>
               ) : (
-                <><Sparkles className="h-4 w-4" /> {billingEnabled ? "Upgrade to Pro" : "Activate Pro (Preview)"}</>
+                <><Sparkles className="h-4 w-4" /> Billing not yet enabled</>
               )}
             </Button>
           ) : (
@@ -187,17 +189,12 @@ export default function UpgradePage() {
                   Manage Subscription
                 </Button>
               )}
-              {!billingEnabled && (
-                <Button variant="outline" className="w-full gap-2 text-muted-foreground text-xs" onClick={() => setPlan("free")}>
-                  Switch to Free (dev)
-                </Button>
-              )}
             </div>
           )}
 
           {!billingEnabled && (
             <p className="text-[10px] text-center text-muted-foreground">
-              Billing integration coming soon. Toggle for testing.
+              Payment processing will be enabled soon.
             </p>
           )}
         </div>
