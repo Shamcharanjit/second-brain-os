@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Brain, ArrowLeft, RefreshCw, Users, UserCheck, Clock,
   TrendingUp, BarChart3, Activity, Loader2, ShieldCheck,
-  Zap, FolderKanban, BookOpen, Mic, ArrowRight, Gauge, Send, Star, Flame, TrendingDown,
+  Zap, FolderKanban, BookOpen, Mic, ArrowRight, Gauge, Send, Star, Flame, TrendingDown, Radar, AlertCircle, Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
