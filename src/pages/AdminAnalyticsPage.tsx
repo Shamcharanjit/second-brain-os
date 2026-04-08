@@ -19,6 +19,8 @@ type WaitlistEntry = {
   status: string;
   invited: boolean;
   invite_token: string | null;
+  invite_sent_at: string | null;
+  referral_reward_level: number;
   created_at: string;
 };
 
