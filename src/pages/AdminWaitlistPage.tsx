@@ -32,7 +32,7 @@ type WaitlistEntry = {
 
 const STATUS_OPTIONS = ["pending", "invited", "reviewed"] as const;
 
-type SortKey = "newest" | "oldest" | "pending_first" | "invited_first" | "reviewed_first";
+type SortKey = "newest" | "oldest" | "pending_first" | "invited_first" | "reviewed_first" | "most_referrals";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "newest", label: "Newest first" },
