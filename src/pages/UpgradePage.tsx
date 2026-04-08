@@ -46,24 +46,32 @@ export default function UpgradePage() {
       return;
     }
 
-    if (billingEnabled) {
-      setCheckoutLoading(true);
-      try {
+    if (!billingEnabled) {
+      toast.info("Billing is not yet enabled. Keys must be configured by the admin.");
+      return;
+    }
+
+    setCheckoutLoading(true);
+    try {
+      if (billingRegion === "india") {
+        const result = await createRazorpaySubscription();
+        if (result?.shortUrl) {
+          window.location.href = result.shortUrl;
+          return;
+        }
+        toast.error("Could not start Razorpay checkout. Please try again.");
+      } else {
         const result = await createCheckoutSession();
         if (result?.url) {
           window.location.href = result.url;
           return;
         }
         toast.error("Could not start checkout. Please try again.");
-      } catch (err: any) {
-        toast.error(err.message || "Checkout failed.");
-      } finally {
-        setCheckoutLoading(false);
       }
-    } else {
-      // Dormant mode — dev toggle
-      setPlan("pro");
-      toast.success("Pro activated (dev mode)");
+    } catch (err: any) {
+      toast.error(err.message || "Checkout failed.");
+    } finally {
+      setCheckoutLoading(false);
     }
   };
 
