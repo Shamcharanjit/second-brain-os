@@ -369,6 +369,7 @@ export default function AdminWaitlistPage() {
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invited</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invite Link</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invite Sent</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Referrals</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Signed Up</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Flags</th>
                   </tr>
