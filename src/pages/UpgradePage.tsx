@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { isStripeEnabled } from "@/lib/stripe/config";
 import { isRazorpayEnabled } from "@/lib/razorpay/config";
 import { createCheckoutSession, createPortalSession } from "@/lib/stripe/billing";
+import { createRazorpaySubscription } from "@/lib/razorpay/billing";
 import { toast } from "sonner";
 
 const FREE_FEATURES = [
