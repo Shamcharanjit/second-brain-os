@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  MessageSquare, Send, Mail, Globe, ArrowRight, ArrowDown,
+  MessageSquare, Send, Mail, Globe, ArrowDown,
   BrainCircuit, CheckCircle2, Clock, Mic, Zap, ChevronRight,
-  Sparkles, Shield, Radio,
+  Sparkles, Shield, Radio, Inbox,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,11 +20,10 @@ const CHANNELS = [
     icon: MessageSquare,
     color: "hsl(var(--brain-teal))",
     bgColor: "hsl(var(--brain-teal) / 0.12)",
-    status: "Beta" as const,
+    status: "Coming Soon" as const,
     description: "Send yourself a message or voice note and AI will process it.",
     example: "Forward any message → AI captures, classifies, and routes it.",
     captures: "Quick thoughts, reminders, voice notes, links",
-    lastActivity: "12 min ago",
   },
   {
     id: "telegram" as const,
@@ -32,11 +31,10 @@ const CHANNELS = [
     icon: Send,
     color: "hsl(var(--brain-blue))",
     bgColor: "hsl(var(--brain-blue) / 0.12)",
-    status: "Beta" as const,
+    status: "Coming Soon" as const,
     description: "Forward ideas, reminders, and follow-ups to your private capture bot.",
     example: "/capture Build a Chrome extension for quick idea saving",
     captures: "Ideas, systems, planning, links, structured notes",
-    lastActivity: "1 hr ago",
   },
   {
     id: "email" as const,
@@ -44,11 +42,10 @@ const CHANNELS = [
     icon: Mail,
     color: "hsl(var(--brain-amber))",
     bgColor: "hsl(var(--brain-amber) / 0.12)",
-    status: "Active" as const,
+    status: "Coming Soon" as const,
     description: "Email tasks, notes, and important thoughts into InsightHalo.",
     example: "Subject: Task — Prepare proposal draft for clinic client",
     captures: "Client work, proposals, admin tasks, follow-ups",
-    lastActivity: "35 min ago",
   },
   {
     id: "web" as const,
@@ -60,34 +57,10 @@ const CHANNELS = [
     description: "Share content from any browser or app directly into your brain.",
     example: "Share a URL or text snippet → auto-captured and categorized.",
     captures: "Articles, links, screenshots, text clips",
-    lastActivity: "2 hrs ago",
   },
 ];
 
 type ChannelId = (typeof CHANNELS)[number]["id"];
-
-/* ── Mock incoming external captures ── */
-interface ExternalCapture {
-  id: string;
-  channel: ChannelId;
-  raw: string;
-  isVoiceNote: boolean;
-  timeAgo: string;
-  aiTitle: string;
-  aiCategory: string;
-  destination: string;
-  project: string | null;
-  status: "auto_approved" | "needs_review";
-}
-
-const MOCK_EXTERNALS: ExternalCapture[] = [
-  { id: "ext-1", channel: "whatsapp", raw: "Remind me to follow up with the contractor tomorrow", isVoiceNote: false, timeAgo: "12 min ago", aiTitle: "Follow up with contractor", aiCategory: "reminder", destination: "Today", project: "Client Work", status: "auto_approved" },
-  { id: "ext-2", channel: "telegram", raw: "Idea: create a capture widget Chrome extension for quick saves from any tab", isVoiceNote: false, timeAgo: "1 hr ago", aiTitle: "Chrome extension capture widget", aiCategory: "idea", destination: "Ideas Vault", project: "Product Development", status: "auto_approved" },
-  { id: "ext-3", channel: "email", raw: "Need to prepare proposal draft for the clinic client before Thursday meeting", isVoiceNote: false, timeAgo: "35 min ago", aiTitle: "Prepare clinic client proposal", aiCategory: "task", destination: "Today", project: "Client Work", status: "auto_approved" },
-  { id: "ext-4", channel: "whatsapp", raw: "Business idea — build an AI WhatsApp assistant specifically for founders and operators", isVoiceNote: true, timeAgo: "2 hrs ago", aiTitle: "AI WhatsApp assistant for founders", aiCategory: "idea", destination: "Ideas Vault", project: "Growth Experiments", status: "needs_review" },
-  { id: "ext-5", channel: "telegram", raw: "Set up automated weekly report pipeline for client dashboards", isVoiceNote: false, timeAgo: "3 hrs ago", aiTitle: "Automate weekly report pipeline", aiCategory: "project", destination: "Projects", project: "Operations", status: "auto_approved" },
-  { id: "ext-6", channel: "email", raw: "Circle back with Sarah about the updated contract terms she mentioned last call", isVoiceNote: false, timeAgo: "4 hrs ago", aiTitle: "Follow up on contract terms with Sarah", aiCategory: "follow_up", destination: "Inbox", project: "Client Work", status: "needs_review" },
-];
 
 /* ── Channel routing rules ── */
 const ROUTING_RULES: Record<ChannelId, { bias: string; routes: string[]; style: string }> = {
@@ -106,7 +79,7 @@ const FLOW_STEPS = [
 ];
 
 export default function CaptureGatewayPage() {
-  const { addCapture } = useBrain();
+  const { captures, addCapture } = useBrain();
   const navigate = useNavigate();
 
   const [simChannel, setSimChannel] = useState<ChannelId>("whatsapp");
@@ -130,23 +103,26 @@ export default function CaptureGatewayPage() {
     setSimSaved(true);
   }
 
-  /* ── Stats ── */
+  /* ── Stats from real captures ── */
   const stats = useMemo(() => {
-    const approved = MOCK_EXTERNALS.filter((e) => e.status === "auto_approved").length;
-    const review = MOCK_EXTERNALS.filter((e) => e.status === "needs_review").length;
-    return {
-      total: MOCK_EXTERNALS.length,
-      approved,
-      review,
-      channels: new Set(MOCK_EXTERNALS.map((e) => e.channel)).size,
-    };
-  }, []);
+    const total = captures.length;
+    const approved = captures.filter((c) => c.review_status === "auto_approved" || c.review_status === "approved").length;
+    const review = captures.filter((c) => c.review_status === "needs_review").length;
+    return { total, approved, review };
+  }, [captures]);
+
+  const recentCaptures = useMemo(() => {
+    return captures
+      .slice()
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 10);
+  }, [captures]);
 
   const kpis = [
-    { label: "External Captures", value: stats.total, icon: Radio, color: "text-primary" },
-    { label: "Auto-Approved", value: stats.approved, icon: CheckCircle2, color: "text-[hsl(var(--brain-teal))]" },
+    { label: "Total Captures", value: stats.total, icon: Radio, color: "text-primary" },
+    { label: "Approved", value: stats.approved, icon: CheckCircle2, color: "text-[hsl(var(--brain-teal))]" },
     { label: "Needs Review", value: stats.review, icon: Shield, color: "text-[hsl(var(--brain-amber))]" },
-    { label: "Active Channels", value: stats.channels, icon: Zap, color: "text-[hsl(var(--brain-purple))]" },
+    { label: "Channels Available", value: CHANNELS.length, icon: Zap, color: "text-[hsl(var(--brain-purple))]" },
   ];
 
   return (
@@ -180,7 +156,7 @@ export default function CaptureGatewayPage() {
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <Radio className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Connected Capture Channels</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Capture Channels</h2>
         </div>
         <div className="grid md:grid-cols-2 gap-3">
           {CHANNELS.map((ch) => (
@@ -198,8 +174,6 @@ export default function CaptureGatewayPage() {
                   </div>
                   <p className="text-[10px] text-muted-foreground">{ch.captures}</p>
                 </div>
-                <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
-                <span className="text-[10px] text-muted-foreground shrink-0">{ch.lastActivity}</span>
               </div>
               <p className="text-xs text-muted-foreground">{ch.description}</p>
               <div className="rounded-lg bg-muted/50 p-2.5">
@@ -246,7 +220,7 @@ export default function CaptureGatewayPage() {
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4 text-[hsl(var(--brain-amber))]" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Test External Capture</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Test Capture</h2>
         </div>
         <div className="rounded-xl border bg-card p-5 space-y-4">
           {/* Channel selector */}
@@ -323,44 +297,55 @@ export default function CaptureGatewayPage() {
         </div>
       </section>
 
-      {/* Recent External Captures */}
+      {/* Recent Captures (real data) */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 text-[hsl(var(--brain-blue))]" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Recent External Captures</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Recent Captures</h2>
         </div>
-        <div className="space-y-2">
-          {MOCK_EXTERNALS.map((ext) => {
-            const ch = channelIcon(ext.channel);
-            return (
-              <div key={ext.id} className="rounded-xl border bg-card p-4 flex items-start gap-3 hover:shadow-sm transition-all">
-                <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: ch.bgColor }}>
-                  <ch.icon className="h-4 w-4" style={{ color: ch.color }} />
-                </div>
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-semibold">{ext.aiTitle}</span>
-                    {ext.isVoiceNote && (
-                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0 gap-0.5">
-                        <Mic className="h-2.5 w-2.5" /> Voice
+        {recentCaptures.length === 0 ? (
+          <div className="rounded-xl border bg-card p-8 text-center space-y-3">
+            <Inbox className="h-8 w-8 text-muted-foreground/40 mx-auto" />
+            <p className="text-sm text-muted-foreground">No captures yet. Use the simulator above or capture from the dashboard.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {recentCaptures.map((cap) => {
+              const aiData = cap.ai_data as AIProcessedData | null;
+              const title = aiData?.title || cap.raw_input.slice(0, 60);
+              const category = aiData?.category?.replace("_", " ") || "uncategorized";
+              const destination = aiData?.destination_suggestion || "inbox";
+              const isVoice = cap.input_type === "voice";
+              const timeAgo = getTimeAgo(cap.created_at);
+              return (
+                <div key={cap.id} className="rounded-xl border bg-card p-4 flex items-start gap-3 hover:shadow-sm transition-all">
+                  <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
+                    <Globe className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-semibold">{title}</span>
+                      {isVoice && (
+                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 gap-0.5">
+                          <Mic className="h-2.5 w-2.5" /> Voice
+                        </Badge>
+                      )}
+                      <Badge variant={cap.review_status === "auto_approved" || cap.review_status === "approved" ? "default" : "outline"} className="text-[9px] px-1.5 py-0">
+                        {cap.review_status === "auto_approved" || cap.review_status === "approved" ? "Auto" : "Review"}
                       </Badge>
-                    )}
-                    <Badge variant={ext.status === "auto_approved" ? "default" : "outline"} className="text-[9px] px-1.5 py-0">
-                      {ext.status === "auto_approved" ? "Auto" : "Review"}
-                    </Badge>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground truncate">{ext.raw}</p>
-                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                    <span className="capitalize">{ext.aiCategory.replace("_", " ")}</span>
-                    <span>→ {ext.destination}</span>
-                    {ext.project && <span className="text-primary/80">{ext.project}</span>}
-                    <span>{ext.timeAgo}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground truncate">{cap.raw_input}</p>
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                      <span className="capitalize">{category}</span>
+                      <span>→ {destination}</span>
+                      <span>{timeAgo}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* Channel Routing Rules */}
@@ -393,4 +378,15 @@ export default function CaptureGatewayPage() {
       </section>
     </div>
   );
+}
+
+function getTimeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
 }
