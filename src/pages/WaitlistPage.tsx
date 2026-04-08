@@ -70,8 +70,9 @@ export default function WaitlistPage() {
           console.error("Waitlist error:", error);
         }
       } else {
-        setReferralCode(data?.referral_code ?? null);
-        setReferralCount(data?.referral_count ?? 0);
+        const result = data as { referral_code?: string; referral_count?: number } | null;
+        setReferralCode(result?.referral_code ?? null);
+        setReferralCount(result?.referral_count ?? 0);
         setSubmitted(true);
         // Fire-and-forget: send confirmation email (don't block UI)
         supabase.functions
