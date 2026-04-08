@@ -117,21 +117,30 @@ export default function AdminAnalyticsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [wl, cap, proj, mem] = await Promise.all([
-        supabase.from("waitlist_signups" as any).select("id, status, invited, invite_token, invite_sent_at, referral_reward_level, created_at").order("created_at", { ascending: false }),
-        supabase.from("user_captures" as any).select("user_id, input_type, created_at, updated_at"),
-        supabase.from("user_projects" as any).select("user_id, created_at, updated_at"),
-        supabase.from("user_memory_entries" as any).select("user_id, created_at, updated_at"),
-      ]);
+      // Waitlist: authenticated users can SELECT via RLS
+      const wl = await supabase
+        .from("waitlist_signups" as any)
+        .select("id, status, invited, invite_token, invite_sent_at, referral_reward_level, created_at")
+        .order("created_at", { ascending: false });
 
-      if (wl.error) throw wl.error;
+      if (wl.error) {
+        console.error("Waitlist query error:", wl.error);
+      }
       setWaitlist((wl.data as any as WaitlistEntry[]) || []);
-      setCaptures((cap.data as any as CaptureRow[]) || []);
-      setProjects((proj.data as any as ProjectRow[]) || []);
-      setMemories((mem.data as any as MemoryRow[]) || []);
+
+      // User activity: use security-definer RPC to bypass per-user RLS
+      const rpc = await supabase.rpc("get_admin_analytics" as any);
+      if (rpc.error) {
+        console.error("Admin analytics RPC error:", rpc.error);
+      } else if (rpc.data) {
+        const d = rpc.data as any;
+        setCaptures((d.captures as CaptureRow[]) || []);
+        setProjects((d.projects as ProjectRow[]) || []);
+        setMemories((d.memories as MemoryRow[]) || []);
+      }
     } catch (e) {
-      toast.error("Failed to load analytics data");
-      console.error(e);
+      console.error("Analytics fetch error:", e);
+      toast.error("Some analytics data could not be loaded");
     }
     setLoading(false);
   };
