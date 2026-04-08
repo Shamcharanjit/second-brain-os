@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { isFounderAdmin } from "@/lib/admin";
 import { Button } from "@/components/ui/button";
 import {
   Brain, ArrowLeft, RefreshCw, Users, UserCheck, Clock,
@@ -311,7 +312,7 @@ export default function AdminAnalyticsPage() {
   }, [captures, projects, memories]);
 
   /* ── auth gate ── */
-  if (!cloudAvailable || !user) {
+  if (!cloudAvailable || !user || !isFounderAdmin(user?.email)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="text-center space-y-4">
