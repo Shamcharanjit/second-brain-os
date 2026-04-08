@@ -178,6 +178,45 @@ export type Database = {
           },
         ]
       }
+      rollout_decisions: {
+        Row: {
+          actual_sent: number
+          created_at: string
+          decided_at: string
+          decision: string
+          health_state: string
+          id: string
+          notes: string | null
+          recommended_batch: number
+          rollout_state: string
+          updated_at: string
+        }
+        Insert: {
+          actual_sent?: number
+          created_at?: string
+          decided_at?: string
+          decision?: string
+          health_state?: string
+          id?: string
+          notes?: string | null
+          recommended_batch: number
+          rollout_state?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_sent?: number
+          created_at?: string
+          decided_at?: string
+          decision?: string
+          health_state?: string
+          id?: string
+          notes?: string | null
+          recommended_batch?: number
+          rollout_state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_captures: {
         Row: {
           ai_data: Json | null

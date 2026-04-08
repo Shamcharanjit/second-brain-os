@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase/client";
@@ -9,6 +9,7 @@ import {
   TrendingUp, BarChart3, Activity, Loader2, ShieldCheck,
   Zap, FolderKanban, BookOpen, Mic, ArrowRight, Gauge, Send, Star, Flame, TrendingDown, Radar, AlertCircle, Rocket,
   Award, Target, Lightbulb, Crown, ArrowUpRight, ArrowDownRight, Minus,
+  Shield, Pause, Play, ChevronDown, History, X, Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -36,6 +37,16 @@ type WaitlistEntry = {
 type CaptureRow = { user_id: string; input_type: string; review_status?: string; created_at: string; updated_at: string };
 type ProjectRow = { user_id: string; created_at: string; updated_at: string };
 type MemoryRow = { user_id: string; created_at: string; updated_at: string };
+type RolloutDecision = {
+  id: string;
+  decided_at: string;
+  recommended_batch: number;
+  actual_sent: number;
+  health_state: string;
+  rollout_state: string;
+  decision: string;
+  notes: string | null;
+};
 
 type StatCardProps = {
   label: string;
@@ -137,7 +148,6 @@ function CohortGauge({ score, label }: { score: number; label: string }) {
         <p className={cn("text-4xl font-bold tracking-tight", color)}>{score}</p>
         <span className="text-sm text-muted-foreground">/ 100</span>
       </div>
-      {/* Progress bar */}
       <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
         <div className={cn("h-full rounded-full transition-all", score >= 80 ? "bg-primary" : score >= 50 ? "bg-blue-500" : score >= 25 ? "bg-yellow-500" : "bg-destructive")}
           style={{ width: `${score}%` }} />
@@ -183,7 +193,13 @@ export default function AdminAnalyticsPage() {
   const [captures, setCaptures] = useState<CaptureRow[]>([]);
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [memories, setMemories] = useState<MemoryRow[]>([]);
+  const [rolloutHistory, setRolloutHistory] = useState<RolloutDecision[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Rollout decision center state
+  const [excludedCandidates, setExcludedCandidates] = useState<Set<string>>(new Set());
+  const [rolloutNotes, setRolloutNotes] = useState("");
+  const [submittingDecision, setSubmittingDecision] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -204,6 +220,16 @@ export default function AdminAnalyticsPage() {
         setCaptures((d.captures as CaptureRow[]) || []);
         setProjects((d.projects as ProjectRow[]) || []);
         setMemories((d.memories as MemoryRow[]) || []);
+      }
+
+      // Fetch rollout history
+      const rh = await supabase
+        .from("rollout_decisions" as any)
+        .select("*")
+        .order("decided_at", { ascending: false })
+        .limit(20);
+      if (!rh.error && rh.data) {
+        setRolloutHistory(rh.data as any as RolloutDecision[]);
       }
     } catch (e) {
       console.error("Analytics fetch error:", e);
@@ -253,7 +279,6 @@ export default function AdminAnalyticsPage() {
     const pctAccepted = opened > 0 ? Math.round((accepted / opened) * 100) : 0;
     const pctActivated = accepted > 0 ? Math.round((activated / accepted) * 100) : 0;
 
-    // Simple trend: compare last 3 days vs prior 3 days
     const now = new Date();
     const d3 = subDays(now, 3);
     const d6 = subDays(now, 6);
@@ -294,22 +319,17 @@ export default function AdminAnalyticsPage() {
     const h24 = subHours(now, 24);
     const d7 = subDays(now, 7);
 
-    const withReferrals = waitlist.filter((e) => e.referral_count > 0);
     const totalRefs = waitlist.reduce((sum, e) => sum + e.referral_count, 0);
-
-    // Referrals last 24h: users who were referred_by and created in last 24h
     const refs24h = waitlist.filter((e) => (e as any).referred_by && isAfter(new Date(e.created_at), h24)).length;
     const refs7d = waitlist.filter((e) => (e as any).referred_by && isAfter(new Date(e.created_at), d7)).length;
 
     const invitedCount = waitlist.filter((e) => e.invited).length;
     const avgPerInvited = invitedCount > 0 ? (totalRefs / invitedCount).toFixed(1) : "0";
 
-    // Day-over-day comparison for viral acceleration
     const yesterday = subHours(now, 48);
     const refsDayBefore = waitlist.filter((e) => (e as any).referred_by && isAfter(new Date(e.created_at), yesterday) && !isAfter(new Date(e.created_at), h24)).length;
     const viralAccelerating = refs24h > refsDayBefore;
 
-    // Top referrers
     const topReferrers = [...waitlist]
       .filter((e) => e.referral_count > 0)
       .sort((a, b) => b.referral_count - a.referral_count)
@@ -347,12 +367,11 @@ export default function AdminAnalyticsPage() {
 
   const hasActivationData = activation.totalRegistered > 0;
 
-  /* ── PART 3: Invite timing recommendation ── */
+  /* ── Invite timing / health recommendation ── */
   const inviteRecommendation = useMemo(() => {
     const now = new Date();
     const h24 = subHours(now, 24);
 
-    // Activation rate
     const sentToday = waitlist.filter((e) => e.invited && e.invite_sent_at && isAfter(new Date(e.invite_sent_at), h24)).length;
     const acceptedToday = activeAfter(
       [...captures.map((c) => ({ user_id: c.user_id, updated_at: c.created_at })),
@@ -362,39 +381,130 @@ export default function AdminAnalyticsPage() {
     );
     const activationRate = sentToday > 0 ? Math.round((acceptedToday / sentToday) * 100) : (activation.totalRegistered > 0 ? 50 : 0);
 
-    // Retention indicator (7d active / total)
     const retentionRate = activation.totalRegistered > 0 ? Math.round((activation.active7d / activation.totalRegistered) * 100) : 0;
-
-    // Referral velocity score
     const refScore = referralVelocity.viralAccelerating ? 20 : referralVelocity.refs24h > 0 ? 10 : 0;
-
-    // Engagement score
     const engagementScore = activation.active7d > 0 ? Math.min(Math.round((captures.length / Math.max(activation.active7d, 1)) * 10), 30) : 0;
-
     const compositeScore = activationRate * 0.4 + retentionRate * 0.3 + refScore + engagementScore * 0.3;
+
+    // Invite acceptance rate
+    const totalInvited = waitlist.filter(e => e.invited).length;
+    const totalAccepted = waitlist.filter(e => e.invite_accepted_at).length;
+    const acceptanceRate = totalInvited > 0 ? Math.round((totalAccepted / totalInvited) * 100) : 0;
 
     let recommended: number;
     let explanation: string;
+    let healthState: "strong" | "stable" | "moderate" | "weak";
+    let rolloutState: "increase" | "hold" | "slow" | "pause";
+    let riskLevel: "Low" | "Moderate" | "High";
+
     if (compositeScore >= 60) {
       recommended = 20;
       explanation = "Activation strong, retention healthy, referrals growing — safe to accelerate rollout";
+      healthState = "strong";
+      rolloutState = "increase";
+      riskLevel = "Low";
     } else if (compositeScore >= 40) {
       recommended = 10;
       explanation = "Activation stable — proceed with standard rollout pace";
+      healthState = "stable";
+      rolloutState = "hold";
+      riskLevel = "Low";
     } else if (compositeScore >= 20) {
       recommended = 5;
       explanation = "Activation moderate — conservative invite pace recommended";
+      healthState = "moderate";
+      rolloutState = "slow";
+      riskLevel = "Moderate";
     } else {
       recommended = 2;
       explanation = "Activation weak — slow invite pace, focus on improving onboarding";
+      healthState = "weak";
+      rolloutState = "pause";
+      riskLevel = "High";
     }
 
     const pendingHighPriority = waitlist.filter((e) => e.status === "pending" && !e.invited && e.referral_reward_level >= 3).length;
 
-    return { recommended, explanation, compositeScore, activationRate, retentionRate, refScore, engagementScore, pendingHighPriority, sentToday, acceptedToday };
+    return { recommended, explanation, compositeScore, activationRate, retentionRate, refScore, engagementScore, pendingHighPriority, sentToday, acceptedToday, healthState, rolloutState, riskLevel, acceptanceRate };
   }, [waitlist, captures, projects, memories, activation, referralVelocity]);
 
-  /* ── PART 4: Engagement heat signals ── */
+  /* ── PART 1: Daily invite queue candidates ── */
+  const inviteCandidates = useMemo(() => {
+    return waitlist
+      .filter((e) => e.status === "pending" && !e.invited)
+      .map((e) => ({
+        ...e,
+        priorityScore: e.referral_reward_level * 10 + e.referral_count * 2 + differenceInDays(new Date(), new Date(e.created_at)),
+      }))
+      .sort((a, b) => {
+        if (b.referral_reward_level !== a.referral_reward_level) return b.referral_reward_level - a.referral_reward_level;
+        if (b.referral_count !== a.referral_count) return b.referral_count - a.referral_count;
+        if (b.priorityScore !== a.priorityScore) return b.priorityScore - a.priorityScore;
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+  }, [waitlist]);
+
+  const activeCandidates = useMemo(() => {
+    return inviteCandidates.filter(c => !excludedCandidates.has(c.id));
+  }, [inviteCandidates, excludedCandidates]);
+
+  const toggleExcludeCandidate = useCallback((id: string) => {
+    setExcludedCandidates(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  /* ── Rollout decision handlers ── */
+  const submitDecision = async (decision: "approve" | "reduce" | "pause", batchSize: number) => {
+    setSubmittingDecision(true);
+    try {
+      const actualSent = decision === "pause" ? 0 : Math.min(batchSize, activeCandidates.length);
+
+      // Log the decision
+      const { error: logError } = await supabase.from("rollout_decisions" as any).insert({
+        recommended_batch: inviteRecommendation.recommended,
+        actual_sent: actualSent,
+        health_state: inviteRecommendation.healthState,
+        rollout_state: decision === "approve" ? inviteRecommendation.rolloutState : decision === "reduce" ? "slow" : "pause",
+        decision,
+        notes: rolloutNotes.trim() || null,
+      } as any);
+
+      if (logError) {
+        console.error("Failed to log decision:", logError);
+        toast.error("Failed to log rollout decision");
+        setSubmittingDecision(false);
+        return;
+      }
+
+      // If not pausing, send the batch
+      if (decision !== "pause" && actualSent > 0) {
+        const candidateIds = activeCandidates.slice(0, actualSent).map(c => c.id);
+        const { data, error } = await supabase.functions.invoke("send-invite-email", {
+          body: { batch_size: actualSent },
+        });
+        if (error) {
+          toast.error("Batch invite failed");
+        } else if (data?.success) {
+          toast.success(`Rollout approved: ${data.results?.sent || actualSent} invite(s) sent`);
+        }
+      } else if (decision === "pause") {
+        toast.success("Rollout paused for today");
+      }
+
+      setRolloutNotes("");
+      setExcludedCandidates(new Set());
+      await fetchData();
+    } catch (err) {
+      console.error("Decision error:", err);
+      toast.error("Failed to process rollout decision");
+    }
+    setSubmittingDecision(false);
+  };
+
+  /* ── Engagement heat signals ── */
   const engagementHeat = useMemo(() => {
     const activeUsers = Math.max(activation.active7d, 1);
     const sevenDaysAgo = subDays(new Date(), 7);
@@ -403,20 +513,15 @@ export default function AdminAnalyticsPage() {
     const mem7d = memories.filter((m) => isAfter(new Date(m.created_at), sevenDaysAgo));
     const voice7d = captures.filter((c) => c.input_type === "voice" && isAfter(new Date(c.created_at), sevenDaysAgo));
 
-    const capturesPerUser = cap7d.length / activeUsers;
-    const projectsPerUser = proj7d.length / activeUsers;
-    const memoriesPerUser = mem7d.length / activeUsers;
-    const voicePerUser = voice7d.length / activeUsers;
-
     return {
-      captures: { total: cap7d.length, perUser: capturesPerUser, level: getEngagementLevel(capturesPerUser) },
-      projects: { total: proj7d.length, perUser: projectsPerUser, level: getEngagementLevel(projectsPerUser) },
-      memories: { total: mem7d.length, perUser: memoriesPerUser, level: getEngagementLevel(memoriesPerUser) },
-      voice: { total: voice7d.length, perUser: voicePerUser, level: getEngagementLevel(voicePerUser) },
+      captures: { total: cap7d.length, perUser: cap7d.length / activeUsers, level: getEngagementLevel(cap7d.length / activeUsers) },
+      projects: { total: proj7d.length, perUser: proj7d.length / activeUsers, level: getEngagementLevel(proj7d.length / activeUsers) },
+      memories: { total: mem7d.length, perUser: mem7d.length / activeUsers, level: getEngagementLevel(mem7d.length / activeUsers) },
+      voice: { total: voice7d.length, perUser: voice7d.length / activeUsers, level: getEngagementLevel(voice7d.length / activeUsers) },
     };
   }, [captures, projects, memories, activation.active7d]);
 
-  /* ── PART 5: Early Cohort Quality Score ── */
+  /* ── Cohort Quality Score ── */
   const cohortScore = useMemo(() => {
     const totalInvited = Math.max(wlMetrics.invited, 1);
     const activationScore = Math.min(Math.round((wlMetrics.activated / totalInvited) * 100), 100);
@@ -425,21 +530,15 @@ export default function AdminAnalyticsPage() {
     const projectScore = Math.min(Math.round((projects.length / Math.max(activation.totalRegistered, 1)) * 30), 100);
     const memoryScore = Math.min(Math.round((memories.length / Math.max(activation.totalRegistered, 1)) * 30), 100);
 
-    // Weighted: activation 30%, referrals 20%, captures 20%, projects 15%, memory 15%
     const weighted = Math.round(
-      activationScore * 0.30 +
-      referralScore * 0.20 +
-      captureScore * 0.20 +
-      projectScore * 0.15 +
-      memoryScore * 0.15
+      activationScore * 0.30 + referralScore * 0.20 + captureScore * 0.20 + projectScore * 0.15 + memoryScore * 0.15
     );
     const clamped = Math.min(weighted, 100);
-
     const label = clamped >= 80 ? "Excellent" : clamped >= 50 ? "Strong" : clamped >= 25 ? "Healthy" : "Low";
     return { score: clamped, label, activationScore, referralScore, captureScore, projectScore, memoryScore };
   }, [wlMetrics, referralVelocity, captures, projects, memories, activation]);
 
-  /* ── PART 6: Referral leaderboard ── */
+  /* ── Referral leaderboard ── */
   const referralLeaderboard = useMemo(() => {
     return [...waitlist]
       .filter((e) => e.referral_count > 0)
@@ -504,6 +603,19 @@ export default function AdminAnalyticsPage() {
   const maxDailyCount = Math.max(...wlMetrics.dailyBreakdown.map((d) => d.count), 1);
   const REWARD_LABELS: Record<number, string> = { 0: "—", 1: "Priority", 3: "Fast-track", 5: "Feature access", 10: "Insider" };
 
+  const rolloutStateConfig: Record<string, { label: string; icon: React.ElementType; cls: string }> = {
+    increase: { label: "Increase", icon: TrendingUp, cls: "text-primary" },
+    hold: { label: "Hold", icon: Minus, cls: "text-blue-500" },
+    slow: { label: "Slow", icon: TrendingDown, cls: "text-yellow-500" },
+    pause: { label: "Pause", icon: Pause, cls: "text-destructive" },
+  };
+
+  const riskConfig: Record<string, string> = {
+    Low: "bg-primary/10 text-primary border-primary/20",
+    Moderate: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20",
+    High: "bg-destructive/10 text-destructive border-destructive/20",
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
@@ -535,30 +647,23 @@ export default function AdminAnalyticsPage() {
       ) : (
         <div className="mx-auto max-w-6xl px-5 md:px-8 py-8 space-y-8">
 
-          {/* ═══ PART 1: ACTIVATION FUNNEL ═══ */}
-          <section className="space-y-3">
+          {/* ═══ ROLLOUT DECISION CENTER ═══ */}
+          <section className="space-y-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" /> Activation Funnel
+              <Shield className="h-4 w-4" /> Rollout Decision Center
             </h2>
-            <ConversionFunnel steps={funnelMetrics.steps} />
-          </section>
 
-          {/* ═══ PART 3: INVITE TIMING RECOMMENDATION ═══ */}
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <Lightbulb className="h-4 w-4" /> Invite Pacing Recommendation
-            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Recommendation card */}
+              {/* Main recommendation card */}
               <div className={cn(
-                "rounded-xl border p-5 space-y-3 md:row-span-2",
+                "rounded-xl border p-5 space-y-4 md:row-span-2",
                 inviteRecommendation.compositeScore >= 60 ? "border-primary/30 bg-primary/5" :
                 inviteRecommendation.compositeScore >= 40 ? "border-blue-500/30 bg-blue-500/5" :
                 inviteRecommendation.compositeScore >= 20 ? "border-yellow-500/30 bg-yellow-500/5" :
                 "border-destructive/30 bg-destructive/5"
               )}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Recommended Today</span>
+                  <span className="text-xs font-medium text-muted-foreground">Recommended Batch Today</span>
                   <Gauge className={cn("h-4 w-4",
                     inviteRecommendation.compositeScore >= 60 ? "text-primary" :
                     inviteRecommendation.compositeScore >= 40 ? "text-blue-500" :
@@ -573,28 +678,152 @@ export default function AdminAnalyticsPage() {
                   {inviteRecommendation.recommended}
                 </p>
                 <p className="text-xs text-muted-foreground leading-relaxed">{inviteRecommendation.explanation}</p>
-                <div className="pt-2 space-y-1.5">
-                  {[2, 5, 10, 20].map((n) => (
-                    <div key={n} className={cn("flex items-center gap-2 text-xs",
-                      n === inviteRecommendation.recommended ? "text-foreground font-semibold" : "text-muted-foreground"
-                    )}>
-                      <div className={cn("h-2 w-2 rounded-full",
-                        n === inviteRecommendation.recommended ? "bg-primary" : "bg-muted"
-                      )} />
-                      Invite {n} users
-                    </div>
-                  ))}
+
+                {/* Risk & State indicators */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={cn("inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium", riskConfig[inviteRecommendation.riskLevel])}>
+                    Risk: {inviteRecommendation.riskLevel}
+                  </span>
+                  {(() => {
+                    const cfg = rolloutStateConfig[inviteRecommendation.rolloutState] || rolloutStateConfig.hold;
+                    const SIcon = cfg.icon;
+                    return (
+                      <span className={cn("inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium bg-card border-border", cfg.cls)}>
+                        <SIcon className="h-2.5 w-2.5" /> {cfg.label}
+                      </span>
+                    );
+                  })()}
+                </div>
+
+                {/* Decision buttons */}
+                <div className="space-y-2 pt-2">
+                  <textarea
+                    value={rolloutNotes}
+                    onChange={(e) => setRolloutNotes(e.target.value)}
+                    placeholder="Optional notes for this decision…"
+                    rows={2}
+                    className="w-full text-xs rounded-md border border-border bg-card px-3 py-2 text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      disabled={submittingDecision || activeCandidates.length === 0}
+                      onClick={() => submitDecision("approve", inviteRecommendation.recommended)}
+                      className="gap-1.5 text-xs"
+                    >
+                      {submittingDecision ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                      Approve Batch ({Math.min(inviteRecommendation.recommended, activeCandidates.length)})
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={submittingDecision || activeCandidates.length === 0}
+                      onClick={() => submitDecision("reduce", Math.max(Math.floor(inviteRecommendation.recommended / 2), 2))}
+                      className="gap-1.5 text-xs"
+                    >
+                      <ChevronDown className="h-3 w-3" />
+                      Reduce ({Math.min(Math.max(Math.floor(inviteRecommendation.recommended / 2), 2), activeCandidates.length)})
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={submittingDecision}
+                      onClick={() => submitDecision("pause", 0)}
+                      className="gap-1.5 text-xs text-destructive hover:text-destructive"
+                    >
+                      <Pause className="h-3 w-3" /> Pause Today
+                    </Button>
+                  </div>
                 </div>
               </div>
 
-              <StatCard label="Activation Rate" value={`${inviteRecommendation.activationRate}%`} icon={TrendingUp} accent subtitle="Accepted / Sent today" />
+              {/* Health metric cards */}
+              <StatCard label="Activation Rate" value={`${inviteRecommendation.activationRate}%`} icon={TrendingUp} accent subtitle="Active / Invited today" />
+              <StatCard label="Acceptance Rate" value={`${inviteRecommendation.acceptanceRate}%`} icon={UserCheck} subtitle="Accepted / Total invited" />
               <StatCard label="Retention (7d)" value={`${inviteRecommendation.retentionRate}%`} icon={Activity} subtitle="Active users / Total" />
-              <StatCard label="Invites Sent Today" value={inviteRecommendation.sentToday} icon={Send} subtitle="Last 24 hours" />
               <StatCard label="Pending High-Priority" value={inviteRecommendation.pendingHighPriority} icon={Star} subtitle="Reward level ≥ 3" />
             </div>
+
+            {/* Auto-prepared invite candidates */}
+            {inviteCandidates.length > 0 && (
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-xs font-medium text-foreground">Invite Candidates (Top {Math.min(inviteCandidates.length, 20)})</span>
+                    {excludedCandidates.size > 0 && (
+                      <span className="text-[10px] text-destructive bg-destructive/10 px-2 py-0.5 rounded-full border border-destructive/20">
+                        {excludedCandidates.size} excluded
+                      </span>
+                    )}
+                  </div>
+                  {excludedCandidates.size > 0 && (
+                    <button onClick={() => setExcludedCandidates(new Set())} className="text-[10px] text-muted-foreground hover:text-foreground">
+                      Reset
+                    </button>
+                  )}
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/20">
+                        <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground w-8"></th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">User</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Reward</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Referrals</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Priority</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">Status</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Age</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inviteCandidates.slice(0, 20).map((c, i) => {
+                        const excluded = excludedCandidates.has(c.id);
+                        return (
+                          <tr key={c.id} className={cn("border-b last:border-0 transition-colors", excluded ? "opacity-40 bg-muted/10" : "hover:bg-muted/20")}>
+                            <td className="px-4 py-2">
+                              <button onClick={() => toggleExcludeCandidate(c.id)} className="p-0.5 rounded hover:bg-muted">
+                                {excluded ? <X className="h-3 w-3 text-destructive" /> : <span className="text-[10px] font-bold text-muted-foreground">{i + 1}</span>}
+                              </button>
+                            </td>
+                            <td className="px-4 py-2">
+                              <span className="text-xs font-medium">{c.name}</span>
+                              <span className="block text-[10px] text-muted-foreground">{maskEmail(c.email)}</span>
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              {c.referral_reward_level > 0 ? (
+                                <span className={cn("inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full border font-medium",
+                                  c.referral_reward_level >= 3 ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground border-border"
+                                )}>
+                                  {REWARD_LABELS[c.referral_reward_level] || `Lvl ${c.referral_reward_level}`}
+                                </span>
+                              ) : <span className="text-[10px] text-muted-foreground/40">—</span>}
+                            </td>
+                            <td className="px-4 py-2 text-right text-xs font-medium text-primary tabular-nums">{c.referral_count}</td>
+                            <td className="px-4 py-2 text-right text-xs tabular-nums text-muted-foreground">{c.priorityScore}</td>
+                            <td className="px-4 py-2">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">{c.status}</span>
+                            </td>
+                            <td className="px-4 py-2 text-right text-[10px] text-muted-foreground">{differenceInDays(new Date(), new Date(c.created_at))}d</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </section>
 
-          {/* ═══ PART 2: REFERRAL VELOCITY ═══ */}
+          {/* ═══ ACTIVATION FUNNEL ═══ */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" /> Activation Funnel
+            </h2>
+            <ConversionFunnel steps={funnelMetrics.steps} />
+          </section>
+
+          {/* ═══ REFERRAL VELOCITY ═══ */}
           <section className="space-y-3">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <Flame className="h-4 w-4" /> Referral Velocity
@@ -621,7 +850,6 @@ export default function AdminAnalyticsPage() {
               </div>
             </div>
 
-            {/* Top referrers this week */}
             {referralVelocity.topReferrers.length > 0 && (
               <div className="rounded-xl border border-border bg-card overflow-hidden">
                 <div className="px-4 py-3 border-b bg-muted/30">
@@ -650,7 +878,7 @@ export default function AdminAnalyticsPage() {
             )}
           </section>
 
-          {/* ═══ PART 4: ENGAGEMENT HEAT SIGNALS ═══ */}
+          {/* ═══ ENGAGEMENT HEAT SIGNALS ═══ */}
           <section className="space-y-3">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <Activity className="h-4 w-4" /> Engagement Heat Signals
@@ -683,9 +911,8 @@ export default function AdminAnalyticsPage() {
             )}
           </section>
 
-          {/* ═══ PART 5: COHORT QUALITY SCORE + PART 6: LEADERBOARD ═══ */}
+          {/* ═══ COHORT QUALITY + LEADERBOARD ═══ */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Cohort Quality */}
             <section className="space-y-3">
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <Award className="h-4 w-4" /> Cohort Quality Score
@@ -711,7 +938,6 @@ export default function AdminAnalyticsPage() {
               </div>
             </section>
 
-            {/* Referral Leaderboard */}
             <section className="space-y-3">
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <Crown className="h-4 w-4" /> Referral Leaderboard
@@ -766,6 +992,77 @@ export default function AdminAnalyticsPage() {
             </section>
           </div>
 
+          {/* ═══ ROLLOUT HISTORY LOG ═══ */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <History className="h-4 w-4" /> Rollout History
+            </h2>
+            {rolloutHistory.length === 0 ? (
+              <div className="rounded-xl border border-border bg-card p-8 text-center">
+                <p className="text-sm text-muted-foreground">No rollout decisions yet</p>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/30">
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Date</th>
+                        <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Recommended</th>
+                        <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Sent</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Health</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">State</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Decision</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rolloutHistory.map((d) => {
+                        const stateCfg = rolloutStateConfig[d.rollout_state] || rolloutStateConfig.hold;
+                        const StateIcon = stateCfg.icon;
+                        const decisionColors: Record<string, string> = {
+                          approve: "bg-primary/10 text-primary border-primary/20",
+                          reduce: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20",
+                          pause: "bg-destructive/10 text-destructive border-destructive/20",
+                        };
+                        return (
+                          <tr key={d.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                            <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
+                              {format(new Date(d.decided_at), "MMM d, h:mm a")}
+                            </td>
+                            <td className="px-4 py-2.5 text-right tabular-nums font-medium">{d.recommended_batch}</td>
+                            <td className="px-4 py-2.5 text-right tabular-nums font-bold text-primary">{d.actual_sent}</td>
+                            <td className="px-4 py-2.5">
+                              <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full border font-medium",
+                                d.health_state === "strong" ? "bg-primary/10 text-primary border-primary/20" :
+                                d.health_state === "stable" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
+                                d.health_state === "moderate" ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20" :
+                                "bg-destructive/10 text-destructive border-destructive/20"
+                              )}>{d.health_state}</span>
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <span className={cn("inline-flex items-center gap-0.5 text-[10px]", stateCfg.cls)}>
+                                <StateIcon className="h-2.5 w-2.5" /> {stateCfg.label}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full border font-medium",
+                                decisionColors[d.decision] || "bg-muted text-muted-foreground border-border"
+                              )}>{d.decision}</span>
+                            </td>
+                            <td className="px-4 py-2.5 text-[10px] text-muted-foreground max-w-[200px] truncate">
+                              {d.notes || "—"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </section>
+
           {/* ═══ WAITLIST METRICS ═══ */}
           <div className="border-t border-border pt-8 space-y-8">
             <section className="space-y-3">
@@ -781,7 +1078,6 @@ export default function AdminAnalyticsPage() {
               </div>
             </section>
 
-            {/* Daily chart */}
             <section className="space-y-3">
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" /> Daily Signups
