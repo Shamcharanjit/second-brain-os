@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import QuickCaptureModal from "@/components/QuickCaptureModal";
 import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
 import InsightHaloIcon from "@/components/branding/InsightHaloIcon";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 
 const NAV_LINKS = [
   { to: "/app", label: "Dashboard", icon: () => <InsightHaloIcon size="xs" animated={false} /> },
@@ -120,6 +121,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
           </div>
         )}
 
+        <AnnouncementBanner />
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-3xl px-4 py-6 md:px-8 md:py-10">
             {children ?? <Outlet />}
