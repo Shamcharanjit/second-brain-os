@@ -24,6 +24,9 @@ type WaitlistEntry = {
   invited: boolean;
   invite_token: string | null;
   invite_sent_at: string | null;
+  referral_code: string | null;
+  referred_by: string | null;
+  referral_count: number;
   created_at: string;
 };
 
