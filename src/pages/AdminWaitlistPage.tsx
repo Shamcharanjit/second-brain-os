@@ -314,6 +314,104 @@ export default function AdminWaitlistPage() {
           ))}
         </div>
 
+        {/* Suggested Next Invites */}
+        {suggestedInvites.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold text-foreground">Suggested Next Invites</h2>
+              <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{suggestedInvites.length}</span>
+            </div>
+            <div className="border border-border rounded-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/30 text-left">
+                      <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs">Name</th>
+                      <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs">Email</th>
+                      <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs">Referrals</th>
+                      <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs">Reward</th>
+                      <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs">Age</th>
+                      <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs">Use Case</th>
+                      <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {suggestedInvites.map((entry) => {
+                      const ageDays = differenceInDays(new Date(), new Date(entry.created_at));
+                      const isHighPriority = entry.referral_reward_level >= 3;
+                      return (
+                        <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                          <td className="px-4 py-2.5 font-medium whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              {entry.name}
+                              {isHighPriority && (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
+                                  <Star className="h-2.5 w-2.5" /> High Priority
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{entry.email}</td>
+                          <td className="px-4 py-2.5 text-center">
+                            <span className={cn("text-xs font-medium", entry.referral_count > 0 ? "text-primary" : "text-muted-foreground/40")}>
+                              {entry.referral_count}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            {entry.referral_reward_level > 0 ? (
+                              <span className={cn(
+                                "inline-flex items-center text-[10px] px-2 py-0.5 rounded-full border font-medium",
+                                entry.referral_reward_level >= 10 ? "bg-primary/15 text-primary border-primary/30" :
+                                entry.referral_reward_level >= 5 ? "bg-primary/10 text-primary/80 border-primary/20" :
+                                "bg-muted text-muted-foreground border-border"
+                              )}>
+                                {REWARD_LABELS[entry.referral_reward_level] || `Lvl ${entry.referral_reward_level}`}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/40">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{ageDays}d</td>
+                          <td className="px-4 py-2.5">
+                            {entry.use_case ? (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-muted border border-border">{entry.use_case}</span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/40">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs gap-1.5"
+                              onClick={async () => {
+                                if (!entry.invite_token) {
+                                  await toggleInvited(entry);
+                                  const updated = entries.find((e) => e.id === entry.id);
+                                  if (updated?.invite_token) {
+                                    navigator.clipboard.writeText(getInviteLink(updated.invite_token));
+                                    toast.success("Invite link copied");
+                                  }
+                                } else {
+                                  navigator.clipboard.writeText(getInviteLink(entry.invite_token));
+                                  toast.success("Invite link copied");
+                                }
+                              }}
+                            >
+                              <Send className="h-3 w-3" /> Invite Now
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Filters + Sort */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
