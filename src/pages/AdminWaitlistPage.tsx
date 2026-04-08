@@ -306,7 +306,7 @@ export default function AdminWaitlistPage() {
           </div>
           <div className="flex items-center gap-2">
             <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-            {(["all", "not_invited", "invited", "ready_to_invite"] as const).map((v) => (
+            {(["all", "not_invited", "invited", "ready_to_invite", "top_referrers"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setFilterInvited(v)}
@@ -317,7 +317,7 @@ export default function AdminWaitlistPage() {
                     : "bg-card border-border text-muted-foreground hover:border-primary/30"
                 )}
               >
-                {v === "all" ? "All" : v === "invited" ? "Invited" : v === "not_invited" ? "Pending" : "Ready to Invite"}
+                {v === "all" ? "All" : v === "invited" ? "Invited" : v === "not_invited" ? "Pending" : v === "ready_to_invite" ? "Ready to Invite" : "Top Referrers"}
               </button>
             ))}
           </div>
