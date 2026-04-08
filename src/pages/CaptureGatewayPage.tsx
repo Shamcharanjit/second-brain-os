@@ -106,7 +106,7 @@ export default function CaptureGatewayPage() {
   /* ── Stats from real captures ── */
   const stats = useMemo(() => {
     const total = captures.length;
-    const approved = captures.filter((c) => c.review_status === "auto_approved" || c.review_status === "approved").length;
+    const approved = captures.filter((c) => c.review_status === "auto_approved" || c.review_status === "reviewed").length;
     const review = captures.filter((c) => c.review_status === "needs_review").length;
     return { total, approved, review };
   }, [captures]);
@@ -330,8 +330,8 @@ export default function CaptureGatewayPage() {
                           <Mic className="h-2.5 w-2.5" /> Voice
                         </Badge>
                       )}
-                      <Badge variant={cap.review_status === "auto_approved" || cap.review_status === "approved" ? "default" : "outline"} className="text-[9px] px-1.5 py-0">
-                        {cap.review_status === "auto_approved" || cap.review_status === "approved" ? "Auto" : "Review"}
+                      <Badge variant={cap.review_status === "auto_approved" || cap.review_status === "reviewed" ? "default" : "outline"} className="text-[9px] px-1.5 py-0">
+                        {cap.review_status === "auto_approved" || cap.review_status === "reviewed" ? "Processed" : "Review"}
                       </Badge>
                     </div>
                     <p className="text-[11px] text-muted-foreground truncate">{cap.raw_input}</p>
