@@ -27,7 +27,16 @@ type WaitlistEntry = {
   referral_code: string | null;
   referred_by: string | null;
   referral_count: number;
+  referral_reward_level: number;
   created_at: string;
+};
+
+const REWARD_LABELS: Record<number, string> = {
+  0: "—",
+  1: "Priority boost",
+  3: "Fast-track",
+  5: "Feature access",
+  10: "Insider",
 };
 
 const STATUS_OPTIONS = ["pending", "invited", "reviewed"] as const;
