@@ -10,10 +10,11 @@ import {
   Brain, ArrowLeft, Download, RefreshCw, CheckCircle2, Clock,
   Search, Filter, Loader2, X, Users, UserCheck, Copy, Send,
   ArrowUpDown, AlertTriangle, BarChart3, Zap, Star, Mail,
+  MailCheck, Eye, UserPlus, Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, differenceInHours, formatDistanceToNow } from "date-fns";
 
 type WaitlistEntry = {
   id: string;
@@ -25,11 +26,16 @@ type WaitlistEntry = {
   invited: boolean;
   invite_token: string | null;
   invite_sent_at: string | null;
+  invite_opened_at: string | null;
+  invite_accepted_at: string | null;
+  activation_completed_at: string | null;
   referral_code: string | null;
   referred_by: string | null;
   referral_count: number;
   referral_reward_level: number;
   last_reminder_sent_at: string | null;
+  last_email_type_sent: string | null;
+  email_send_count: number;
   reminder_count: number;
   created_at: string;
 };
@@ -65,36 +71,68 @@ function getInviteLink(token: string): string {
   return `${window.location.origin}/invite?token=${token}`;
 }
 
-/** Pending + not invited + created > 3 days ago */
 function needsReview(e: WaitlistEntry): boolean {
   return e.status === "pending" && !e.invited && differenceInDays(new Date(), new Date(e.created_at)) > 3;
 }
 
-/** Invited but invite_sent_at > 3 days ago (or no send timestamp) and still not reviewed */
 function isStaleInvite(e: WaitlistEntry): boolean {
   if (!e.invited) return false;
   const ref = e.invite_sent_at ? new Date(e.invite_sent_at) : new Date(e.created_at);
-  return differenceInDays(new Date(), ref) > 3 && e.status !== "reviewed";
+  return differenceInDays(new Date(), ref) > 3 && e.status !== "reviewed" && e.status !== "activated";
+}
+
+function getInviteStatusBadge(entry: WaitlistEntry) {
+  if (entry.activation_completed_at) return { label: "Activated", color: "bg-primary/15 text-primary border-primary/30", icon: Rocket };
+  if (entry.invite_accepted_at || entry.status === "activated") return { label: "Accepted", color: "bg-primary/10 text-primary border-primary/20", icon: CheckCircle2 };
+  if (entry.invite_opened_at) return { label: "Opened", color: "bg-blue-500/10 text-blue-500 border-blue-500/20", icon: Eye };
+  if (entry.invited) return { label: "Invited", color: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20", icon: Send };
+  return { label: "Not invited", color: "bg-muted text-muted-foreground border-border", icon: Clock };
+}
+
+function canResendInvite(entry: WaitlistEntry): boolean {
+  if (entry.invite_accepted_at || entry.status === "activated") return false;
+  if (!entry.invited || !entry.invite_token) return false;
+  const ref = entry.invite_sent_at ? new Date(entry.invite_sent_at) : null;
+  if (!ref) return true;
+  return differenceInHours(new Date(), ref) >= 24;
 }
 
 function sortEntries(entries: WaitlistEntry[], key: SortKey): WaitlistEntry[] {
   const sorted = [...entries];
   switch (key) {
-    case "newest":
-      return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    case "oldest":
-      return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    case "pending_first":
-      return sorted.sort((a, b) => (a.status === "pending" ? -1 : 1) - (b.status === "pending" ? -1 : 1));
-    case "invited_first":
-      return sorted.sort((a, b) => (b.invited ? 1 : 0) - (a.invited ? 1 : 0));
-    case "reviewed_first":
-      return sorted.sort((a, b) => (a.status === "reviewed" ? -1 : 1) - (b.status === "reviewed" ? -1 : 1));
-    case "most_referrals":
-      return sorted.sort((a, b) => b.referral_count - a.referral_count);
-    default:
-      return sorted;
+    case "newest": return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    case "oldest": return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    case "pending_first": return sorted.sort((a, b) => (a.status === "pending" ? -1 : 1) - (b.status === "pending" ? -1 : 1));
+    case "invited_first": return sorted.sort((a, b) => (b.invited ? 1 : 0) - (a.invited ? 1 : 0));
+    case "reviewed_first": return sorted.sort((a, b) => (a.status === "reviewed" ? -1 : 1) - (b.status === "reviewed" ? -1 : 1));
+    case "most_referrals": return sorted.sort((a, b) => b.referral_count - a.referral_count);
+    default: return sorted;
   }
+}
+
+function formatShortDate(iso: string | null) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function EmailTooltip({ entry }: { entry: WaitlistEntry }) {
+  if (!entry.last_email_type_sent && !entry.last_reminder_sent_at) return null;
+  const type = entry.last_email_type_sent || "reminder";
+  const labelMap: Record<string, string> = {
+    invite: "Invite",
+    invite_resend: "Invite Resend",
+    reminder: "Reminder",
+  };
+  const lastAt = entry.invite_sent_at || entry.last_reminder_sent_at;
+  const ago = lastAt ? formatDistanceToNow(new Date(lastAt), { addSuffix: true }) : "";
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border cursor-help"
+      title={`Last email: ${labelMap[type] || type} ${ago}\nTotal emails sent: ${entry.email_send_count}`}
+    >
+      <Mail className="h-2.5 w-2.5" /> {entry.email_send_count}
+    </span>
+  );
 }
 
 export default function AdminWaitlistPage() {
@@ -109,6 +147,8 @@ export default function AdminWaitlistPage() {
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [editNotesValue, setEditNotesValue] = useState("");
+  const [sendingInvite, setSendingInvite] = useState<string | null>(null);
+  const [batchSending, setBatchSending] = useState(false);
 
   const fetchEntries = async () => {
     setLoading(true);
@@ -121,11 +161,9 @@ export default function AdminWaitlistPage() {
 
       if (error) {
         console.error("Waitlist query error:", error);
-        // Only show error if we have no cached data at all
         if (entries.length === 0) {
           setLoadError("Could not load waitlist data. Please try refreshing.");
         } else {
-          // We have stale data — show a non-blocking toast
           toast.error("Refresh failed — showing cached data");
         }
       } else {
@@ -147,9 +185,7 @@ export default function AdminWaitlistPage() {
     let result = entries;
     if (search) {
       const q = search.toLowerCase();
-      result = result.filter(
-        (e) => e.name.toLowerCase().includes(q) || e.email.toLowerCase().includes(q)
-      );
+      result = result.filter((e) => e.name.toLowerCase().includes(q) || e.email.toLowerCase().includes(q));
     }
     if (filterInvited === "invited") result = result.filter((e) => e.invited);
     if (filterInvited === "not_invited") result = result.filter((e) => !e.invited);
@@ -163,7 +199,6 @@ export default function AdminWaitlistPage() {
     return sortEntries(result, sortKey);
   }, [entries, search, filterInvited, filterStatus, sortKey]);
 
-  // Suggested next invites: top 10 uninvited users ranked by priority
   const suggestedInvites = useMemo(() => {
     return entries
       .filter((e) => e.status === "pending" && !e.invited)
@@ -194,19 +229,10 @@ export default function AdminWaitlistPage() {
       status: newVal ? "invited" : "pending",
       ...(newVal && !entry.invite_token ? { invite_token: token } : {}),
     };
-
-    const { error } = await supabase
-      .from("waitlist_signups" as any)
-      .update(updatePayload)
-      .eq("id", entry.id);
-
+    const { error } = await supabase.from("waitlist_signups" as any).update(updatePayload).eq("id", entry.id);
     if (error) { toast.error("Update failed"); return; }
     setEntries((prev) =>
-      prev.map((e) =>
-        e.id === entry.id
-          ? { ...e, invited: newVal, status: newVal ? "invited" : "pending", invite_token: newVal ? (token ?? e.invite_token) : e.invite_token }
-          : e
-      )
+      prev.map((e) => e.id === entry.id ? { ...e, invited: newVal, status: newVal ? "invited" : "pending", invite_token: newVal ? (token ?? e.invite_token) : e.invite_token } : e)
     );
     toast.success(newVal ? "Marked as invited — token generated" : "Invite removed");
   };
@@ -217,53 +243,66 @@ export default function AdminWaitlistPage() {
     toast.success("Invite link copied!");
   };
 
-  const markInviteSent = async (entry: WaitlistEntry) => {
-    const { error } = await supabase
-      .from("waitlist_signups" as any)
-      .update({ invite_sent_at: new Date().toISOString() } as any)
-      .eq("id", entry.id);
+  const sendInviteEmail = async (entry: WaitlistEntry, resend = false) => {
+    setSendingInvite(entry.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-invite-email", {
+        body: { waitlist_id: entry.id, resend },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(resend ? "Invite resent!" : "Invite email sent!");
+        await fetchEntries();
+      } else {
+        toast.error(data?.error || "Failed to send invite");
+      }
+    } catch (err) {
+      console.error("Send invite error:", err);
+      toast.error("Failed to send invite email");
+    }
+    setSendingInvite(null);
+  };
 
-    if (error) { toast.error("Update failed"); return; }
-    setEntries((prev) =>
-      prev.map((e) => e.id === entry.id ? { ...e, invite_sent_at: new Date().toISOString() } : e)
-    );
-    toast.success("Marked as sent");
+  const sendBatchInvites = async (batchSize: number) => {
+    setBatchSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-invite-email", {
+        body: { batch_size: batchSize },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`Sent ${data.results.sent} invite(s)!`);
+        await fetchEntries();
+      } else {
+        toast.error(data?.error || "Batch invite failed");
+      }
+    } catch (err) {
+      console.error("Batch invite error:", err);
+      toast.error("Batch invite failed");
+    }
+    setBatchSending(false);
   };
 
   const updateStatus = async (entry: WaitlistEntry, status: string) => {
-    const { error } = await supabase
-      .from("waitlist_signups" as any)
-      .update({ status } as any)
-      .eq("id", entry.id);
-
+    const { error } = await supabase.from("waitlist_signups" as any).update({ status } as any).eq("id", entry.id);
     if (error) { toast.error("Update failed"); return; }
-    setEntries((prev) =>
-      prev.map((e) => e.id === entry.id ? { ...e, status } : e)
-    );
+    setEntries((prev) => prev.map((e) => e.id === entry.id ? { ...e, status } : e));
   };
 
   const saveNotes = async (id: string) => {
-    const { error } = await supabase
-      .from("waitlist_signups" as any)
-      .update({ notes: editNotesValue.trim() || null } as any)
-      .eq("id", id);
-
+    const { error } = await supabase.from("waitlist_signups" as any).update({ notes: editNotesValue.trim() || null } as any).eq("id", id);
     if (error) { toast.error("Update failed"); return; }
-    setEntries((prev) =>
-      prev.map((e) => e.id === id ? { ...e, notes: editNotesValue.trim() || null } : e)
-    );
+    setEntries((prev) => prev.map((e) => e.id === id ? { ...e, notes: editNotesValue.trim() || null } : e));
     setEditingNotes(null);
     toast.success("Notes saved");
   };
 
   const exportCSV = () => {
-    const headers = ["name", "email", "use_case", "notes", "status", "invited", "invite_token", "invite_link", "invite_sent_at", "created_at"];
+    const headers = ["name", "email", "use_case", "notes", "status", "invited", "invite_token", "invite_link", "invite_sent_at", "invite_opened_at", "invite_accepted_at", "activation_completed_at", "created_at"];
     const escape = (v: string | null | boolean) => {
       if (v === null || v === undefined) return "";
       const s = String(v);
-      return s.includes(",") || s.includes('"') || s.includes("\n")
-        ? `"${s.replace(/"/g, '""')}"`
-        : s;
+      return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const rows = filtered.map((e) =>
       headers.map((h) => {
@@ -285,7 +324,7 @@ export default function AdminWaitlistPage() {
   const invitedCount = entries.filter((e) => e.invited).length;
   const pendingCount = entries.filter((e) => !e.invited).length;
   const readyToInviteCount = entries.filter((e) => e.status === "pending" && !e.invited).length;
-
+  const activatedCount = entries.filter((e) => e.status === "activated" || e.invite_accepted_at).length;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -316,12 +355,13 @@ export default function AdminWaitlistPage() {
 
       <div className="mx-auto max-w-6xl px-5 md:px-8 py-6 space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {[
             { label: "Total Signups", value: entries.length, icon: Users, color: "text-foreground" },
             { label: "Pending", value: pendingCount, icon: Clock, color: "text-muted-foreground" },
             { label: "Invited", value: invitedCount, icon: UserCheck, color: "text-primary" },
             { label: "Ready to Invite", value: readyToInviteCount, icon: Send, color: "text-primary" },
+            { label: "Activated", value: activatedCount, icon: Rocket, color: "text-primary" },
           ].map((s) => (
             <div key={s.label} className="rounded-xl border border-border bg-card p-4 space-y-1">
               <div className="flex items-center gap-2">
@@ -332,6 +372,36 @@ export default function AdminWaitlistPage() {
             </div>
           ))}
         </div>
+
+        {/* Batch Invite Panel */}
+        {readyToInviteCount > 0 && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold text-foreground">Invite Next Batch</h2>
+              <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{readyToInviteCount} eligible</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Auto-selects highest priority users by reward level → referral count → signup age.
+              Sends invite emails automatically via SMTP.
+            </p>
+            <div className="flex items-center gap-2">
+              {[2, 5, 10].map((n) => (
+                <Button
+                  key={n}
+                  size="sm"
+                  variant="outline"
+                  disabled={batchSending || readyToInviteCount === 0}
+                  onClick={() => sendBatchInvites(n)}
+                  className="gap-1.5 text-xs border-primary/30 hover:bg-primary/10"
+                >
+                  {batchSending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                  Invite {Math.min(n, readyToInviteCount)}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Suggested Next Invites */}
         {suggestedInvites.length > 0 && (
@@ -404,21 +474,11 @@ export default function AdminWaitlistPage() {
                               size="sm"
                               variant="outline"
                               className="h-7 text-xs gap-1.5"
-                              onClick={async () => {
-                                if (!entry.invite_token) {
-                                  await toggleInvited(entry);
-                                  const updated = entries.find((e) => e.id === entry.id);
-                                  if (updated?.invite_token) {
-                                    navigator.clipboard.writeText(getInviteLink(updated.invite_token));
-                                    toast.success("Invite link copied");
-                                  }
-                                } else {
-                                  navigator.clipboard.writeText(getInviteLink(entry.invite_token));
-                                  toast.success("Invite link copied");
-                                }
-                              }}
+                              disabled={sendingInvite === entry.id}
+                              onClick={() => sendInviteEmail(entry)}
                             >
-                              <Send className="h-3 w-3" /> Invite Now
+                              {sendingInvite === entry.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                              Send Invite
                             </Button>
                           </td>
                         </tr>
@@ -474,7 +534,6 @@ export default function AdminWaitlistPage() {
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
-          {/* Sort control */}
           <div className="flex items-center gap-1.5">
             <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
             <select
@@ -514,22 +573,24 @@ export default function AdminWaitlistPage() {
                   <tr className="border-b bg-muted/30 text-left">
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Name</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Email</th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Use Case</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Notes</th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Status</th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invited</th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invite Link</th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invite Sent</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invite Status</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Sent</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Opened</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Accepted</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Activated</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Referrals</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Reward</th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Signed Up</th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Flags</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Emails</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((entry) => {
+                    const badge = getInviteStatusBadge(entry);
                     const _needsReview = needsReview(entry);
                     const _staleInvite = isStaleInvite(entry);
+                    const BadgeIcon = badge.icon;
 
                     return (
                       <tr
@@ -542,22 +603,15 @@ export default function AdminWaitlistPage() {
                         )}
                       >
                         <td className="px-4 py-3 font-medium whitespace-nowrap">{entry.name}</td>
-                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{entry.email}</td>
-                        <td className="px-4 py-3">
-                          {entry.use_case ? (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-muted border border-border">{entry.use_case}</span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground/50">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 max-w-[200px]">
+                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap text-xs">{entry.email}</td>
+                        <td className="px-4 py-3 max-w-[160px]">
                           {editingNotes === entry.id ? (
                             <div className="flex gap-1.5">
                               <Textarea
                                 value={editNotesValue}
                                 onChange={(e) => setEditNotesValue(e.target.value)}
                                 rows={2}
-                                className="text-xs resize-none min-w-[140px]"
+                                className="text-xs resize-none min-w-[120px]"
                                 autoFocus
                               />
                               <div className="flex flex-col gap-1">
@@ -568,90 +622,36 @@ export default function AdminWaitlistPage() {
                           ) : (
                             <button
                               onClick={() => { setEditingNotes(entry.id); setEditNotesValue(entry.notes || ""); }}
-                              className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left truncate max-w-[180px] block"
+                              className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left truncate max-w-[150px] block"
                               title="Click to edit notes"
                             >
                               {entry.notes || <span className="text-muted-foreground/40 italic">add note…</span>}
                             </button>
                           )}
                         </td>
+                        {/* Invite Status Badge */}
                         <td className="px-4 py-3">
-                          <select
-                            value={entry.status}
-                            onChange={(e) => updateStatus(entry, e.target.value)}
-                            className={cn(
-                              "text-xs h-7 rounded-md border px-2 bg-card",
-                              entry.status === "invited" && "text-primary border-primary/30",
-                              entry.status === "pending" && "text-muted-foreground border-border",
-                              entry.status === "reviewed" && "text-foreground border-border",
-                            )}
-                          >
-                            {STATUS_OPTIONS.map((s) => (
-                              <option key={s} value={s}>{s}</option>
-                            ))}
-                          </select>
+                          <span className={cn("inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium", badge.color)}>
+                            <BadgeIcon className="h-2.5 w-2.5" /> {badge.label}
+                          </span>
                         </td>
-                        <td className="px-4 py-3">
-                          <button
-                            onClick={() => toggleInvited(entry)}
-                            className={cn(
-                              "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors",
-                              entry.invited
-                                ? "bg-primary/10 text-primary border-primary/30"
-                                : "bg-card text-muted-foreground border-border hover:border-primary/30"
-                            )}
-                          >
-                            {entry.invited ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                            {entry.invited ? "Yes" : "No"}
-                          </button>
+                        {/* Sent */}
+                        <td className="px-4 py-3 text-[10px] text-muted-foreground whitespace-nowrap">
+                          {formatShortDate(entry.invite_sent_at) || "—"}
                         </td>
-                        <td className="px-4 py-3">
-                          {entry.invited && entry.invite_token ? (
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                onClick={() => copyInviteLink(entry)}
-                                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border bg-card hover:border-primary/30 transition-colors text-muted-foreground hover:text-foreground"
-                                title={getInviteLink(entry.invite_token)}
-                              >
-                                <Copy className="h-3 w-3" /> Copy
-                              </button>
-                              {/* Resend Invite = copy link again with distinct toast */}
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(getInviteLink(entry.invite_token!));
-                                  toast.success("Invite link copied");
-                                }}
-                                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border bg-card hover:border-primary/30 transition-colors text-muted-foreground hover:text-foreground"
-                                title="Resend invite (copies link)"
-                              >
-                                <RefreshCw className="h-3 w-3" /> Resend
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground/40">—</span>
-                          )}
+                        {/* Opened */}
+                        <td className="px-4 py-3 text-[10px] text-muted-foreground whitespace-nowrap">
+                          {formatShortDate(entry.invite_opened_at) || "—"}
                         </td>
-                        {/* Invite Sent column */}
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {entry.invited && entry.invite_token ? (
-                            !entry.invite_sent_at ? (
-                              <button
-                                onClick={() => markInviteSent(entry)}
-                                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border bg-card hover:border-primary/30 transition-colors text-muted-foreground hover:text-foreground"
-                                title="Mark invite as sent"
-                              >
-                                <Send className="h-3 w-3" /> Mark sent
-                              </button>
-                            ) : (
-                              <span className="text-[10px] text-primary/70">
-                                {new Date(entry.invite_sent_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                              </span>
-                            )
-                          ) : (
-                            <span className="text-xs text-muted-foreground/40">—</span>
-                          )}
+                        {/* Accepted */}
+                        <td className="px-4 py-3 text-[10px] text-muted-foreground whitespace-nowrap">
+                          {formatShortDate(entry.invite_accepted_at) || "—"}
                         </td>
-                        {/* Referrals column */}
+                        {/* Activated */}
+                        <td className="px-4 py-3 text-[10px] text-muted-foreground whitespace-nowrap">
+                          {formatShortDate(entry.activation_completed_at) || "—"}
+                        </td>
+                        {/* Referrals */}
                         <td className="px-4 py-3 text-center">
                           {entry.referral_count > 0 ? (
                             <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
@@ -661,7 +661,7 @@ export default function AdminWaitlistPage() {
                             <span className="text-xs text-muted-foreground/40">0</span>
                           )}
                         </td>
-                        {/* Reward Level column */}
+                        {/* Reward Level */}
                         <td className="px-4 py-3">
                           {entry.referral_reward_level > 0 ? (
                             <span className={cn(
@@ -676,27 +676,55 @@ export default function AdminWaitlistPage() {
                             <span className="text-xs text-muted-foreground/40">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                          {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                        </td>
-                        {/* Flags column */}
+                        {/* Emails tooltip */}
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {_needsReview && (
-                              <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
-                                <AlertTriangle className="h-2.5 w-2.5" /> Needs review
-                              </span>
+                          <EmailTooltip entry={entry} />
+                        </td>
+                        {/* Actions */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {!entry.invited && (
+                              <Button
+                                size="sm" variant="outline"
+                                className="h-6 text-[10px] gap-1 px-2"
+                                disabled={sendingInvite === entry.id}
+                                onClick={() => sendInviteEmail(entry)}
+                              >
+                                {sendingInvite === entry.id ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Send className="h-2.5 w-2.5" />}
+                                Invite
+                              </Button>
                             )}
-                            {_staleInvite && (
-                              <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20">
-                                <Clock className="h-2.5 w-2.5" /> Invite not accepted
-                              </span>
+                            {entry.invited && entry.invite_token && (
+                              <>
+                                <button
+                                  onClick={() => copyInviteLink(entry)}
+                                  className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-md border border-border bg-card hover:border-primary/30 transition-colors text-muted-foreground hover:text-foreground"
+                                >
+                                  <Copy className="h-2.5 w-2.5" /> Copy
+                                </button>
+                                {canResendInvite(entry) && (
+                                  <Button
+                                    size="sm" variant="outline"
+                                    className="h-6 text-[10px] gap-1 px-2"
+                                    disabled={sendingInvite === entry.id}
+                                    onClick={() => sendInviteEmail(entry, true)}
+                                  >
+                                    {sendingInvite === entry.id ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <RefreshCw className="h-2.5 w-2.5" />}
+                                    Resend
+                                  </Button>
+                                )}
+                              </>
                             )}
-                            {entry.last_reminder_sent_at && (
-                              <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20" title={`Sent ${entry.reminder_count} reminder(s), last: ${new Date(entry.last_reminder_sent_at).toLocaleDateString()}`}>
-                                <Mail className="h-2.5 w-2.5" /> Reminder Sent
-                              </span>
-                            )}
+                            {/* Status dropdown */}
+                            <select
+                              value={entry.status}
+                              onChange={(e) => updateStatus(entry, e.target.value)}
+                              className="text-[10px] h-6 rounded-md border border-border bg-card px-1.5 text-muted-foreground"
+                            >
+                              {STATUS_OPTIONS.map((s) => (
+                                <option key={s} value={s}>{s}</option>
+                              ))}
+                            </select>
                           </div>
                         </td>
                       </tr>
