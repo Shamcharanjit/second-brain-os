@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, ArrowRight, CheckCircle2, Sparkles, Loader2, Copy, Share2 } from "lucide-react";
+import { Brain, ArrowRight, CheckCircle2, Sparkles, Loader2, Copy, Share2, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
