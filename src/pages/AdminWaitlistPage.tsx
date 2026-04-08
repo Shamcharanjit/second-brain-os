@@ -499,7 +499,16 @@ export default function AdminWaitlistPage() {
                             <span className="text-xs text-muted-foreground/40">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                        {/* Referrals column */}
+                        <td className="px-4 py-3 text-center">
+                          {entry.referral_count > 0 ? (
+                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
+                              {entry.referral_count}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/40">0</span>
+                          )}
+                        </td>
                           {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </td>
                         {/* Flags column */}
