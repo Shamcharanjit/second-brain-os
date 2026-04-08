@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import {
   Brain, ArrowLeft, RefreshCw, Users, UserCheck, Clock,
   TrendingUp, BarChart3, Activity, Loader2, ShieldCheck,
-  Zap, FolderKanban, BookOpen, Mic, ArrowRight, Gauge, Send, Star, Flame, TrendingDown,
+  Zap, FolderKanban, BookOpen, Mic, ArrowRight, Gauge, Send, Star, Flame, TrendingDown, Radar, AlertCircle, Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { format, subDays, subHours, isAfter } from "date-fns";
+import { format, subDays, subHours, isAfter, differenceInDays } from "date-fns";
 
 /* ── types ── */
 
@@ -266,6 +266,49 @@ export default function AdminAnalyticsPage() {
 
     return { capturesPerUser, proj7d: proj7d.length, mem7d: mem7d.length, voice7d: voice7d.length, adoptionPct, adoptionLabel, features };
   }, [captures, projects, memories, activation.active7d]);
+
+  /* ── retention radar ── */
+  type UserProfile = { userId: string; captures: number; projects: number; memories: number; voice: number; firstSeen: Date };
+
+  const retentionRadar = useMemo(() => {
+    // Build per-user profiles
+    const profiles = new Map<string, UserProfile>();
+    const ensure = (uid: string, created: string) => {
+      if (!profiles.has(uid)) profiles.set(uid, { userId: uid, captures: 0, projects: 0, memories: 0, voice: 0, firstSeen: new Date(created) });
+      const p = profiles.get(uid)!;
+      const d = new Date(created);
+      if (d < p.firstSeen) p.firstSeen = d;
+      return p;
+    };
+    for (const c of captures) { const p = ensure(c.user_id, c.created_at); p.captures++; if (c.input_type === "voice") p.voice++; }
+    for (const p of projects) ensure(p.user_id, p.created_at).projects++;
+    for (const m of memories) ensure(m.user_id, m.created_at).memories++;
+
+    const all = Array.from(profiles.values());
+    const now = new Date();
+    const sevenDaysAgo = subDays(now, 7);
+
+    // Power users: 3+ captures OR 1+ project OR used memory OR used voice
+    const powerUsers = all
+      .filter((u) => u.captures >= 3 || u.projects >= 1 || u.memories >= 1 || u.voice >= 1)
+      .sort((a, b) => (b.captures + b.projects * 2 + b.memories + b.voice) - (a.captures + a.projects * 2 + a.memories + a.voice))
+      .slice(0, 10);
+
+    // At risk: 0 captures, 0 projects, 0 memory, 0 voice, signed up > 48h ago
+    const h48ago = subHours(now, 48);
+    const atRisk = all
+      .filter((u) => u.captures === 0 && u.projects === 0 && u.memories === 0 && u.voice === 0 && u.firstSeen < h48ago)
+      .sort((a, b) => a.firstSeen.getTime() - b.firstSeen.getTime())
+      .slice(0, 10);
+
+    // Rising: at least 1 capture AND account within last 7 days
+    const rising = all
+      .filter((u) => u.captures >= 1 && isAfter(u.firstSeen, sevenDaysAgo))
+      .sort((a, b) => (b.captures + b.projects) - (a.captures + a.projects))
+      .slice(0, 10);
+
+    return { powerUsers, atRisk, rising };
+  }, [captures, projects, memories]);
 
   /* ── auth gate ── */
   if (!cloudAvailable || !user) {
@@ -704,6 +747,150 @@ export default function AdminAnalyticsPage() {
                         })}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* ═══ RETENTION RADAR ═══ */}
+            <section className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <Radar className="h-4 w-4" /> Retention Radar
+              </h2>
+
+              {!hasActivationData ? (
+                <div className="rounded-xl border border-border bg-card p-8 text-center">
+                  <p className="text-sm text-muted-foreground">No user data yet</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Power Users */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Star className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold text-foreground">Power Users</span>
+                      <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{retentionRadar.powerUsers.length}</span>
+                    </div>
+                    {retentionRadar.powerUsers.length === 0 ? (
+                      <p className="text-xs text-muted-foreground/60 pl-5">No power users yet</p>
+                    ) : (
+                      <div className="rounded-xl border border-border bg-card overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b bg-muted/30">
+                              <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">User</th>
+                              <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Captures</th>
+                              <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Projects</th>
+                              <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Memory</th>
+                              <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Voice</th>
+                              <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {retentionRadar.powerUsers.map((u) => (
+                              <tr key={u.userId} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                                <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{u.userId.slice(0, 8)}…</td>
+                                <td className="px-4 py-2.5 text-right tabular-nums">{u.captures}</td>
+                                <td className="px-4 py-2.5 text-right tabular-nums">{u.projects}</td>
+                                <td className="px-4 py-2.5 text-right tabular-nums">{u.memories}</td>
+                                <td className="px-4 py-2.5 text-right tabular-nums">{u.voice}</td>
+                                <td className="px-4 py-2.5">
+                                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
+                                    <Star className="h-2.5 w-2.5" /> Power User
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* At Risk Users */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                      <span className="text-xs font-semibold text-foreground">At Risk Users</span>
+                      <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{retentionRadar.atRisk.length}</span>
+                    </div>
+                    {retentionRadar.atRisk.length === 0 ? (
+                      <p className="text-xs text-muted-foreground/60 pl-5">No at-risk users detected</p>
+                    ) : (
+                      <div className="rounded-xl border border-border bg-card overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b bg-muted/30">
+                              <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">User</th>
+                              <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Signed Up</th>
+                              <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Days Inactive</th>
+                              <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {retentionRadar.atRisk.map((u) => (
+                              <tr key={u.userId} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                                <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{u.userId.slice(0, 8)}…</td>
+                                <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">
+                                  {format(u.firstSeen, "MMM d")}
+                                </td>
+                                <td className="px-4 py-2.5 text-right tabular-nums">
+                                  {differenceInDays(new Date(), u.firstSeen)}
+                                </td>
+                                <td className="px-4 py-2.5">
+                                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20 font-medium">
+                                    <AlertCircle className="h-2.5 w-2.5" /> Needs Activation
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Rising Users */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Rocket className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold text-foreground">Rising Users</span>
+                      <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{retentionRadar.rising.length}</span>
+                    </div>
+                    {retentionRadar.rising.length === 0 ? (
+                      <p className="text-xs text-muted-foreground/60 pl-5">No rising users yet</p>
+                    ) : (
+                      <div className="rounded-xl border border-border bg-card overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b bg-muted/30">
+                              <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">User</th>
+                              <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Captures</th>
+                              <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Projects</th>
+                              <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Joined</th>
+                              <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {retentionRadar.rising.map((u) => (
+                              <tr key={u.userId} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                                <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{u.userId.slice(0, 8)}…</td>
+                                <td className="px-4 py-2.5 text-right tabular-nums">{u.captures}</td>
+                                <td className="px-4 py-2.5 text-right tabular-nums">{u.projects}</td>
+                                <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">
+                                  {format(u.firstSeen, "MMM d")}
+                                </td>
+                                <td className="px-4 py-2.5">
+                                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
+                                    <Rocket className="h-2.5 w-2.5" /> Rising User
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
