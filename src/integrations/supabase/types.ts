@@ -220,6 +220,44 @@ export type Database = {
         }
         Relationships: []
       }
+      conversion_prompt_events: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          prompt_strength: string
+          prompt_type: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          prompt_strength?: string
+          prompt_type?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          prompt_strength?: string
+          prompt_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversion_prompt_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "conversion_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rollout_decisions: {
         Row: {
           actual_sent: number
