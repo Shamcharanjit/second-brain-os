@@ -9,7 +9,7 @@ import {
   TrendingUp, BarChart3, Activity, Loader2, ShieldCheck,
   Zap, FolderKanban, BookOpen, Mic, ArrowRight, Gauge, Send, Star, Flame, TrendingDown, Radar, AlertCircle, Rocket,
   Award, Target, Lightbulb, Crown, ArrowUpRight, ArrowDownRight, Minus,
-  Shield, Pause, Play, ChevronDown, History, X, Check,
+  Shield, Pause, Play, ChevronDown, History, X, Check, Sparkles, PieChart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -194,6 +194,7 @@ export default function AdminAnalyticsPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [memories, setMemories] = useState<MemoryRow[]>([]);
   const [rolloutHistory, setRolloutHistory] = useState<RolloutDecision[]>([]);
+  const [planDistribution, setPlanDistribution] = useState<{ early_access: number; pro: number; free: number; total: number }>({ early_access: 0, pro: 0, free: 0, total: 0 });
   const [loading, setLoading] = useState(true);
 
   // Rollout decision center state
@@ -230,6 +231,16 @@ export default function AdminAnalyticsPage() {
         .limit(20);
       if (!rh.error && rh.data) {
         setRolloutHistory(rh.data as any as RolloutDecision[]);
+      }
+
+      // Fetch plan distribution
+      const subsRes = await supabase.from("user_subscriptions" as any).select("plan_tier, is_early_access, subscription_status");
+      if (!subsRes.error && subsRes.data) {
+        const subs = subsRes.data as any[];
+        const ea = subs.filter(s => s.is_early_access).length;
+        const pro = subs.filter(s => s.plan_tier === "pro" && !s.is_early_access && s.subscription_status === "active").length;
+        const free = subs.filter(s => s.plan_tier === "free" && !s.is_early_access).length;
+        setPlanDistribution({ early_access: ea, pro, free, total: subs.length });
       }
     } catch (e) {
       console.error("Analytics fetch error:", e);
