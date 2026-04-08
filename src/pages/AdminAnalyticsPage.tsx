@@ -589,6 +589,125 @@ export default function AdminAnalyticsPage() {
                 </div>
               )}
             </section>
+
+            {/* ═══ PRODUCT HEALTH SIGNALS ═══ */}
+            <section className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <Flame className="h-4 w-4" /> Product Health Signals
+              </h2>
+
+              {!hasActivationData ? (
+                <div className="rounded-xl border border-border bg-card p-8 text-center">
+                  <p className="text-sm text-muted-foreground">No product data yet</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Metrics will appear once users start using features.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <StatCard
+                      label="Captures / Active User"
+                      value={productHealth.capturesPerUser.toFixed(1)}
+                      icon={Zap}
+                      accent
+                      subtitle="Last 7 days"
+                    />
+                    <StatCard
+                      label="Projects (7d)"
+                      value={productHealth.proj7d}
+                      icon={FolderKanban}
+                      subtitle="Created last 7 days"
+                    />
+                    <StatCard
+                      label="Memory Entries (7d)"
+                      value={productHealth.mem7d}
+                      icon={BookOpen}
+                      subtitle="Created last 7 days"
+                    />
+                    <StatCard
+                      label="Voice Captures (7d)"
+                      value={productHealth.voice7d}
+                      icon={Mic}
+                      subtitle="Last 7 days"
+                    />
+                    {/* Adoption score */}
+                    <div className={cn(
+                      "rounded-xl border p-5 space-y-2",
+                      productHealth.adoptionLabel === "Strong" ? "border-primary/30 bg-primary/5" :
+                      productHealth.adoptionLabel === "Medium" ? "border-yellow-500/30 bg-yellow-500/5" :
+                      "border-destructive/30 bg-destructive/5"
+                    )}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">Adoption Score</span>
+                        <div className={cn(
+                          "h-2.5 w-2.5 rounded-full",
+                          productHealth.adoptionLabel === "Strong" ? "bg-primary" :
+                          productHealth.adoptionLabel === "Medium" ? "bg-yellow-500" :
+                          "bg-destructive"
+                        )} />
+                      </div>
+                      <p className={cn(
+                        "text-3xl font-bold tracking-tight",
+                        productHealth.adoptionLabel === "Strong" ? "text-primary" :
+                        productHealth.adoptionLabel === "Medium" ? "text-yellow-500" :
+                        "text-destructive"
+                      )}>
+                        {productHealth.adoptionPct}%
+                      </p>
+                      <p className="text-xs text-muted-foreground">{productHealth.adoptionLabel} adoption</p>
+                    </div>
+                  </div>
+
+                  {/* Feature engagement ranking */}
+                  <div className="rounded-xl border border-border bg-card overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/30">
+                          <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Feature</th>
+                          <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground">Usage (7d)</th>
+                          <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
+                          <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground w-1/3">Engagement</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {productHealth.features.map((feat, i) => {
+                          const maxCount = Math.max(...productHealth.features.map((f) => f.count), 1);
+                          const pct = Math.round((feat.count / maxCount) * 100);
+                          const badge = i === 0 && feat.count > 0
+                            ? { label: "Hot feature", cls: "bg-primary/10 text-primary border-primary/20" }
+                            : feat.count > 0
+                            ? { label: "Growing", cls: "bg-muted text-muted-foreground border-border" }
+                            : { label: "Low adoption", cls: "bg-destructive/10 text-destructive border-destructive/20" };
+                          return (
+                            <tr key={feat.name} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                              <td className="px-5 py-3 font-medium">
+                                <div className="flex items-center gap-2">
+                                  <feat.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                                  {feat.name}
+                                </div>
+                              </td>
+                              <td className="px-5 py-3 text-right tabular-nums">{feat.count}</td>
+                              <td className="px-5 py-3">
+                                <span className={cn("inline-flex items-center text-[10px] px-2 py-0.5 rounded-full border font-medium", badge.cls)}>
+                                  {badge.label}
+                                </span>
+                              </td>
+                              <td className="px-5 py-3">
+                                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-primary transition-all"
+                                    style={{ width: `${Math.max(pct, 4)}%` }}
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </section>
           </div>
         </div>
       )}
