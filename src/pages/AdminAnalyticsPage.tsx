@@ -194,7 +194,7 @@ export default function AdminAnalyticsPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [memories, setMemories] = useState<MemoryRow[]>([]);
   const [rolloutHistory, setRolloutHistory] = useState<RolloutDecision[]>([]);
-  const [planDistribution, setPlanDistribution] = useState<{ early_access: number; pro: number; free: number; total: number }>({ early_access: 0, pro: 0, free: 0, total: 0 });
+  const [planDistribution, setPlanDistribution] = useState<{ early_access: number; pro: number; free: number; total: number; india: number; international: number }>({ early_access: 0, pro: 0, free: 0, total: 0, india: 0, international: 0 });
   const [loading, setLoading] = useState(true);
 
   // Rollout decision center state
@@ -234,13 +234,15 @@ export default function AdminAnalyticsPage() {
       }
 
       // Fetch plan distribution
-      const subsRes = await supabase.from("user_subscriptions" as any).select("plan_tier, is_early_access, subscription_status");
+      const subsRes = await supabase.from("user_subscriptions" as any).select("plan_tier, is_early_access, subscription_status, billing_region");
       if (!subsRes.error && subsRes.data) {
         const subs = subsRes.data as any[];
         const ea = subs.filter(s => s.is_early_access).length;
         const pro = subs.filter(s => s.plan_tier === "pro" && !s.is_early_access && s.subscription_status === "active").length;
         const free = subs.filter(s => s.plan_tier === "free" && !s.is_early_access).length;
-        setPlanDistribution({ early_access: ea, pro, free, total: subs.length });
+        const india = subs.filter(s => s.billing_region === "india").length;
+        const international = subs.filter(s => s.billing_region === "international").length;
+        setPlanDistribution({ early_access: ea, pro, free, total: subs.length, india, international });
       }
     } catch (e) {
       console.error("Analytics fetch error:", e);
@@ -1079,7 +1081,7 @@ export default function AdminAnalyticsPage() {
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <PieChart className="h-4 w-4" /> Plan Distribution
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">Early Access</span>
@@ -1094,7 +1096,7 @@ export default function AdminAnalyticsPage() {
                   <Crown className="h-4 w-4 text-primary" />
                 </div>
                 <p className="text-3xl font-bold text-foreground tabular-nums">{planDistribution.pro}</p>
-                <p className="text-[10px] text-muted-foreground">$9/month</p>
+                <p className="text-[10px] text-muted-foreground">$9/month · ₹749/month</p>
               </div>
               <div className="rounded-xl border border-border bg-card p-5 space-y-2">
                 <div className="flex items-center justify-between">
@@ -1104,6 +1106,8 @@ export default function AdminAnalyticsPage() {
                 <p className="text-3xl font-bold text-muted-foreground tabular-nums">{planDistribution.free}</p>
                 <p className="text-[10px] text-muted-foreground">Basic access</p>
               </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="rounded-xl border border-border bg-card p-5 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">Conversion Rate</span>
@@ -1115,6 +1119,20 @@ export default function AdminAnalyticsPage() {
                 <p className="text-[10px] text-muted-foreground">
                   {planDistribution.early_access + planDistribution.free} eligible for upgrade
                 </p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">🇮🇳 India (Razorpay)</span>
+                </div>
+                <p className="text-3xl font-bold text-foreground tabular-nums">{planDistribution.india}</p>
+                <p className="text-[10px] text-muted-foreground">₹ billing region</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">🌍 International (Stripe)</span>
+                </div>
+                <p className="text-3xl font-bold text-foreground tabular-nums">{planDistribution.international}</p>
+                <p className="text-[10px] text-muted-foreground">$ billing region</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
