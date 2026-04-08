@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate, Outlet } from "react-router-dom";
-import { Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings, Crown } from "lucide-react";
+import { Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings, Crown, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -7,6 +7,7 @@ import QuickCaptureModal from "@/components/QuickCaptureModal";
 import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
 import InsightHaloIcon from "@/components/branding/InsightHaloIcon";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
+import { useConversionCampaignPrompt } from "@/hooks/useConversionCampaignPrompt";
 
 const NAV_LINKS = [
   { to: "/app", label: "Dashboard", icon: () => <InsightHaloIcon size="xs" animated={false} /> },
