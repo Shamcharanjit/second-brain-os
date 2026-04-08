@@ -200,6 +200,47 @@ export default function AdminAnalyticsPage() {
 
   const hasActivationData = activation.totalRegistered > 0;
 
+  /* ── launch control metrics ── */
+  const launchControl = useMemo(() => {
+    const now = new Date();
+    const h24 = subHours(now, 24);
+
+    const sentToday = waitlist.filter(
+      (e) => e.invited && e.invite_sent_at && isAfter(new Date(e.invite_sent_at), h24)
+    ).length;
+
+    // Accepted = users who created activity today (proxy for invite acceptance)
+    const acceptedToday = activeAfter(
+      [
+        ...captures.map((c) => ({ user_id: c.user_id, updated_at: c.created_at })),
+        ...projects.map((p) => ({ user_id: p.user_id, updated_at: p.created_at })),
+        ...memories.map((m) => ({ user_id: m.user_id, updated_at: m.created_at })),
+      ],
+      h24
+    );
+
+    const activationRate = sentToday > 0 ? Math.round((acceptedToday / sentToday) * 100) : 0;
+
+    const pendingHighPriority = waitlist.filter(
+      (e) => e.status === "pending" && !e.invited && e.referral_reward_level >= 3
+    ).length;
+
+    let batchSize: number;
+    let healthColor: "green" | "yellow" | "red";
+    if (activationRate > 60) {
+      batchSize = 10;
+      healthColor = "green";
+    } else if (activationRate >= 30) {
+      batchSize = 5;
+      healthColor = "yellow";
+    } else {
+      batchSize = 2;
+      healthColor = "red";
+    }
+
+    return { sentToday, acceptedToday, activationRate, pendingHighPriority, batchSize, healthColor };
+  }, [waitlist, captures, projects, memories]);
+
   /* ── auth gate ── */
   if (!cloudAvailable || !user) {
     return (
