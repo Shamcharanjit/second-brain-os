@@ -513,7 +513,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      submit_waitlist: {
+        Args: {
+          p_email: string
+          p_name: string
+          p_notes?: string
+          p_referred_by?: string
+          p_use_case?: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
