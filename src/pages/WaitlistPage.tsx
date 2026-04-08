@@ -214,6 +214,37 @@ export default function WaitlistPage() {
                 </p>
               </div>
 
+              {/* Referral link card */}
+              {referralCode && (
+                <div className="rounded-xl border border-primary/20 bg-card p-4 space-y-3 max-w-sm mx-auto">
+                  <div className="flex items-center justify-center gap-2">
+                    <Share2 className="h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium text-foreground">Your referral link</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      readOnly
+                      value={`https://insighthalo.com/waitlist?ref=${referralCode}`}
+                      className="flex-1 text-xs bg-muted/50 border border-border rounded-lg px-3 py-2 text-muted-foreground truncate"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`https://insighthalo.com/waitlist?ref=${referralCode}`);
+                        toast.success("Referral link copied!");
+                      }}
+                    >
+                      <Copy className="h-3.5 w-3.5" /> Copy
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    You've invited <span className="text-primary font-semibold">{referralCount}</span> {referralCount === 1 ? "person" : "people"}
+                  </p>
+                </div>
+              )}
+
               <div className="rounded-xl border bg-card p-4 space-y-2 max-w-xs mx-auto">
                 <p className="text-xs font-medium text-foreground">What happens next?</p>
                 <ul className="text-xs text-muted-foreground space-y-1.5 text-left">
