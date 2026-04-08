@@ -1,0 +1,4 @@
+
+ALTER TABLE public.waitlist_signups
+ADD COLUMN last_reminder_sent_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+ADD COLUMN reminder_count INTEGER NOT NULL DEFAULT 0;
