@@ -28,6 +28,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import UpgradePage from "@/pages/UpgradePage";
 import WaitlistPage from "@/pages/WaitlistPage";
 import AdminWaitlistPage from "@/pages/AdminWaitlistPage";
+import AdminAnalyticsPage from "@/pages/AdminAnalyticsPage";
 import InvitePage from "@/pages/InvitePage";
 import NotFound from "@/pages/NotFound";
 
@@ -62,6 +63,7 @@ const App = () => (
                     <Route path="/privacy" element={<PrivacyPage />} />
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
+                    <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
 
                     {/* App routes — wrapped in sidebar layout */}
                     <Route element={<AppShell />}>
