@@ -32,6 +32,11 @@ export default function WaitlistPage() {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralCount, setReferralCount] = useState(0);
+
+  // Capture ref param from URL
+  const refParam = new URLSearchParams(window.location.search).get("ref");
 
   /* Force dark mode */
   useEffect(() => {
