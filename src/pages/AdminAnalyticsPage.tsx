@@ -1074,6 +1074,56 @@ export default function AdminAnalyticsPage() {
             )}
           </section>
 
+          {/* ═══ PLAN DISTRIBUTION ═══ */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <PieChart className="h-4 w-4" /> Plan Distribution
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Early Access</span>
+                  <Sparkles className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-3xl font-bold text-primary tabular-nums">{planDistribution.early_access}</p>
+                <p className="text-[10px] text-muted-foreground">Pro features included</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Pro (Paid)</span>
+                  <Crown className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-3xl font-bold text-foreground tabular-nums">{planDistribution.pro}</p>
+                <p className="text-[10px] text-muted-foreground">$9/month</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Free</span>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="text-3xl font-bold text-muted-foreground tabular-nums">{planDistribution.free}</p>
+                <p className="text-[10px] text-muted-foreground">Basic access</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Conversion Rate</span>
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-3xl font-bold text-primary tabular-nums">
+                  {planDistribution.total > 0 ? Math.round(((planDistribution.pro) / planDistribution.total) * 100) : 0}%
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {planDistribution.early_access + planDistribution.free} eligible for upgrade
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => navigate("/admin/plans")}>
+                <Crown className="h-3.5 w-3.5" /> Manage Plans
+              </Button>
+            </div>
+          </section>
+
           {/* ═══ WAITLIST METRICS ═══ */}
           <div className="border-t border-border pt-8 space-y-8">
             <section className="space-y-3">
