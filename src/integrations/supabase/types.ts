@@ -491,6 +491,7 @@ export type Database = {
         Row: {
           billing_provider: string | null
           billing_region: string
+          conversion_readiness_score: number
           created_at: string
           current_period_end: string | null
           id: string
@@ -503,11 +504,13 @@ export type Database = {
           provider_subscription_id: string | null
           subscription_status: string
           updated_at: string
+          upgrade_prompt_eligible: boolean
           user_id: string
         }
         Insert: {
           billing_provider?: string | null
           billing_region?: string
+          conversion_readiness_score?: number
           created_at?: string
           current_period_end?: string | null
           id?: string
@@ -520,11 +523,13 @@ export type Database = {
           provider_subscription_id?: string | null
           subscription_status?: string
           updated_at?: string
+          upgrade_prompt_eligible?: boolean
           user_id: string
         }
         Update: {
           billing_provider?: string | null
           billing_region?: string
+          conversion_readiness_score?: number
           created_at?: string
           current_period_end?: string | null
           id?: string
@@ -537,6 +542,7 @@ export type Database = {
           provider_subscription_id?: string | null
           subscription_status?: string
           updated_at?: string
+          upgrade_prompt_eligible?: boolean
           user_id?: string
         }
         Relationships: []
