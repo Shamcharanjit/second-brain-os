@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Brain, ArrowLeft, Download, RefreshCw, CheckCircle2, Clock,
   Search, Filter, Loader2, X, Users, UserCheck, Copy, Send,
-  ArrowUpDown, AlertTriangle, BarChart3, Zap, Star,
+  ArrowUpDown, AlertTriangle, BarChart3, Zap, Star, Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -28,6 +28,8 @@ type WaitlistEntry = {
   referred_by: string | null;
   referral_count: number;
   referral_reward_level: number;
+  last_reminder_sent_at: string | null;
+  reminder_count: number;
   created_at: string;
 };
 
