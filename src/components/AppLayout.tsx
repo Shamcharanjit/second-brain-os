@@ -127,20 +127,12 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
         {/* Campaign upgrade prompt */}
         {campaignPrompt.shouldShow && campaignPrompt.strength !== "soft" && (
-          <div className="mx-auto max-w-3xl px-4 pt-4 md:px-8">
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">Ready to upgrade to Pro?</p>
-                  <p className="text-[10px] text-muted-foreground">Unlock AI-powered intelligence and advanced features.</p>
-                </div>
-              </div>
-              <Button size="sm" className="gap-1.5 text-xs shrink-0" onClick={() => navigate("/upgrade")}>
-                <Crown className="h-3 w-3" /> Upgrade
-              </Button>
-            </div>
-          </div>
+          <UpgradePromptBanner
+            strength={campaignPrompt.strength!}
+            onShow={() => campaignPrompt.trackEvent("shown")}
+            onClick={() => { campaignPrompt.trackEvent("clicked"); navigate("/upgrade"); }}
+            onDismiss={() => campaignPrompt.trackEvent("dismissed")}
+          />
         )}
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-3xl px-4 py-6 md:px-8 md:py-10">
