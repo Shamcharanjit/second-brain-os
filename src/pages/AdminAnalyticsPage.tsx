@@ -25,7 +25,7 @@ type WaitlistEntry = {
   created_at: string;
 };
 
-type CaptureRow = { user_id: string; input_type: string; created_at: string; updated_at: string };
+type CaptureRow = { user_id: string; input_type: string; review_status?: string; created_at: string; updated_at: string };
 type ProjectRow = { user_id: string; created_at: string; updated_at: string };
 type MemoryRow = { user_id: string; created_at: string; updated_at: string };
 
