@@ -628,6 +628,7 @@ export type Database = {
     }
     Functions: {
       get_admin_analytics: { Args: never; Returns: Json }
+      get_conversion_candidates: { Args: never; Returns: Json }
       submit_waitlist: {
         Args: {
           p_email: string
