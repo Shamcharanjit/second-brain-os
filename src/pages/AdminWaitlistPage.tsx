@@ -78,6 +78,8 @@ function sortEntries(entries: WaitlistEntry[], key: SortKey): WaitlistEntry[] {
       return sorted.sort((a, b) => (b.invited ? 1 : 0) - (a.invited ? 1 : 0));
     case "reviewed_first":
       return sorted.sort((a, b) => (a.status === "reviewed" ? -1 : 1) - (b.status === "reviewed" ? -1 : 1));
+    case "most_referrals":
+      return sorted.sort((a, b) => b.referral_count - a.referral_count);
     default:
       return sorted;
   }
