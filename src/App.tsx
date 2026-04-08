@@ -69,6 +69,7 @@ const App = () => (
                     <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
                     <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
                     <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
+                    <Route path="/admin/plans" element={<AdminPlansPage />} />
 
                     {/* App routes — wrapped in sidebar layout */}
                     <Route element={<AppShell />}>
