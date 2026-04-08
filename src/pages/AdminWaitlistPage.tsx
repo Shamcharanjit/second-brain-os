@@ -27,7 +27,16 @@ type WaitlistEntry = {
   referral_code: string | null;
   referred_by: string | null;
   referral_count: number;
+  referral_reward_level: number;
   created_at: string;
+};
+
+const REWARD_LABELS: Record<number, string> = {
+  0: "—",
+  1: "Priority boost",
+  3: "Fast-track",
+  5: "Feature access",
+  10: "Insider",
 };
 
 const STATUS_OPTIONS = ["pending", "invited", "reviewed"] as const;
@@ -91,7 +100,7 @@ export default function AdminWaitlistPage() {
   const [entries, setEntries] = useState<WaitlistEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterInvited, setFilterInvited] = useState<"all" | "invited" | "not_invited" | "ready_to_invite" | "top_referrers">("all");
+  const [filterInvited, setFilterInvited] = useState<"all" | "invited" | "not_invited" | "ready_to_invite" | "top_referrers" | "fast_track">("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
@@ -125,8 +134,12 @@ export default function AdminWaitlistPage() {
     }
     if (filterInvited === "invited") result = result.filter((e) => e.invited);
     if (filterInvited === "not_invited") result = result.filter((e) => !e.invited);
-    if (filterInvited === "ready_to_invite") result = result.filter((e) => e.status === "pending" && !e.invited);
+    if (filterInvited === "ready_to_invite") {
+      result = result.filter((e) => e.status === "pending" && !e.invited);
+      result.sort((a, b) => b.referral_reward_level - a.referral_reward_level);
+    }
     if (filterInvited === "top_referrers") result = result.filter((e) => e.referral_count > 0);
+    if (filterInvited === "fast_track") result = result.filter((e) => e.referral_reward_level >= 3);
     if (filterStatus !== "all") result = result.filter((e) => e.status === filterStatus);
     return sortEntries(result, sortKey);
   }, [entries, search, filterInvited, filterStatus, sortKey]);
@@ -306,7 +319,7 @@ export default function AdminWaitlistPage() {
           </div>
           <div className="flex items-center gap-2">
             <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-            {(["all", "not_invited", "invited", "ready_to_invite", "top_referrers"] as const).map((v) => (
+            {(["all", "not_invited", "invited", "ready_to_invite", "top_referrers", "fast_track"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setFilterInvited(v)}
@@ -317,7 +330,7 @@ export default function AdminWaitlistPage() {
                     : "bg-card border-border text-muted-foreground hover:border-primary/30"
                 )}
               >
-                {v === "all" ? "All" : v === "invited" ? "Invited" : v === "not_invited" ? "Pending" : v === "ready_to_invite" ? "Ready to Invite" : "Top Referrers"}
+                {v === "all" ? "All" : v === "invited" ? "Invited" : v === "not_invited" ? "Pending" : v === "ready_to_invite" ? "Ready to Invite" : v === "top_referrers" ? "Top Referrers" : "Fast-track"}
               </button>
             ))}
           </div>
@@ -370,6 +383,7 @@ export default function AdminWaitlistPage() {
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invite Link</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invite Sent</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Referrals</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Reward</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Signed Up</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Flags</th>
                   </tr>
@@ -507,6 +521,21 @@ export default function AdminWaitlistPage() {
                             </span>
                           ) : (
                             <span className="text-xs text-muted-foreground/40">0</span>
+                          )}
+                        </td>
+                        {/* Reward Level column */}
+                        <td className="px-4 py-3">
+                          {entry.referral_reward_level > 0 ? (
+                            <span className={cn(
+                              "inline-flex items-center text-[10px] px-2 py-0.5 rounded-full border font-medium",
+                              entry.referral_reward_level >= 10 ? "bg-primary/15 text-primary border-primary/30" :
+                              entry.referral_reward_level >= 5 ? "bg-primary/10 text-primary/80 border-primary/20" :
+                              "bg-muted text-muted-foreground border-border"
+                            )}>
+                              {REWARD_LABELS[entry.referral_reward_level] || `Lvl ${entry.referral_reward_level}`}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/40">—</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">

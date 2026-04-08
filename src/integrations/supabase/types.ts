@@ -427,6 +427,7 @@ export type Database = {
           notes: string | null
           referral_code: string | null
           referral_count: number
+          referral_reward_level: number
           referred_by: string | null
           status: string
           updated_at: string
@@ -443,6 +444,7 @@ export type Database = {
           notes?: string | null
           referral_code?: string | null
           referral_count?: number
+          referral_reward_level?: number
           referred_by?: string | null
           status?: string
           updated_at?: string
@@ -459,6 +461,7 @@ export type Database = {
           notes?: string | null
           referral_code?: string | null
           referral_count?: number
+          referral_reward_level?: number
           referred_by?: string | null
           status?: string
           updated_at?: string
