@@ -399,6 +399,72 @@ export default function AdminAnalyticsPage() {
             </div>
           </section>
 
+          {/* ═══ LAUNCH CONTROL PANEL ═══ */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Gauge className="h-4 w-4" /> Launch Control Panel
+            </h2>
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <StatCard
+                label="Invites Sent Today"
+                value={launchControl.sentToday}
+                icon={Send}
+                subtitle="Last 24 hours"
+              />
+              <StatCard
+                label="Invites Accepted Today"
+                value={launchControl.acceptedToday}
+                icon={UserCheck}
+                subtitle="New users today"
+              />
+              <StatCard
+                label="Activation Rate Today"
+                value={`${launchControl.activationRate}%`}
+                icon={TrendingUp}
+                accent
+                subtitle="Accepted / Sent"
+              />
+              <StatCard
+                label="Pending High-Priority"
+                value={launchControl.pendingHighPriority}
+                icon={Star}
+                subtitle="Reward level ≥ 3"
+              />
+
+              {/* Recommendation card */}
+              <div className={cn(
+                "rounded-xl border p-5 space-y-2",
+                launchControl.healthColor === "green" ? "border-primary/30 bg-primary/5" :
+                launchControl.healthColor === "yellow" ? "border-yellow-500/30 bg-yellow-500/5" :
+                "border-destructive/30 bg-destructive/5"
+              )}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Suggested Batch</span>
+                  <div className={cn(
+                    "h-2.5 w-2.5 rounded-full",
+                    launchControl.healthColor === "green" ? "bg-primary" :
+                    launchControl.healthColor === "yellow" ? "bg-yellow-500" :
+                    "bg-destructive"
+                  )} />
+                </div>
+                <p className={cn(
+                  "text-3xl font-bold tracking-tight",
+                  launchControl.healthColor === "green" ? "text-primary" :
+                  launchControl.healthColor === "yellow" ? "text-yellow-500" :
+                  "text-destructive"
+                )}>
+                  {launchControl.batchSize}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {launchControl.healthColor === "green" ? "Healthy rollout — invite 10 users today" :
+                   launchControl.healthColor === "yellow" ? "Moderate pace — invite 5 users today" :
+                   "Low activation — invite 2 users today"}
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* ═══════════════════════════════════════════════════════════
                PHASE 23 — EARLY ACCESS ACTIVATION SIGNALS
              ═══════════════════════════════════════════════════════════ */}
