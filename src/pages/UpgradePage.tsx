@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { isStripeEnabled } from "@/lib/stripe/config";
 import { isRazorpayEnabled } from "@/lib/razorpay/config";
 import { createCheckoutSession, createPortalSession } from "@/lib/stripe/billing";
+import { createRazorpaySubscription } from "@/lib/razorpay/billing";
 import { toast } from "sonner";
 
 const FREE_FEATURES = [
@@ -45,24 +46,32 @@ export default function UpgradePage() {
       return;
     }
 
-    if (billingEnabled) {
-      setCheckoutLoading(true);
-      try {
+    if (!billingEnabled) {
+      toast.info("Billing is not yet enabled. Keys must be configured by the admin.");
+      return;
+    }
+
+    setCheckoutLoading(true);
+    try {
+      if (billingRegion === "india") {
+        const result = await createRazorpaySubscription();
+        if (result?.shortUrl) {
+          window.location.href = result.shortUrl;
+          return;
+        }
+        toast.error("Could not start Razorpay checkout. Please try again.");
+      } else {
         const result = await createCheckoutSession();
         if (result?.url) {
           window.location.href = result.url;
           return;
         }
         toast.error("Could not start checkout. Please try again.");
-      } catch (err: any) {
-        toast.error(err.message || "Checkout failed.");
-      } finally {
-        setCheckoutLoading(false);
       }
-    } else {
-      // Dormant mode — dev toggle
-      setPlan("pro");
-      toast.success("Pro activated (dev mode)");
+    } catch (err: any) {
+      toast.error(err.message || "Checkout failed.");
+    } finally {
+      setCheckoutLoading(false);
     }
   };
 
@@ -164,11 +173,13 @@ export default function UpgradePage() {
               <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
             </Button>
           ) : !isPro ? (
-            <Button className="w-full gap-2" onClick={handleUpgrade} disabled={checkoutLoading}>
+            <Button className="w-full gap-2" onClick={handleUpgrade} disabled={checkoutLoading || !billingEnabled}>
               {checkoutLoading ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Starting checkout…</>
+              ) : billingEnabled ? (
+                <><Sparkles className="h-4 w-4" /> Upgrade to Pro</>
               ) : (
-                <><Sparkles className="h-4 w-4" /> {billingEnabled ? "Upgrade to Pro" : "Activate Pro (Preview)"}</>
+                <><Sparkles className="h-4 w-4" /> Billing not yet enabled</>
               )}
             </Button>
           ) : (
@@ -178,17 +189,12 @@ export default function UpgradePage() {
                   Manage Subscription
                 </Button>
               )}
-              {!billingEnabled && (
-                <Button variant="outline" className="w-full gap-2 text-muted-foreground text-xs" onClick={() => setPlan("free")}>
-                  Switch to Free (dev)
-                </Button>
-              )}
             </div>
           )}
 
           {!billingEnabled && (
             <p className="text-[10px] text-center text-muted-foreground">
-              Billing integration coming soon. Toggle for testing.
+              Payment processing will be enabled soon.
             </p>
           )}
         </div>

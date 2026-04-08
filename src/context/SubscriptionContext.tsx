@@ -3,6 +3,7 @@ import { loadState, saveState } from "@/lib/persistence";
 import { useAuth } from "@/context/AuthContext";
 import { supabase, isSupabaseEnabled } from "@/lib/supabase/client";
 import { isStripeEnabled } from "@/lib/stripe/config";
+import { isRazorpayEnabled } from "@/lib/razorpay/config";
 
 /* ── Plan types ── */
 export type PlanTier = "free" | "pro";
@@ -123,7 +124,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const effectivePlan: PlanTier = backendPlan ?? "free";
   const hasProAccess = isEarlyAccess || (effectivePlan === "pro" && (subscriptionStatus === "active" || subscriptionStatus === "trialing"));
   const limits = PLAN_LIMITS[hasProAccess ? "pro" : "free"];
-  const billingEnabled = isStripeEnabled;
+  const billingEnabled = isStripeEnabled || isRazorpayEnabled;
 
   const aiTriageRemaining = Math.max(0, limits.aiTriagePerDay - usage.aiTriageUsedToday);
   const canUseAITriage = aiTriageRemaining > 0;
