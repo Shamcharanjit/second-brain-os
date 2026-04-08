@@ -9,7 +9,7 @@ import {
   TrendingUp, BarChart3, Activity, Loader2, ShieldCheck,
   Zap, FolderKanban, BookOpen, Mic, ArrowRight, Gauge, Send, Star, Flame, TrendingDown, Radar, AlertCircle, Rocket,
   Award, Target, Lightbulb, Crown, ArrowUpRight, ArrowDownRight, Minus,
-  Shield, Pause, Play, ChevronDown, History, X, Check,
+  Shield, Pause, Play, ChevronDown, History, X, Check, Sparkles, PieChart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -194,6 +194,7 @@ export default function AdminAnalyticsPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [memories, setMemories] = useState<MemoryRow[]>([]);
   const [rolloutHistory, setRolloutHistory] = useState<RolloutDecision[]>([]);
+  const [planDistribution, setPlanDistribution] = useState<{ early_access: number; pro: number; free: number; total: number }>({ early_access: 0, pro: 0, free: 0, total: 0 });
   const [loading, setLoading] = useState(true);
 
   // Rollout decision center state
@@ -230,6 +231,16 @@ export default function AdminAnalyticsPage() {
         .limit(20);
       if (!rh.error && rh.data) {
         setRolloutHistory(rh.data as any as RolloutDecision[]);
+      }
+
+      // Fetch plan distribution
+      const subsRes = await supabase.from("user_subscriptions" as any).select("plan_tier, is_early_access, subscription_status");
+      if (!subsRes.error && subsRes.data) {
+        const subs = subsRes.data as any[];
+        const ea = subs.filter(s => s.is_early_access).length;
+        const pro = subs.filter(s => s.plan_tier === "pro" && !s.is_early_access && s.subscription_status === "active").length;
+        const free = subs.filter(s => s.plan_tier === "free" && !s.is_early_access).length;
+        setPlanDistribution({ early_access: ea, pro, free, total: subs.length });
       }
     } catch (e) {
       console.error("Analytics fetch error:", e);
@@ -1061,6 +1072,56 @@ export default function AdminAnalyticsPage() {
                 </div>
               </div>
             )}
+          </section>
+
+          {/* ═══ PLAN DISTRIBUTION ═══ */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <PieChart className="h-4 w-4" /> Plan Distribution
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Early Access</span>
+                  <Sparkles className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-3xl font-bold text-primary tabular-nums">{planDistribution.early_access}</p>
+                <p className="text-[10px] text-muted-foreground">Pro features included</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Pro (Paid)</span>
+                  <Crown className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-3xl font-bold text-foreground tabular-nums">{planDistribution.pro}</p>
+                <p className="text-[10px] text-muted-foreground">$9/month</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Free</span>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="text-3xl font-bold text-muted-foreground tabular-nums">{planDistribution.free}</p>
+                <p className="text-[10px] text-muted-foreground">Basic access</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Conversion Rate</span>
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-3xl font-bold text-primary tabular-nums">
+                  {planDistribution.total > 0 ? Math.round(((planDistribution.pro) / planDistribution.total) * 100) : 0}%
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {planDistribution.early_access + planDistribution.free} eligible for upgrade
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => navigate("/admin/plans")}>
+                <Crown className="h-3.5 w-3.5" /> Manage Plans
+              </Button>
+            </div>
           </section>
 
           {/* ═══ WAITLIST METRICS ═══ */}

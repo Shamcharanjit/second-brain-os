@@ -31,6 +31,7 @@ import AdminWaitlistPage from "@/pages/AdminWaitlistPage";
 import AdminAnalyticsPage from "@/pages/AdminAnalyticsPage";
 import AdminAnnouncementsPage from "@/pages/AdminAnnouncementsPage";
 import InvitePage from "@/pages/InvitePage";
+import AdminPlansPage from "@/pages/AdminPlansPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import NotFound from "@/pages/NotFound";
 
@@ -68,6 +69,7 @@ const App = () => (
                     <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
                     <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
                     <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
+                    <Route path="/admin/plans" element={<AdminPlansPage />} />
 
                     {/* App routes — wrapped in sidebar layout */}
                     <Route element={<AppShell />}>

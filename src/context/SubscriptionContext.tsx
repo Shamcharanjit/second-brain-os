@@ -26,6 +26,7 @@ export type SubscriptionStatus = "none" | "active" | "trialing" | "canceled" | "
 interface SubscriptionContextType {
   plan: PlanTier;
   isPro: boolean;
+  isEarlyAccess: boolean;
   limits: PlanLimits;
   aiTriageRemaining: number;
   aiTriageUsedToday: number;
@@ -59,6 +60,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [backendPlan, setBackendPlan] = useState<PlanTier | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus>("none");
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
+  const [isEarlyAccess, setIsEarlyAccess] = useState(false);
   const [loadingSubscription, setLoadingSubscription] = useState(false);
 
   // Local usage tracking (works for all users)
@@ -78,44 +80,49 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       setBackendPlan(null);
       setSubscriptionStatus("none");
       setCurrentPeriodEnd(null);
+      setIsEarlyAccess(false);
       return;
     }
 
     setLoadingSubscription(true);
     supabase
       .from("user_subscriptions")
-      .select("plan_tier, subscription_status, current_period_end")
+      .select("plan_tier, subscription_status, current_period_end, is_early_access")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
-          setBackendPlan(data.plan_tier as PlanTier);
-          setSubscriptionStatus((data.subscription_status as SubscriptionStatus) || "none");
-          setCurrentPeriodEnd(data.current_period_end || null);
+          const d = data as any;
+          setBackendPlan(d.plan_tier as PlanTier);
+          setSubscriptionStatus((d.subscription_status as SubscriptionStatus) || "none");
+          setCurrentPeriodEnd(d.current_period_end || null);
+          setIsEarlyAccess(d.is_early_access ?? false);
         } else {
           // No subscription record yet — user is free
           setBackendPlan("free");
           setSubscriptionStatus("none");
+          setIsEarlyAccess(false);
           // Create initial subscription record
           supabase.from("user_subscriptions").insert({
             user_id: user.id,
             plan_tier: "free",
             subscription_status: "none",
+            is_early_access: false,
           }).then(() => {});
         }
         setLoadingSubscription(false);
       });
   }, [user]);
 
-  // Derive plan: backend is authoritative when available, else free
-  const plan: PlanTier = backendPlan ?? "free";
-  const isPro = plan === "pro" && (subscriptionStatus === "active" || subscriptionStatus === "trialing");
-  const limits = PLAN_LIMITS[isPro ? "pro" : "free"];
+  // Early access users get Pro-level features
+  const effectivePlan: PlanTier = backendPlan ?? "free";
+  const hasProAccess = isEarlyAccess || (effectivePlan === "pro" && (subscriptionStatus === "active" || subscriptionStatus === "trialing"));
+  const limits = PLAN_LIMITS[hasProAccess ? "pro" : "free"];
   const billingEnabled = isStripeEnabled;
 
   const aiTriageRemaining = Math.max(0, limits.aiTriagePerDay - usage.aiTriageUsedToday);
   const canUseAITriage = aiTriageRemaining > 0;
-  const shouldShowUpgradePrompt = !isPro && usage.aiTriageUsedToday >= limits.aiTriagePerDay;
+  const shouldShowUpgradePrompt = !hasProAccess && usage.aiTriageUsedToday >= limits.aiTriagePerDay;
 
   const recordAITriageUse = useCallback(() => {
     setUsage((prev) => {
@@ -135,8 +142,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   return (
     <SubscriptionContext.Provider value={{
-      plan: isPro ? "pro" : "free",
-      isPro,
+      plan: hasProAccess ? "pro" : "free",
+      isPro: hasProAccess,
+      isEarlyAccess,
       limits,
       aiTriageRemaining,
       aiTriageUsedToday: usage.aiTriageUsedToday,
