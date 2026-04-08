@@ -52,13 +52,13 @@ export default function WaitlistPage() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("waitlist_signups").insert({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        use_case: useCase || null,
-        notes: notes.trim() || null,
-        ...(refParam ? { referred_by: refParam } : {}),
-      }).select("referral_code, referral_count").single();
+      const { data, error } = await supabase.rpc("submit_waitlist", {
+        p_name: name.trim(),
+        p_email: email.trim().toLowerCase(),
+        p_use_case: useCase || null,
+        p_notes: notes.trim() || null,
+        p_referred_by: refParam || null,
+      });
 
       if (error) {
         if (error.code === "23505") {
