@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { useAuth } from "@/context/AuthContext";
 import { isStripeEnabled } from "@/lib/stripe/config";
+import { isRazorpayEnabled } from "@/lib/razorpay/config";
 import { createCheckoutSession, createPortalSession } from "@/lib/stripe/billing";
 import { toast } from "sonner";
 
@@ -31,7 +32,7 @@ const PRO_FEATURES = [
 export default function UpgradePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { plan, isPro, setPlan, billingEnabled, subscriptionStatus, loadingSubscription } = useSubscription();
+  const { plan, isPro, setPlan, billingEnabled, subscriptionStatus, loadingSubscription, billingRegion } = useSubscription();
   const { user } = useAuth();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
@@ -141,7 +142,10 @@ export default function UpgradePage() {
               <h2 className="text-lg font-semibold">Pro</h2>
               {isPro && <Badge className="text-[10px]">Current</Badge>}
             </div>
-            <p className="text-2xl font-bold">$9<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+            <p className="text-2xl font-bold">
+              {billingRegion === "india" ? "₹749" : "$9"}
+              <span className="text-sm font-normal text-muted-foreground">/month</span>
+            </p>
             {!billingEnabled && (
               <p className="text-[10px] text-muted-foreground">Pricing coming soon</p>
             )}

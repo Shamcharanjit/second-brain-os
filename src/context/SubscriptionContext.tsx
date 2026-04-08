@@ -22,11 +22,13 @@ interface UsageState {
 }
 
 export type SubscriptionStatus = "none" | "active" | "trialing" | "canceled" | "past_due" | "incomplete";
+export type BillingRegion = "india" | "international";
 
 interface SubscriptionContextType {
   plan: PlanTier;
   isPro: boolean;
   isEarlyAccess: boolean;
+  billingRegion: BillingRegion;
   limits: PlanLimits;
   aiTriageRemaining: number;
   aiTriageUsedToday: number;
@@ -61,6 +63,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus>("none");
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
   const [isEarlyAccess, setIsEarlyAccess] = useState(false);
+  const [billingRegion, setBillingRegion] = useState<BillingRegion>("international");
   const [loadingSubscription, setLoadingSubscription] = useState(false);
 
   // Local usage tracking (works for all users)
@@ -81,6 +84,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       setSubscriptionStatus("none");
       setCurrentPeriodEnd(null);
       setIsEarlyAccess(false);
+      setBillingRegion("international");
       return;
     }
 
@@ -97,6 +101,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
           setSubscriptionStatus((d.subscription_status as SubscriptionStatus) || "none");
           setCurrentPeriodEnd(d.current_period_end || null);
           setIsEarlyAccess(d.is_early_access ?? false);
+          setBillingRegion((d.billing_region as BillingRegion) || "international");
         } else {
           // No subscription record yet — user is free
           setBackendPlan("free");
@@ -145,6 +150,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       plan: hasProAccess ? "pro" : "free",
       isPro: hasProAccess,
       isEarlyAccess,
+      billingRegion,
       limits,
       aiTriageRemaining,
       aiTriageUsedToday: usage.aiTriageUsedToday,

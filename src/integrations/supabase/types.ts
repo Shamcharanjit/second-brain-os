@@ -221,30 +221,36 @@ export type Database = {
         Row: {
           billing_cycle: string
           created_at: string
+          display_order: number
           feature_flags: Json
           id: string
           is_active: boolean
           name: string
+          price_inr: number
           price_usd: number
           updated_at: string
         }
         Insert: {
           billing_cycle?: string
           created_at?: string
+          display_order?: number
           feature_flags?: Json
           id?: string
           is_active?: boolean
           name: string
+          price_inr?: number
           price_usd?: number
           updated_at?: string
         }
         Update: {
           billing_cycle?: string
           created_at?: string
+          display_order?: number
           feature_flags?: Json
           id?: string
           is_active?: boolean
           name?: string
+          price_inr?: number
           price_usd?: number
           updated_at?: string
         }
@@ -484,10 +490,13 @@ export type Database = {
       user_subscriptions: {
         Row: {
           billing_provider: string | null
+          billing_region: string
           created_at: string
           current_period_end: string | null
           id: string
           is_early_access: boolean
+          is_founder_assigned: boolean
+          plan_expires_at: string | null
           plan_started_at: string | null
           plan_tier: string
           provider_customer_id: string | null
@@ -498,10 +507,13 @@ export type Database = {
         }
         Insert: {
           billing_provider?: string | null
+          billing_region?: string
           created_at?: string
           current_period_end?: string | null
           id?: string
           is_early_access?: boolean
+          is_founder_assigned?: boolean
+          plan_expires_at?: string | null
           plan_started_at?: string | null
           plan_tier?: string
           provider_customer_id?: string | null
@@ -512,10 +524,13 @@ export type Database = {
         }
         Update: {
           billing_provider?: string | null
+          billing_region?: string
           created_at?: string
           current_period_end?: string | null
           id?: string
           is_early_access?: boolean
+          is_founder_assigned?: boolean
+          plan_expires_at?: string | null
           plan_started_at?: string | null
           plan_tier?: string
           provider_customer_id?: string | null
