@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, subDays, subHours, isAfter, differenceInDays } from "date-fns";
+import ConversionIntelligencePanel from "@/components/dashboard/ConversionIntelligencePanel";
 
 /* ── types ── */
 
@@ -1194,6 +1195,11 @@ export default function AdminAnalyticsPage() {
                     subtitle={`${activation.totalRegistered > 0 ? Math.round((activation.active30d / activation.totalRegistered) * 100) : 0}% of users`} />
                 </div>
               )}
+            </section>
+
+            {/* ═══ CONVERSION INTELLIGENCE ═══ */}
+            <section className="space-y-3">
+              <ConversionIntelligencePanel />
             </section>
 
             {/* ═══ RETENTION RADAR ═══ */}
