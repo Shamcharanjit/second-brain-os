@@ -100,7 +100,7 @@ export default function AdminWaitlistPage() {
   const [entries, setEntries] = useState<WaitlistEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterInvited, setFilterInvited] = useState<"all" | "invited" | "not_invited" | "ready_to_invite" | "top_referrers">("all");
+  const [filterInvited, setFilterInvited] = useState<"all" | "invited" | "not_invited" | "ready_to_invite" | "top_referrers" | "fast_track">("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
