@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { format, subDays, subHours, isAfter, differenceInDays } from "date-fns";
 import ConversionIntelligencePanel from "@/components/dashboard/ConversionIntelligencePanel";
 import ConversionCampaignPanel from "@/components/dashboard/ConversionCampaignPanel";
+import PromptExperimentationPanel from "@/components/dashboard/PromptExperimentationPanel";
 
 /* ── types ── */
 
