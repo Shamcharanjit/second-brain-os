@@ -267,6 +267,49 @@ export default function AdminAnalyticsPage() {
     return { capturesPerUser, proj7d: proj7d.length, mem7d: mem7d.length, voice7d: voice7d.length, adoptionPct, adoptionLabel, features };
   }, [captures, projects, memories, activation.active7d]);
 
+  /* ── retention radar ── */
+  type UserProfile = { userId: string; captures: number; projects: number; memories: number; voice: number; firstSeen: Date };
+
+  const retentionRadar = useMemo(() => {
+    // Build per-user profiles
+    const profiles = new Map<string, UserProfile>();
+    const ensure = (uid: string, created: string) => {
+      if (!profiles.has(uid)) profiles.set(uid, { userId: uid, captures: 0, projects: 0, memories: 0, voice: 0, firstSeen: new Date(created) });
+      const p = profiles.get(uid)!;
+      const d = new Date(created);
+      if (d < p.firstSeen) p.firstSeen = d;
+      return p;
+    };
+    for (const c of captures) { const p = ensure(c.user_id, c.created_at); p.captures++; if (c.input_type === "voice") p.voice++; }
+    for (const p of projects) ensure(p.user_id, p.created_at).projects++;
+    for (const m of memories) ensure(m.user_id, m.created_at).memories++;
+
+    const all = Array.from(profiles.values());
+    const now = new Date();
+    const sevenDaysAgo = subDays(now, 7);
+
+    // Power users: 3+ captures OR 1+ project OR used memory OR used voice
+    const powerUsers = all
+      .filter((u) => u.captures >= 3 || u.projects >= 1 || u.memories >= 1 || u.voice >= 1)
+      .sort((a, b) => (b.captures + b.projects * 2 + b.memories + b.voice) - (a.captures + a.projects * 2 + a.memories + a.voice))
+      .slice(0, 10);
+
+    // At risk: 0 captures, 0 projects, 0 memory, 0 voice, signed up > 48h ago
+    const h48ago = subHours(now, 48);
+    const atRisk = all
+      .filter((u) => u.captures === 0 && u.projects === 0 && u.memories === 0 && u.voice === 0 && u.firstSeen < h48ago)
+      .sort((a, b) => a.firstSeen.getTime() - b.firstSeen.getTime())
+      .slice(0, 10);
+
+    // Rising: at least 1 capture AND account within last 7 days
+    const rising = all
+      .filter((u) => u.captures >= 1 && isAfter(u.firstSeen, sevenDaysAgo))
+      .sort((a, b) => (b.captures + b.projects) - (a.captures + a.projects))
+      .slice(0, 10);
+
+    return { powerUsers, atRisk, rising };
+  }, [captures, projects, memories]);
+
   /* ── auth gate ── */
   if (!cloudAvailable || !user) {
     return (
