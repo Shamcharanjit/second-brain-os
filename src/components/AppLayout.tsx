@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate, Outlet } from "react-router-dom";
-import { Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings, Crown } from "lucide-react";
+import { Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings, Crown, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -7,6 +7,7 @@ import QuickCaptureModal from "@/components/QuickCaptureModal";
 import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
 import InsightHaloIcon from "@/components/branding/InsightHaloIcon";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
+import { useConversionCampaignPrompt } from "@/hooks/useConversionCampaignPrompt";
 
 const NAV_LINKS = [
   { to: "/app", label: "Dashboard", icon: () => <InsightHaloIcon size="xs" animated={false} /> },
@@ -29,6 +30,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut, cloudAvailable } = useAuth();
+  const campaignPrompt = useConversionCampaignPrompt();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -122,6 +124,24 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         )}
 
         <AnnouncementBanner />
+
+        {/* Campaign upgrade prompt */}
+        {campaignPrompt.shouldShow && campaignPrompt.strength !== "soft" && (
+          <div className="mx-auto max-w-3xl px-4 pt-4 md:px-8">
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">Ready to upgrade to Pro?</p>
+                  <p className="text-[10px] text-muted-foreground">Unlock AI-powered intelligence and advanced features.</p>
+                </div>
+              </div>
+              <Button size="sm" className="gap-1.5 text-xs shrink-0" onClick={() => navigate("/upgrade")}>
+                <Crown className="h-3 w-3" /> Upgrade
+              </Button>
+            </div>
+          </div>
+        )}
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-3xl px-4 py-6 md:px-8 md:py-10">
             {children ?? <Outlet />}

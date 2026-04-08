@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, subDays, subHours, isAfter, differenceInDays } from "date-fns";
 import ConversionIntelligencePanel from "@/components/dashboard/ConversionIntelligencePanel";
+import ConversionCampaignPanel from "@/components/dashboard/ConversionCampaignPanel";
 
 /* ── types ── */
 
@@ -1202,7 +1203,12 @@ export default function AdminAnalyticsPage() {
               <ConversionIntelligencePanel />
             </section>
 
-            {/* ═══ RETENTION RADAR ═══ */}
+            {/* ═══ CONVERSION CAMPAIGNS ═══ */}
+            <section className="space-y-3">
+              <ConversionCampaignPanel />
+            </section>
+
+
             <section className="space-y-3">
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <Radar className="h-4 w-4" /> Retention Radar
