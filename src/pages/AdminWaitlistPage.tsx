@@ -267,17 +267,6 @@ export default function AdminWaitlistPage() {
   const pendingCount = entries.filter((e) => !e.invited).length;
   const readyToInviteCount = entries.filter((e) => e.status === "pending" && !e.invited).length;
 
-  // Suggested next invites: top 10 uninvited users ranked by priority
-  const suggestedInvites = useMemo(() => {
-    return entries
-      .filter((e) => e.status === "pending" && !e.invited)
-      .sort((a, b) => {
-        if (b.referral_reward_level !== a.referral_reward_level) return b.referral_reward_level - a.referral_reward_level;
-        if (b.referral_count !== a.referral_count) return b.referral_count - a.referral_count;
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      })
-      .slice(0, 10);
-  }, [entries]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
