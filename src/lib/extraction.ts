@@ -3,7 +3,7 @@
  * Fire-and-forget — does not block capture UX.
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase/client";
 
 /** Trigger extraction for a single attachment (non-blocking). */
 export async function triggerAttachmentExtraction(
