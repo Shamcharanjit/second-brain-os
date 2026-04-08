@@ -24,12 +24,15 @@ type WaitlistEntry = {
   invited: boolean;
   invite_token: string | null;
   invite_sent_at: string | null;
+  referral_code: string | null;
+  referred_by: string | null;
+  referral_count: number;
   created_at: string;
 };
 
 const STATUS_OPTIONS = ["pending", "invited", "reviewed"] as const;
 
-type SortKey = "newest" | "oldest" | "pending_first" | "invited_first" | "reviewed_first";
+type SortKey = "newest" | "oldest" | "pending_first" | "invited_first" | "reviewed_first" | "most_referrals";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "newest", label: "Newest first" },
@@ -37,6 +40,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "pending_first", label: "Pending first" },
   { value: "invited_first", label: "Invited first" },
   { value: "reviewed_first", label: "Reviewed first" },
+  { value: "most_referrals", label: "Most referrals" },
 ];
 
 function generateToken(): string {
@@ -74,6 +78,8 @@ function sortEntries(entries: WaitlistEntry[], key: SortKey): WaitlistEntry[] {
       return sorted.sort((a, b) => (b.invited ? 1 : 0) - (a.invited ? 1 : 0));
     case "reviewed_first":
       return sorted.sort((a, b) => (a.status === "reviewed" ? -1 : 1) - (b.status === "reviewed" ? -1 : 1));
+    case "most_referrals":
+      return sorted.sort((a, b) => b.referral_count - a.referral_count);
     default:
       return sorted;
   }
@@ -85,7 +91,7 @@ export default function AdminWaitlistPage() {
   const [entries, setEntries] = useState<WaitlistEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterInvited, setFilterInvited] = useState<"all" | "invited" | "not_invited" | "ready_to_invite">("all");
+  const [filterInvited, setFilterInvited] = useState<"all" | "invited" | "not_invited" | "ready_to_invite" | "top_referrers">("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
@@ -120,6 +126,7 @@ export default function AdminWaitlistPage() {
     if (filterInvited === "invited") result = result.filter((e) => e.invited);
     if (filterInvited === "not_invited") result = result.filter((e) => !e.invited);
     if (filterInvited === "ready_to_invite") result = result.filter((e) => e.status === "pending" && !e.invited);
+    if (filterInvited === "top_referrers") result = result.filter((e) => e.referral_count > 0);
     if (filterStatus !== "all") result = result.filter((e) => e.status === filterStatus);
     return sortEntries(result, sortKey);
   }, [entries, search, filterInvited, filterStatus, sortKey]);
@@ -299,7 +306,7 @@ export default function AdminWaitlistPage() {
           </div>
           <div className="flex items-center gap-2">
             <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-            {(["all", "not_invited", "invited", "ready_to_invite"] as const).map((v) => (
+            {(["all", "not_invited", "invited", "ready_to_invite", "top_referrers"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setFilterInvited(v)}
@@ -310,7 +317,7 @@ export default function AdminWaitlistPage() {
                     : "bg-card border-border text-muted-foreground hover:border-primary/30"
                 )}
               >
-                {v === "all" ? "All" : v === "invited" ? "Invited" : v === "not_invited" ? "Pending" : "Ready to Invite"}
+                {v === "all" ? "All" : v === "invited" ? "Invited" : v === "not_invited" ? "Pending" : v === "ready_to_invite" ? "Ready to Invite" : "Top Referrers"}
               </button>
             ))}
           </div>
@@ -362,6 +369,7 @@ export default function AdminWaitlistPage() {
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invited</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invite Link</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invite Sent</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Referrals</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Signed Up</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Flags</th>
                   </tr>
@@ -489,6 +497,16 @@ export default function AdminWaitlistPage() {
                             )
                           ) : (
                             <span className="text-xs text-muted-foreground/40">—</span>
+                          )}
+                        </td>
+                        {/* Referrals column */}
+                        <td className="px-4 py-3 text-center">
+                          {entry.referral_count > 0 ? (
+                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
+                              {entry.referral_count}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/40">0</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">

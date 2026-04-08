@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, ArrowRight, CheckCircle2, Sparkles, Loader2 } from "lucide-react";
+import { Brain, ArrowRight, CheckCircle2, Sparkles, Loader2, Copy, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +32,11 @@ export default function WaitlistPage() {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralCount, setReferralCount] = useState(0);
+
+  // Capture ref param from URL
+  const refParam = new URLSearchParams(window.location.search).get("ref");
 
   /* Force dark mode */
   useEffect(() => {
@@ -47,12 +52,13 @@ export default function WaitlistPage() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("waitlist_signups").insert({
+      const { data, error } = await supabase.from("waitlist_signups").insert({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         use_case: useCase || null,
         notes: notes.trim() || null,
-      });
+        ...(refParam ? { referred_by: refParam } : {}),
+      }).select("referral_code, referral_count").single();
 
       if (error) {
         if (error.code === "23505") {
@@ -64,6 +70,8 @@ export default function WaitlistPage() {
           console.error("Waitlist error:", error);
         }
       } else {
+        setReferralCode(data?.referral_code ?? null);
+        setReferralCount(data?.referral_count ?? 0);
         setSubmitted(true);
         // Fire-and-forget: send confirmation email (don't block UI)
         supabase.functions
@@ -205,6 +213,37 @@ export default function WaitlistPage() {
                   We'll invite people in batches as we open access — you'll hear from us soon.
                 </p>
               </div>
+
+              {/* Referral link card */}
+              {referralCode && (
+                <div className="rounded-xl border border-primary/20 bg-card p-4 space-y-3 max-w-sm mx-auto">
+                  <div className="flex items-center justify-center gap-2">
+                    <Share2 className="h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium text-foreground">Your referral link</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      readOnly
+                      value={`https://insighthalo.com/waitlist?ref=${referralCode}`}
+                      className="flex-1 text-xs bg-muted/50 border border-border rounded-lg px-3 py-2 text-muted-foreground truncate"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`https://insighthalo.com/waitlist?ref=${referralCode}`);
+                        toast.success("Referral link copied!");
+                      }}
+                    >
+                      <Copy className="h-3.5 w-3.5" /> Copy
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    You've invited <span className="text-primary font-semibold">{referralCount}</span> {referralCount === 1 ? "person" : "people"}
+                  </p>
+                </div>
+              )}
 
               <div className="rounded-xl border bg-card p-4 space-y-2 max-w-xs mx-auto">
                 <p className="text-xs font-medium text-foreground">What happens next?</p>
