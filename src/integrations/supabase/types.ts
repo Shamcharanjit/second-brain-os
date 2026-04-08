@@ -450,12 +450,17 @@ export type Database = {
       }
       waitlist_signups: {
         Row: {
+          activation_completed_at: string | null
           created_at: string
           email: string
+          email_send_count: number
           id: string
+          invite_accepted_at: string | null
+          invite_opened_at: string | null
           invite_sent_at: string | null
           invite_token: string | null
           invited: boolean
+          last_email_type_sent: string | null
           last_reminder_sent_at: string | null
           name: string
           notes: string | null
@@ -469,12 +474,17 @@ export type Database = {
           use_case: string | null
         }
         Insert: {
+          activation_completed_at?: string | null
           created_at?: string
           email: string
+          email_send_count?: number
           id?: string
+          invite_accepted_at?: string | null
+          invite_opened_at?: string | null
           invite_sent_at?: string | null
           invite_token?: string | null
           invited?: boolean
+          last_email_type_sent?: string | null
           last_reminder_sent_at?: string | null
           name: string
           notes?: string | null
@@ -488,12 +498,17 @@ export type Database = {
           use_case?: string | null
         }
         Update: {
+          activation_completed_at?: string | null
           created_at?: string
           email?: string
+          email_send_count?: number
           id?: string
+          invite_accepted_at?: string | null
+          invite_opened_at?: string | null
           invite_sent_at?: string | null
           invite_token?: string | null
           invited?: boolean
+          last_email_type_sent?: string | null
           last_reminder_sent_at?: string | null
           name?: string
           notes?: string | null

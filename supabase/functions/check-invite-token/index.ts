@@ -31,6 +31,15 @@ Deno.serve(async (req) => {
       .eq("invite_token", token.trim())
       .maybeSingle();
 
+    // Record invite_opened_at on first token check
+    if (data?.invited && !error) {
+      await supabase
+        .from("waitlist_signups")
+        .update({ invite_opened_at: new Date().toISOString() })
+        .eq("invite_token", token.trim())
+        .is("invite_opened_at", null);
+    }
+
     if (error || !data || !data.invited) {
       return new Response(
         JSON.stringify({ valid: false, email: null }),
