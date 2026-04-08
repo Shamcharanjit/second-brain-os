@@ -494,6 +494,14 @@ export default function AdminWaitlistPage() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
+        ) : loadError && entries.length === 0 ? (
+          <div className="text-center py-16 space-y-3">
+            <AlertTriangle className="h-6 w-6 text-destructive mx-auto" />
+            <p className="text-sm text-muted-foreground">{loadError}</p>
+            <Button variant="outline" size="sm" onClick={fetchEntries} className="gap-1.5 text-xs">
+              <RefreshCw className="h-3.5 w-3.5" /> Try Again
+            </Button>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground text-sm">
             {entries.length === 0 ? "No waitlist signups yet." : "No entries match your filters."}
