@@ -513,6 +513,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_analytics: { Args: never; Returns: Json }
       submit_waitlist: {
         Args: {
           p_email: string
