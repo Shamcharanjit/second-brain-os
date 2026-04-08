@@ -217,6 +217,39 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_plans: {
+        Row: {
+          billing_cycle: string
+          created_at: string
+          feature_flags: Json
+          id: string
+          is_active: boolean
+          name: string
+          price_usd: number
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle?: string
+          created_at?: string
+          feature_flags?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          price_usd?: number
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: string
+          created_at?: string
+          feature_flags?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_usd?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_captures: {
         Row: {
           ai_data: Json | null
@@ -454,6 +487,8 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           id: string
+          is_early_access: boolean
+          plan_started_at: string | null
           plan_tier: string
           provider_customer_id: string | null
           provider_subscription_id: string | null
@@ -466,6 +501,8 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           id?: string
+          is_early_access?: boolean
+          plan_started_at?: string | null
           plan_tier?: string
           provider_customer_id?: string | null
           provider_subscription_id?: string | null
@@ -478,6 +515,8 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           id?: string
+          is_early_access?: boolean
+          plan_started_at?: string | null
           plan_tier?: string
           provider_customer_id?: string | null
           provider_subscription_id?: string | null
