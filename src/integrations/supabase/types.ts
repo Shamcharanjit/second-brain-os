@@ -325,6 +325,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referred_user_email: string
+          referrer_user_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referred_user_email: string
+          referrer_user_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referred_user_email?: string
+          referrer_user_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       user_review_meta: {
         Row: {
           created_at: string
@@ -401,6 +425,9 @@ export type Database = {
           invited: boolean
           name: string
           notes: string | null
+          referral_code: string | null
+          referral_count: number
+          referred_by: string | null
           status: string
           updated_at: string
           use_case: string | null
@@ -414,6 +441,9 @@ export type Database = {
           invited?: boolean
           name: string
           notes?: string | null
+          referral_code?: string | null
+          referral_count?: number
+          referred_by?: string | null
           status?: string
           updated_at?: string
           use_case?: string | null
@@ -427,6 +457,9 @@ export type Database = {
           invited?: boolean
           name?: string
           notes?: string | null
+          referral_code?: string | null
+          referral_count?: number
+          referred_by?: string | null
           status?: string
           updated_at?: string
           use_case?: string | null
