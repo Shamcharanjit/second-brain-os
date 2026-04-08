@@ -1203,7 +1203,12 @@ export default function AdminAnalyticsPage() {
               <ConversionIntelligencePanel />
             </section>
 
-            {/* ═══ RETENTION RADAR ═══ */}
+            {/* ═══ CONVERSION CAMPAIGNS ═══ */}
+            <section className="space-y-3">
+              <ConversionCampaignPanel />
+            </section>
+
+
             <section className="space-y-3">
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <Radar className="h-4 w-4" /> Retention Radar
