@@ -1196,6 +1196,11 @@ export default function AdminAnalyticsPage() {
               )}
             </section>
 
+            {/* ═══ CONVERSION INTELLIGENCE ═══ */}
+            <section className="space-y-3">
+              <ConversionIntelligencePanel />
+            </section>
+
             {/* ═══ RETENTION RADAR ═══ */}
             <section className="space-y-3">
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
