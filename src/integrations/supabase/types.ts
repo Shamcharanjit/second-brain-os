@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          created_at: string
+          cta_label: string | null
+          cta_link: string | null
+          id: string
+          message: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_label?: string | null
+          cta_link?: string | null
+          id?: string
+          message: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_label?: string | null
+          cta_link?: string | null
+          id?: string
+          message?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       capture_attachment_extractions: {
         Row: {
           attachment_id: string
