@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Brain, ArrowLeft, RefreshCw, Loader2, Crown, Users,
-  Check, X, Shield, Sparkles, UserCheck, Edit2, Save,
+  Check, X, Shield, Sparkles, UserCheck, Edit2, Save, Globe, MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -16,9 +16,11 @@ type Plan = {
   id: string;
   name: string;
   price_usd: number;
+  price_inr: number;
   billing_cycle: string;
   is_active: boolean;
   feature_flags: Record<string, any>;
+  display_order: number;
   created_at: string;
 };
 
@@ -28,7 +30,10 @@ type UserSub = {
   plan_tier: string;
   subscription_status: string;
   is_early_access: boolean;
+  is_founder_assigned: boolean;
+  billing_region: string;
   plan_started_at: string | null;
+  plan_expires_at: string | null;
   created_at: string;
 };
 
@@ -40,12 +45,13 @@ export default function AdminPlansPage() {
   const [loading, setLoading] = useState(true);
   const [editingPlan, setEditingPlan] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState("");
+  const [editPriceInr, setEditPriceInr] = useState("");
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
     const [plansRes, subsRes] = await Promise.all([
-      supabase.from("subscription_plans" as any).select("*").order("price_usd", { ascending: true }),
+      supabase.from("subscription_plans" as any).select("*").order("display_order" as any, { ascending: true }),
       supabase.from("user_subscriptions" as any).select("*").order("created_at", { ascending: false }),
     ]);
     if (plansRes.data) setPlans(plansRes.data as any as Plan[]);
@@ -74,20 +80,22 @@ export default function AdminPlansPage() {
   };
 
   const savePlanPrice = async (plan: Plan) => {
-    const price = parseFloat(editPrice);
-    if (isNaN(price) || price < 0) { toast.error("Invalid price"); return; }
-    const { error } = await supabase.from("subscription_plans" as any).update({ price_usd: price } as any).eq("id", plan.id);
+    const priceUsd = parseFloat(editPrice);
+    const priceInr = parseFloat(editPriceInr);
+    if (isNaN(priceUsd) || priceUsd < 0 || isNaN(priceInr) || priceInr < 0) { toast.error("Invalid price"); return; }
+    const { error } = await supabase.from("subscription_plans" as any).update({ price_usd: priceUsd, price_inr: priceInr } as any).eq("id", plan.id);
     if (error) { toast.error("Update failed"); return; }
-    setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, price_usd: price } : p));
+    setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, price_usd: priceUsd, price_inr: priceInr } : p));
     setEditingPlan(null);
     toast.success("Price updated");
   };
 
-  const assignUserPlan = async (sub: UserSub, planTier: string, isEarlyAccess: boolean) => {
+  const assignUserPlan = async (sub: UserSub, planTier: string, isEarlyAccess: boolean, isFounderAssigned: boolean = false) => {
     setUpdatingUser(sub.id);
     const { error } = await supabase.from("user_subscriptions" as any).update({
       plan_tier: planTier,
       is_early_access: isEarlyAccess,
+      is_founder_assigned: isFounderAssigned,
       subscription_status: planTier === "pro" ? "active" : "none",
       plan_started_at: new Date().toISOString(),
     } as any).eq("id", sub.id);
@@ -96,16 +104,28 @@ export default function AdminPlansPage() {
       ...s,
       plan_tier: planTier,
       is_early_access: isEarlyAccess,
+      is_founder_assigned: isFounderAssigned,
       subscription_status: planTier === "pro" ? "active" : "none",
       plan_started_at: new Date().toISOString(),
     } : s));
     setUpdatingUser(null);
-    toast.success(`User plan updated to ${planTier}${isEarlyAccess ? " (Early Access)" : ""}`);
+    toast.success(`User plan updated to ${planTier}${isEarlyAccess ? " (Early Access)" : ""}${isFounderAssigned ? " — Founder assigned" : ""}`);
+  };
+
+  const setUserRegion = async (sub: UserSub, region: string) => {
+    setUpdatingUser(sub.id);
+    const { error } = await supabase.from("user_subscriptions" as any).update({ billing_region: region } as any).eq("id", sub.id);
+    if (error) { toast.error("Update failed"); setUpdatingUser(null); return; }
+    setSubs(prev => prev.map(s => s.id === sub.id ? { ...s, billing_region: region } : s));
+    setUpdatingUser(null);
+    toast.success(`Billing region set to ${region}`);
   };
 
   const earlyAccessCount = subs.filter(s => s.is_early_access).length;
   const proCount = subs.filter(s => s.plan_tier === "pro" && !s.is_early_access).length;
   const freeCount = subs.filter(s => s.plan_tier === "free" && !s.is_early_access).length;
+  const indiaCount = subs.filter(s => s.billing_region === "india").length;
+  const internationalCount = subs.filter(s => s.billing_region === "international").length;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -137,12 +157,14 @@ export default function AdminPlansPage() {
       ) : (
         <div className="mx-auto max-w-5xl px-5 md:px-8 py-8 space-y-8">
 
-          {/* Plan distribution stats */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* Plan + region distribution stats */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
               { label: "Early Access", value: earlyAccessCount, icon: Sparkles, color: "text-primary" },
               { label: "Pro (Paid)", value: proCount, icon: Crown, color: "text-primary" },
               { label: "Free", value: freeCount, icon: Users, color: "text-muted-foreground" },
+              { label: "India", value: indiaCount, icon: MapPin, color: "text-primary" },
+              { label: "International", value: internationalCount, icon: Globe, color: "text-muted-foreground" },
             ].map(s => (
               <div key={s.label} className="rounded-xl border border-border bg-card p-4 space-y-1">
                 <div className="flex items-center gap-2">
@@ -179,19 +201,19 @@ export default function AdminPlansPage() {
                     </button>
                   </div>
 
-                  <div className="flex items-baseline gap-1">
+                  <div className="space-y-1">
                     {editingPlan === plan.id ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">$</span>
-                        <Input
-                          value={editPrice}
-                          onChange={(e) => setEditPrice(e.target.value)}
-                          className="h-8 w-20 text-sm"
-                          type="number"
-                          min={0}
-                          step={1}
-                          autoFocus
-                        />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm text-muted-foreground">$</span>
+                          <Input value={editPrice} onChange={(e) => setEditPrice(e.target.value)}
+                            className="h-8 w-20 text-sm" type="number" min={0} step={1} autoFocus />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm text-muted-foreground">₹</span>
+                          <Input value={editPriceInr} onChange={(e) => setEditPriceInr(e.target.value)}
+                            className="h-8 w-20 text-sm" type="number" min={0} step={1} />
+                        </div>
                         <Button size="sm" className="h-7 px-2" onClick={() => savePlanPrice(plan)}>
                           <Save className="h-3 w-3" />
                         </Button>
@@ -200,16 +222,22 @@ export default function AdminPlansPage() {
                         </Button>
                       </div>
                     ) : (
-                      <>
-                        <span className="text-2xl font-bold">${plan.price_usd}</span>
-                        <span className="text-xs text-muted-foreground">/{plan.billing_cycle}</span>
+                      <div className="flex items-baseline gap-3">
+                        <div>
+                          <span className="text-2xl font-bold">${plan.price_usd}</span>
+                          <span className="text-xs text-muted-foreground">/{plan.billing_cycle}</span>
+                        </div>
+                        <div className="text-muted-foreground">
+                          <span className="text-lg font-semibold">₹{plan.price_inr}</span>
+                          <span className="text-xs">/{plan.billing_cycle}</span>
+                        </div>
                         <button
-                          onClick={() => { setEditingPlan(plan.id); setEditPrice(String(plan.price_usd)); }}
+                          onClick={() => { setEditingPlan(plan.id); setEditPrice(String(plan.price_usd)); setEditPriceInr(String(plan.price_inr)); }}
                           className="ml-2 p-1 rounded hover:bg-muted"
                         >
                           <Edit2 className="h-3 w-3 text-muted-foreground" />
                         </button>
-                      </>
+                      </div>
                     )}
                   </div>
 
@@ -239,6 +267,7 @@ export default function AdminPlansPage() {
                       <tr className="border-b bg-muted/30">
                         <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">User ID</th>
                         <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Plan</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Region</th>
                         <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Status</th>
                         <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Early Access</th>
                         <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Started</th>
@@ -256,6 +285,25 @@ export default function AdminPlansPage() {
                             )}>
                               {sub.plan_tier}
                             </span>
+                            {sub.is_founder_assigned && (
+                              <span className="ml-1 text-[9px] text-muted-foreground">(founder)</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setUserRegion(sub, sub.billing_region === "india" ? "international" : "india")}
+                                disabled={updatingUser === sub.id}
+                                className={cn(
+                                  "text-[10px] px-2 py-0.5 rounded-full border font-medium cursor-pointer hover:opacity-80",
+                                  sub.billing_region === "india"
+                                    ? "bg-primary/10 text-primary border-primary/20"
+                                    : "bg-muted text-muted-foreground border-border"
+                                )}
+                              >
+                                {sub.billing_region === "india" ? "🇮🇳 India" : "🌍 Intl"}
+                              </button>
+                            </div>
                           </td>
                           <td className="px-4 py-2.5 text-xs text-muted-foreground">{sub.subscription_status}</td>
                           <td className="px-4 py-2.5">
@@ -275,7 +323,7 @@ export default function AdminPlansPage() {
                                   size="sm" variant="outline"
                                   className="h-6 text-[10px] gap-1 px-2"
                                   disabled={updatingUser === sub.id}
-                                  onClick={() => assignUserPlan(sub, "pro", false)}
+                                  onClick={() => assignUserPlan(sub, "pro", false, true)}
                                 >
                                   {updatingUser === sub.id ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Crown className="h-2.5 w-2.5" />}
                                   Pro
@@ -286,7 +334,7 @@ export default function AdminPlansPage() {
                                   size="sm" variant="outline"
                                   className="h-6 text-[10px] gap-1 px-2"
                                   disabled={updatingUser === sub.id}
-                                  onClick={() => assignUserPlan(sub, "pro", true)}
+                                  onClick={() => assignUserPlan(sub, "pro", true, true)}
                                 >
                                   {updatingUser === sub.id ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Sparkles className="h-2.5 w-2.5" />}
                                   Early Access
@@ -297,7 +345,7 @@ export default function AdminPlansPage() {
                                   size="sm" variant="ghost"
                                   className="h-6 text-[10px] gap-1 px-2 text-muted-foreground"
                                   disabled={updatingUser === sub.id}
-                                  onClick={() => assignUserPlan(sub, "free", false)}
+                                  onClick={() => assignUserPlan(sub, "free", false, false)}
                                 >
                                   Free
                                 </Button>
