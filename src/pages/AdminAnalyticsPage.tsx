@@ -241,6 +241,32 @@ export default function AdminAnalyticsPage() {
     return { sentToday, acceptedToday, activationRate, pendingHighPriority, batchSize, healthColor };
   }, [waitlist, captures, projects, memories]);
 
+  /* ── product health metrics ── */
+  const productHealth = useMemo(() => {
+    const sevenDaysAgo = subDays(new Date(), 7);
+    const cap7d = captures.filter((c) => isAfter(new Date(c.created_at), sevenDaysAgo));
+    const proj7d = projects.filter((p) => isAfter(new Date(p.created_at), sevenDaysAgo));
+    const mem7d = memories.filter((m) => isAfter(new Date(m.created_at), sevenDaysAgo));
+    const voice7d = captures.filter((c) => c.input_type === "voice" && isAfter(new Date(c.created_at), sevenDaysAgo));
+
+    const capturesPerUser = activation.active7d > 0 ? (cap7d.length / activation.active7d) : 0;
+
+    // Weighted adoption score: captures(1x) + projects(2x) + memory(1.5x) + voice(1x)
+    const rawScore = cap7d.length * 1 + proj7d.length * 2 + mem7d.length * 1.5 + voice7d.length * 1;
+    const maxExpected = Math.max(activation.active7d, 1) * 10; // 10 actions/user = strong
+    const adoptionPct = Math.min(Math.round((rawScore / maxExpected) * 100), 100);
+    const adoptionLabel = adoptionPct >= 60 ? "Strong" : adoptionPct >= 30 ? "Medium" : "Low";
+
+    const features = [
+      { name: "Captures", count: cap7d.length, icon: Zap },
+      { name: "Projects", count: proj7d.length, icon: FolderKanban },
+      { name: "Memory", count: mem7d.length, icon: BookOpen },
+      { name: "Voice Capture", count: voice7d.length, icon: Mic },
+    ].sort((a, b) => b.count - a.count);
+
+    return { capturesPerUser, proj7d: proj7d.length, mem7d: mem7d.length, voice7d: voice7d.length, adoptionPct, adoptionLabel, features };
+  }, [captures, projects, memories, activation.active7d]);
+
   /* ── auth gate ── */
   if (!cloudAvailable || !user) {
     return (
