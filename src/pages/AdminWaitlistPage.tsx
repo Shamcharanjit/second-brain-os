@@ -523,6 +523,21 @@ export default function AdminWaitlistPage() {
                             <span className="text-xs text-muted-foreground/40">0</span>
                           )}
                         </td>
+                        {/* Reward Level column */}
+                        <td className="px-4 py-3">
+                          {entry.referral_reward_level > 0 ? (
+                            <span className={cn(
+                              "inline-flex items-center text-[10px] px-2 py-0.5 rounded-full border font-medium",
+                              entry.referral_reward_level >= 10 ? "bg-primary/15 text-primary border-primary/30" :
+                              entry.referral_reward_level >= 5 ? "bg-primary/10 text-primary/80 border-primary/20" :
+                              "bg-muted text-muted-foreground border-border"
+                            )}>
+                              {REWARD_LABELS[entry.referral_reward_level] || `Lvl ${entry.referral_reward_level}`}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/40">—</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                           {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </td>
