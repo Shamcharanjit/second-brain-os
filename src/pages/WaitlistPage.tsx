@@ -214,9 +214,9 @@ export default function WaitlistPage() {
                 </p>
               </div>
 
-              {/* Referral link card */}
+              {/* Referral rewards card */}
               {referralCode && (
-                <div className="rounded-xl border border-primary/20 bg-card p-4 space-y-3 max-w-sm mx-auto">
+                <div className="rounded-xl border border-primary/20 bg-card p-5 space-y-4 max-w-sm mx-auto">
                   <div className="flex items-center justify-center gap-2">
                     <Share2 className="h-4 w-4 text-primary" />
                     <p className="text-sm font-medium text-foreground">Your referral link</p>
@@ -239,9 +239,69 @@ export default function WaitlistPage() {
                       <Copy className="h-3.5 w-3.5" /> Copy
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    You've invited <span className="text-primary font-semibold">{referralCount}</span> {referralCount === 1 ? "person" : "people"}
-                  </p>
+
+                  {/* Reward progress */}
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        You've invited <span className="text-primary font-semibold">{referralCount}</span> {referralCount === 1 ? "person" : "people"}
+                      </p>
+                      {referralCount < 10 && (() => {
+                        const next = referralCount < 1 ? 1 : referralCount < 3 ? 3 : referralCount < 5 ? 5 : 10;
+                        return (
+                          <span className="text-[10px] text-muted-foreground/70">
+                            {next - referralCount} more to unlock
+                          </span>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min((referralCount / 10) * 100, 100)}%` }}
+                      />
+                    </div>
+
+                    {/* Tier milestones */}
+                    <div className="space-y-1.5">
+                      {[
+                        { count: 1, label: "Priority queue boost" },
+                        { count: 3, label: "Fast-track invite eligibility" },
+                        { count: 5, label: "Early feature access badge" },
+                        { count: 10, label: "InsightHalo Insider badge" },
+                      ].map((tier) => {
+                        const unlocked = referralCount >= tier.count;
+                        const isNext = !unlocked && (
+                          tier.count === 1 || referralCount >= (tier.count === 3 ? 1 : tier.count === 5 ? 3 : 5)
+                        );
+                        return (
+                          <div
+                            key={tier.count}
+                            className={cn(
+                              "flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg transition-colors",
+                              unlocked ? "bg-primary/10 text-primary" :
+                              isNext ? "bg-muted/50 text-foreground" :
+                              "text-muted-foreground/50"
+                            )}
+                          >
+                            {unlocked ? (
+                              <Trophy className="h-3.5 w-3.5 text-primary shrink-0" />
+                            ) : (
+                              <span className="h-3.5 w-3.5 flex items-center justify-center text-[10px] font-bold shrink-0">
+                                {tier.count}
+                              </span>
+                            )}
+                            <span className={unlocked ? "font-medium" : ""}>{tier.label}</span>
+                            {unlocked && (
+                              <CheckCircle2 className="h-3 w-3 ml-auto shrink-0" />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
 
