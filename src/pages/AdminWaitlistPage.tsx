@@ -8,9 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Brain, ArrowLeft, Download, RefreshCw, CheckCircle2, Clock,
   Search, Filter, Loader2, X, Users, UserCheck, Copy, Send,
+  ArrowUpDown, AlertTriangle, BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { differenceInDays } from "date-fns";
 
 type WaitlistEntry = {
   id: string;
@@ -27,6 +29,16 @@ type WaitlistEntry = {
 
 const STATUS_OPTIONS = ["pending", "invited", "reviewed"] as const;
 
+type SortKey = "newest" | "oldest" | "pending_first" | "invited_first" | "reviewed_first";
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+  { value: "pending_first", label: "Pending first" },
+  { value: "invited_first", label: "Invited first" },
+  { value: "reviewed_first", label: "Reviewed first" },
+];
+
 function generateToken(): string {
   const arr = new Uint8Array(24);
   crypto.getRandomValues(arr);
@@ -37,14 +49,45 @@ function getInviteLink(token: string): string {
   return `${window.location.origin}/invite?token=${token}`;
 }
 
+/** Pending + not invited + created > 3 days ago */
+function needsReview(e: WaitlistEntry): boolean {
+  return e.status === "pending" && !e.invited && differenceInDays(new Date(), new Date(e.created_at)) > 3;
+}
+
+/** Invited but invite_sent_at > 3 days ago (or no send timestamp) and still not reviewed */
+function isStaleInvite(e: WaitlistEntry): boolean {
+  if (!e.invited) return false;
+  const ref = e.invite_sent_at ? new Date(e.invite_sent_at) : new Date(e.created_at);
+  return differenceInDays(new Date(), ref) > 3 && e.status !== "reviewed";
+}
+
+function sortEntries(entries: WaitlistEntry[], key: SortKey): WaitlistEntry[] {
+  const sorted = [...entries];
+  switch (key) {
+    case "newest":
+      return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    case "oldest":
+      return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    case "pending_first":
+      return sorted.sort((a, b) => (a.status === "pending" ? -1 : 1) - (b.status === "pending" ? -1 : 1));
+    case "invited_first":
+      return sorted.sort((a, b) => (b.invited ? 1 : 0) - (a.invited ? 1 : 0));
+    case "reviewed_first":
+      return sorted.sort((a, b) => (a.status === "reviewed" ? -1 : 1) - (b.status === "reviewed" ? -1 : 1));
+    default:
+      return sorted;
+  }
+}
+
 export default function AdminWaitlistPage() {
   const { user, cloudAvailable } = useAuth();
   const navigate = useNavigate();
   const [entries, setEntries] = useState<WaitlistEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterInvited, setFilterInvited] = useState<"all" | "invited" | "not_invited">("all");
+  const [filterInvited, setFilterInvited] = useState<"all" | "invited" | "not_invited" | "ready_to_invite">("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [editNotesValue, setEditNotesValue] = useState("");
 
@@ -76,9 +119,10 @@ export default function AdminWaitlistPage() {
     }
     if (filterInvited === "invited") result = result.filter((e) => e.invited);
     if (filterInvited === "not_invited") result = result.filter((e) => !e.invited);
+    if (filterInvited === "ready_to_invite") result = result.filter((e) => e.status === "pending" && !e.invited);
     if (filterStatus !== "all") result = result.filter((e) => e.status === filterStatus);
-    return result;
-  }, [entries, search, filterInvited, filterStatus]);
+    return sortEntries(result, sortKey);
+  }, [entries, search, filterInvited, filterStatus, sortKey]);
 
   if (!cloudAvailable || !user) {
     return (
@@ -189,6 +233,7 @@ export default function AdminWaitlistPage() {
 
   const invitedCount = entries.filter((e) => e.invited).length;
   const pendingCount = entries.filter((e) => !e.invited).length;
+  const readyToInviteCount = entries.filter((e) => e.status === "pending" && !e.invited).length;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -204,6 +249,9 @@ export default function AdminWaitlistPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/admin/analytics")} className="gap-1.5 text-xs">
+              <BarChart3 className="h-3.5 w-3.5" /> Analytics
+            </Button>
             <Button variant="outline" size="sm" onClick={fetchEntries} className="gap-1.5 text-xs">
               <RefreshCw className="h-3.5 w-3.5" /> Refresh
             </Button>
@@ -216,13 +264,14 @@ export default function AdminWaitlistPage() {
 
       <div className="mx-auto max-w-6xl px-5 md:px-8 py-6 space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: "Total Signups", value: entries.length, icon: Users, color: "text-foreground" },
             { label: "Pending", value: pendingCount, icon: Clock, color: "text-muted-foreground" },
             { label: "Invited", value: invitedCount, icon: UserCheck, color: "text-primary" },
+            { label: "Ready to Invite", value: readyToInviteCount, icon: Send, color: "text-primary" },
           ].map((s) => (
-            <div key={s.label} className="rounded-xl border bg-card p-4 space-y-1">
+            <div key={s.label} className="rounded-xl border border-border bg-card p-4 space-y-1">
               <div className="flex items-center gap-2">
                 <s.icon className={cn("h-4 w-4", s.color)} />
                 <span className="text-xs text-muted-foreground">{s.label}</span>
@@ -232,7 +281,7 @@ export default function AdminWaitlistPage() {
           ))}
         </div>
 
-        {/* Filters */}
+        {/* Filters + Sort */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -250,7 +299,7 @@ export default function AdminWaitlistPage() {
           </div>
           <div className="flex items-center gap-2">
             <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-            {(["all", "not_invited", "invited"] as const).map((v) => (
+            {(["all", "not_invited", "invited", "ready_to_invite"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setFilterInvited(v)}
@@ -261,7 +310,7 @@ export default function AdminWaitlistPage() {
                     : "bg-card border-border text-muted-foreground hover:border-primary/30"
                 )}
               >
-                {v === "all" ? "All" : v === "invited" ? "Invited" : "Pending"}
+                {v === "all" ? "All" : v === "invited" ? "Invited" : v === "not_invited" ? "Pending" : "Ready to Invite"}
               </button>
             ))}
           </div>
@@ -275,6 +324,19 @@ export default function AdminWaitlistPage() {
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
+          {/* Sort control */}
+          <div className="flex items-center gap-1.5">
+            <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as SortKey)}
+              className="text-xs h-8 rounded-md border border-border bg-card px-2 text-muted-foreground"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Table */}
@@ -287,7 +349,7 @@ export default function AdminWaitlistPage() {
             {entries.length === 0 ? "No waitlist signups yet." : "No entries match your filters."}
           </div>
         ) : (
-          <div className="border rounded-xl overflow-hidden">
+          <div className="border border-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -299,107 +361,157 @@ export default function AdminWaitlistPage() {
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Status</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invited</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invite Link</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Invite Sent</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Signed Up</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground text-xs">Flags</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((entry) => (
-                    <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                      <td className="px-4 py-3 font-medium whitespace-nowrap">{entry.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{entry.email}</td>
-                      <td className="px-4 py-3">
-                        {entry.use_case ? (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-muted border border-border">{entry.use_case}</span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground/50">—</span>
+                  {filtered.map((entry) => {
+                    const _needsReview = needsReview(entry);
+                    const _staleInvite = isStaleInvite(entry);
+
+                    return (
+                      <tr
+                        key={entry.id}
+                        className={cn(
+                          "border-b last:border-0 transition-colors",
+                          _needsReview ? "bg-destructive/5 hover:bg-destructive/10" :
+                          _staleInvite ? "bg-yellow-500/5 hover:bg-yellow-500/10" :
+                          "hover:bg-muted/20"
                         )}
-                      </td>
-                      <td className="px-4 py-3 max-w-[200px]">
-                        {editingNotes === entry.id ? (
-                          <div className="flex gap-1.5">
-                            <Textarea
-                              value={editNotesValue}
-                              onChange={(e) => setEditNotesValue(e.target.value)}
-                              rows={2}
-                              className="text-xs resize-none min-w-[140px]"
-                              autoFocus
-                            />
-                            <div className="flex flex-col gap-1">
-                              <Button size="sm" onClick={() => saveNotes(entry.id)} className="h-6 px-2 text-[10px]">Save</Button>
-                              <Button size="sm" variant="ghost" onClick={() => setEditingNotes(null)} className="h-6 px-2 text-[10px]">✕</Button>
+                      >
+                        <td className="px-4 py-3 font-medium whitespace-nowrap">{entry.name}</td>
+                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{entry.email}</td>
+                        <td className="px-4 py-3">
+                          {entry.use_case ? (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-muted border border-border">{entry.use_case}</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/50">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 max-w-[200px]">
+                          {editingNotes === entry.id ? (
+                            <div className="flex gap-1.5">
+                              <Textarea
+                                value={editNotesValue}
+                                onChange={(e) => setEditNotesValue(e.target.value)}
+                                rows={2}
+                                className="text-xs resize-none min-w-[140px]"
+                                autoFocus
+                              />
+                              <div className="flex flex-col gap-1">
+                                <Button size="sm" onClick={() => saveNotes(entry.id)} className="h-6 px-2 text-[10px]">Save</Button>
+                                <Button size="sm" variant="ghost" onClick={() => setEditingNotes(null)} className="h-6 px-2 text-[10px]">✕</Button>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => { setEditingNotes(entry.id); setEditNotesValue(entry.notes || ""); }}
-                            className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left truncate max-w-[180px] block"
-                            title="Click to edit notes"
-                          >
-                            {entry.notes || <span className="text-muted-foreground/40 italic">add note…</span>}
-                          </button>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={entry.status}
-                          onChange={(e) => updateStatus(entry, e.target.value)}
-                          className={cn(
-                            "text-xs h-7 rounded-md border px-2 bg-card",
-                            entry.status === "invited" && "text-primary border-primary/30",
-                            entry.status === "pending" && "text-muted-foreground border-border",
-                            entry.status === "reviewed" && "text-foreground border-border",
-                          )}
-                        >
-                          {STATUS_OPTIONS.map((s) => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => toggleInvited(entry)}
-                          className={cn(
-                            "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors",
-                            entry.invited
-                              ? "bg-primary/10 text-primary border-primary/30"
-                              : "bg-card text-muted-foreground border-border hover:border-primary/30"
-                          )}
-                        >
-                          {entry.invited ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                          {entry.invited ? "Yes" : "No"}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        {entry.invited && entry.invite_token ? (
-                          <div className="flex items-center gap-1.5">
+                          ) : (
                             <button
-                              onClick={() => copyInviteLink(entry)}
-                              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border bg-card hover:border-primary/30 transition-colors text-muted-foreground hover:text-foreground"
-                              title={getInviteLink(entry.invite_token)}
+                              onClick={() => { setEditingNotes(entry.id); setEditNotesValue(entry.notes || ""); }}
+                              className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left truncate max-w-[180px] block"
+                              title="Click to edit notes"
                             >
-                              <Copy className="h-3 w-3" /> Copy
+                              {entry.notes || <span className="text-muted-foreground/40 italic">add note…</span>}
                             </button>
-                            {!entry.invite_sent_at ? (
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <select
+                            value={entry.status}
+                            onChange={(e) => updateStatus(entry, e.target.value)}
+                            className={cn(
+                              "text-xs h-7 rounded-md border px-2 bg-card",
+                              entry.status === "invited" && "text-primary border-primary/30",
+                              entry.status === "pending" && "text-muted-foreground border-border",
+                              entry.status === "reviewed" && "text-foreground border-border",
+                            )}
+                          >
+                            {STATUS_OPTIONS.map((s) => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => toggleInvited(entry)}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors",
+                              entry.invited
+                                ? "bg-primary/10 text-primary border-primary/30"
+                                : "bg-card text-muted-foreground border-border hover:border-primary/30"
+                            )}
+                          >
+                            {entry.invited ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                            {entry.invited ? "Yes" : "No"}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3">
+                          {entry.invited && entry.invite_token ? (
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => copyInviteLink(entry)}
+                                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border bg-card hover:border-primary/30 transition-colors text-muted-foreground hover:text-foreground"
+                                title={getInviteLink(entry.invite_token)}
+                              >
+                                <Copy className="h-3 w-3" /> Copy
+                              </button>
+                              {/* Resend Invite = copy link again with distinct toast */}
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(getInviteLink(entry.invite_token!));
+                                  toast.success("Invite link copied");
+                                }}
+                                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border bg-card hover:border-primary/30 transition-colors text-muted-foreground hover:text-foreground"
+                                title="Resend invite (copies link)"
+                              >
+                                <RefreshCw className="h-3 w-3" /> Resend
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/40">—</span>
+                          )}
+                        </td>
+                        {/* Invite Sent column */}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {entry.invited && entry.invite_token ? (
+                            !entry.invite_sent_at ? (
                               <button
                                 onClick={() => markInviteSent(entry)}
                                 className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border bg-card hover:border-primary/30 transition-colors text-muted-foreground hover:text-foreground"
                                 title="Mark invite as sent"
                               >
-                                <Send className="h-3 w-3" />
+                                <Send className="h-3 w-3" /> Mark sent
                               </button>
                             ) : (
-                              <span className="text-[10px] text-primary/70">Sent</span>
+                              <span className="text-[10px] text-primary/70">
+                                {new Date(entry.invite_sent_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-xs text-muted-foreground/40">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </td>
+                        {/* Flags column */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            {_needsReview && (
+                              <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
+                                <AlertTriangle className="h-2.5 w-2.5" /> Needs review
+                              </span>
+                            )}
+                            {_staleInvite && (
+                              <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20">
+                                <Clock className="h-2.5 w-2.5" /> Invite not accepted
+                              </span>
                             )}
                           </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground/40">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                        {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
