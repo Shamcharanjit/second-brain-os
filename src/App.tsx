@@ -63,6 +63,7 @@ const App = () => (
                     <Route path="/privacy" element={<PrivacyPage />} />
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
+                    <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
 
                     {/* App routes — wrapped in sidebar layout */}
                     <Route element={<AppShell />}>
