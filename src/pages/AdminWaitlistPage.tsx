@@ -42,7 +42,7 @@ const REWARD_LABELS: Record<number, string> = {
   10: "Insider",
 };
 
-const STATUS_OPTIONS = ["pending", "invited", "reviewed"] as const;
+const STATUS_OPTIONS = ["pending", "invited", "reviewed", "activated"] as const;
 
 type SortKey = "newest" | "oldest" | "pending_first" | "invited_first" | "reviewed_first" | "most_referrals";
 
@@ -102,6 +102,7 @@ export default function AdminWaitlistPage() {
   const navigate = useNavigate();
   const [entries, setEntries] = useState<WaitlistEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filterInvited, setFilterInvited] = useState<"all" | "invited" | "not_invited" | "ready_to_invite" | "top_referrers" | "fast_track">("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -111,16 +112,31 @@ export default function AdminWaitlistPage() {
 
   const fetchEntries = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("waitlist_signups" as any)
-      .select("*")
-      .order("created_at", { ascending: false });
+    setLoadError(null);
+    try {
+      const { data, error } = await supabase
+        .from("waitlist_signups" as any)
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      toast.error("Failed to load waitlist");
-      console.error(error);
-    } else {
-      setEntries((data as any as WaitlistEntry[]) || []);
+      if (error) {
+        console.error("Waitlist query error:", error);
+        // Only show error if we have no cached data at all
+        if (entries.length === 0) {
+          setLoadError("Could not load waitlist data. Please try refreshing.");
+        } else {
+          // We have stale data — show a non-blocking toast
+          toast.error("Refresh failed — showing cached data");
+        }
+      } else {
+        setEntries((data as any as WaitlistEntry[]) || []);
+        setLoadError(null);
+      }
+    } catch (err) {
+      console.error("Waitlist fetch exception:", err);
+      if (entries.length === 0) {
+        setLoadError("Could not load waitlist data. Please try refreshing.");
+      }
     }
     setLoading(false);
   };
@@ -477,6 +493,14 @@ export default function AdminWaitlistPage() {
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : loadError && entries.length === 0 ? (
+          <div className="text-center py-16 space-y-3">
+            <AlertTriangle className="h-6 w-6 text-destructive mx-auto" />
+            <p className="text-sm text-muted-foreground">{loadError}</p>
+            <Button variant="outline" size="sm" onClick={fetchEntries} className="gap-1.5 text-xs">
+              <RefreshCw className="h-3.5 w-3.5" /> Try Again
+            </Button>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground text-sm">
