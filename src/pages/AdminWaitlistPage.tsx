@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Brain, ArrowLeft, Download, RefreshCw, CheckCircle2, Clock,
   Search, Filter, Loader2, X, Users, UserCheck, Copy, Send,
-  ArrowUpDown, AlertTriangle, BarChart3, Zap, Star,
+  ArrowUpDown, AlertTriangle, BarChart3, Zap, Star, Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -28,6 +28,8 @@ type WaitlistEntry = {
   referred_by: string | null;
   referral_count: number;
   referral_reward_level: number;
+  last_reminder_sent_at: string | null;
+  reminder_count: number;
   created_at: string;
 };
 
@@ -654,7 +656,7 @@ export default function AdminWaitlistPage() {
                         </td>
                         {/* Flags column */}
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             {_needsReview && (
                               <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
                                 <AlertTriangle className="h-2.5 w-2.5" /> Needs review
@@ -663,6 +665,11 @@ export default function AdminWaitlistPage() {
                             {_staleInvite && (
                               <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20">
                                 <Clock className="h-2.5 w-2.5" /> Invite not accepted
+                              </span>
+                            )}
+                            {entry.last_reminder_sent_at && (
+                              <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20" title={`Sent ${entry.reminder_count} reminder(s), last: ${new Date(entry.last_reminder_sent_at).toLocaleDateString()}`}>
+                                <Mail className="h-2.5 w-2.5" /> Reminder Sent
                               </span>
                             )}
                           </div>

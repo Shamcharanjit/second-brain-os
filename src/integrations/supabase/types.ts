@@ -423,12 +423,14 @@ export type Database = {
           invite_sent_at: string | null
           invite_token: string | null
           invited: boolean
+          last_reminder_sent_at: string | null
           name: string
           notes: string | null
           referral_code: string | null
           referral_count: number
           referral_reward_level: number
           referred_by: string | null
+          reminder_count: number
           status: string
           updated_at: string
           use_case: string | null
@@ -440,12 +442,14 @@ export type Database = {
           invite_sent_at?: string | null
           invite_token?: string | null
           invited?: boolean
+          last_reminder_sent_at?: string | null
           name: string
           notes?: string | null
           referral_code?: string | null
           referral_count?: number
           referral_reward_level?: number
           referred_by?: string | null
+          reminder_count?: number
           status?: string
           updated_at?: string
           use_case?: string | null
@@ -457,12 +461,14 @@ export type Database = {
           invite_sent_at?: string | null
           invite_token?: string | null
           invited?: boolean
+          last_reminder_sent_at?: string | null
           name?: string
           notes?: string | null
           referral_code?: string | null
           referral_count?: number
           referral_reward_level?: number
           referred_by?: string | null
+          reminder_count?: number
           status?: string
           updated_at?: string
           use_case?: string | null
