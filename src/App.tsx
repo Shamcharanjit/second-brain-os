@@ -31,6 +31,7 @@ import AdminWaitlistPage from "@/pages/AdminWaitlistPage";
 import AdminAnalyticsPage from "@/pages/AdminAnalyticsPage";
 import AdminAnnouncementsPage from "@/pages/AdminAnnouncementsPage";
 import InvitePage from "@/pages/InvitePage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
