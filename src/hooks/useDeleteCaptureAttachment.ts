@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase/client";
 import { CAPTURE_UPLOADS_BUCKET } from "@/lib/storage";
 import { toast } from "sonner";
 import type { CaptureAttachment } from "@/lib/uploads";
