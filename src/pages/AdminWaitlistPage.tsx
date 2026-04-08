@@ -134,8 +134,12 @@ export default function AdminWaitlistPage() {
     }
     if (filterInvited === "invited") result = result.filter((e) => e.invited);
     if (filterInvited === "not_invited") result = result.filter((e) => !e.invited);
-    if (filterInvited === "ready_to_invite") result = result.filter((e) => e.status === "pending" && !e.invited);
+    if (filterInvited === "ready_to_invite") {
+      result = result.filter((e) => e.status === "pending" && !e.invited);
+      result.sort((a, b) => b.referral_reward_level - a.referral_reward_level);
+    }
     if (filterInvited === "top_referrers") result = result.filter((e) => e.referral_count > 0);
+    if (filterInvited === "fast_track") result = result.filter((e) => e.referral_reward_level >= 3);
     if (filterStatus !== "all") result = result.filter((e) => e.status === filterStatus);
     return sortEntries(result, sortKey);
   }, [entries, search, filterInvited, filterStatus, sortKey]);
