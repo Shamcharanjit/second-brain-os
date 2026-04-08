@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, subDays, subHours, isAfter, differenceInDays } from "date-fns";
+import ConversionIntelligencePanel from "@/components/dashboard/ConversionIntelligencePanel";
 
 /* ── types ── */
 
