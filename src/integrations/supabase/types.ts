@@ -178,6 +178,48 @@ export type Database = {
           },
         ]
       }
+      conversion_campaigns: {
+        Row: {
+          campaign_name: string
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          min_score_threshold: number
+          notes: string | null
+          prompt_strength: string
+          start_date: string
+          target_segment: string[]
+          updated_at: string
+        }
+        Insert: {
+          campaign_name: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          min_score_threshold?: number
+          notes?: string | null
+          prompt_strength?: string
+          start_date?: string
+          target_segment?: string[]
+          updated_at?: string
+        }
+        Update: {
+          campaign_name?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          min_score_threshold?: number
+          notes?: string | null
+          prompt_strength?: string
+          start_date?: string
+          target_segment?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rollout_decisions: {
         Row: {
           actual_sent: number
