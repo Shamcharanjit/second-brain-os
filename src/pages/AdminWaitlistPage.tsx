@@ -509,6 +509,7 @@ export default function AdminWaitlistPage() {
                             <span className="text-xs text-muted-foreground/40">0</span>
                           )}
                         </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                           {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </td>
                         {/* Flags column */}
