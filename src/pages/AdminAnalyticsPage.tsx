@@ -117,7 +117,7 @@ export default function AdminAnalyticsPage() {
     setLoading(true);
     try {
       const [wl, cap, proj, mem] = await Promise.all([
-        supabase.from("waitlist_signups" as any).select("id, status, invited, invite_token, created_at").order("created_at", { ascending: false }),
+        supabase.from("waitlist_signups" as any).select("id, status, invited, invite_token, invite_sent_at, referral_reward_level, created_at").order("created_at", { ascending: false }),
         supabase.from("user_captures" as any).select("user_id, input_type, created_at, updated_at"),
         supabase.from("user_projects" as any).select("user_id, created_at, updated_at"),
         supabase.from("user_memory_entries" as any).select("user_id, created_at, updated_at"),
