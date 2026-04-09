@@ -1221,6 +1221,10 @@ export default function AdminAnalyticsPage() {
               <UpgradeTimingPanel />
             </section>
 
+            {/* ═══ PAYWALL INTELLIGENCE ═══ */}
+            <section className="space-y-3">
+              <PaywallIntelligencePanel />
+
             <section className="space-y-3">
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <Radar className="h-4 w-4" /> Retention Radar
