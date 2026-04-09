@@ -1224,6 +1224,7 @@ export default function AdminAnalyticsPage() {
             {/* ═══ PAYWALL INTELLIGENCE ═══ */}
             <section className="space-y-3">
               <PaywallIntelligencePanel />
+            </section>
 
             <section className="space-y-3">
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
