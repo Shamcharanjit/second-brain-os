@@ -18,6 +18,7 @@ import ConversionIntelligencePanel from "@/components/dashboard/ConversionIntell
 import ConversionCampaignPanel from "@/components/dashboard/ConversionCampaignPanel";
 import PromptExperimentationPanel from "@/components/dashboard/PromptExperimentationPanel";
 import UpgradeTimingPanel from "@/components/dashboard/UpgradeTimingPanel";
+import PaywallIntelligencePanel from "@/components/dashboard/PaywallIntelligencePanel";
 
 /* ── types ── */
 
