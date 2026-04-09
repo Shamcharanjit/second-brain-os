@@ -142,19 +142,27 @@ export default function ProjectsPage() {
 
       {/* Filters + Search */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+        <nav
+          role="tablist"
+          className="flex gap-1.5 overflow-x-auto overflow-y-hidden scrollbar-none"
+          style={{ WebkitOverflowScrolling: "touch", msOverflowStyle: "none", scrollbarWidth: "none" }}
+        >
           {filterTabs.map((t) => (
             <button
               key={t.key}
+              role="tab"
+              aria-selected={filter === t.key}
               onClick={() => setFilter(t.key)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium border transition-all shrink-0 ${
-                filter === t.key ? "border-primary bg-primary/10 text-primary shadow-sm" : "border-border bg-card text-muted-foreground hover:bg-muted/50"
+              className={`relative rounded-lg px-3 py-1.5 text-xs font-medium border whitespace-nowrap shrink-0 transition-colors duration-150 ${
+                filter === t.key
+                  ? "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted/50"
               }`}
             >
               {t.label} ({t.count})
             </button>
           ))}
-        </div>
+        </nav>
         <div className="relative sm:ml-auto">
           <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
           <Input placeholder="Search projects..." className="pl-8 h-8 text-xs w-full sm:w-48" value={search} onChange={(e) => setSearch(e.target.value)} />
