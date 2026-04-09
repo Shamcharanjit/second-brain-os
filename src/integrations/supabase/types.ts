@@ -228,6 +228,7 @@ export type Database = {
           id: string
           prompt_strength: string
           prompt_type: string
+          trigger_source: string
           user_id: string
         }
         Insert: {
@@ -237,6 +238,7 @@ export type Database = {
           id?: string
           prompt_strength?: string
           prompt_type?: string
+          trigger_source?: string
           user_id: string
         }
         Update: {
@@ -246,6 +248,7 @@ export type Database = {
           id?: string
           prompt_strength?: string
           prompt_type?: string
+          trigger_source?: string
           user_id?: string
         }
         Relationships: [
@@ -332,6 +335,107 @@ export type Database = {
           name?: string
           price_inr?: number
           price_usd?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      upgrade_prompt_history: {
+        Row: {
+          clicked_at: string | null
+          dismissed_at: string | null
+          id: string
+          prompt_strength: string
+          prompt_type: string
+          rule_id: string | null
+          shown_at: string
+          user_id: string
+        }
+        Insert: {
+          clicked_at?: string | null
+          dismissed_at?: string | null
+          id?: string
+          prompt_strength?: string
+          prompt_type?: string
+          rule_id?: string | null
+          shown_at?: string
+          user_id: string
+        }
+        Update: {
+          clicked_at?: string | null
+          dismissed_at?: string | null
+          id?: string
+          prompt_strength?: string
+          prompt_type?: string
+          rule_id?: string | null
+          shown_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upgrade_prompt_history_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "upgrade_prompt_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upgrade_prompt_rules: {
+        Row: {
+          allowed_plan_tiers: string[]
+          cooldown_hours: number
+          created_at: string
+          id: string
+          is_active: boolean
+          min_capture_count: number
+          min_memory_count: number
+          min_project_count: number
+          min_readiness_score: number
+          min_referral_count: number
+          priority_weight: number
+          prompt_strength: string
+          prompt_type: string
+          recent_activity_window_hours: number
+          require_recent_activity: boolean
+          rule_name: string
+          updated_at: string
+        }
+        Insert: {
+          allowed_plan_tiers?: string[]
+          cooldown_hours?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_capture_count?: number
+          min_memory_count?: number
+          min_project_count?: number
+          min_readiness_score?: number
+          min_referral_count?: number
+          priority_weight?: number
+          prompt_strength?: string
+          prompt_type?: string
+          recent_activity_window_hours?: number
+          require_recent_activity?: boolean
+          rule_name: string
+          updated_at?: string
+        }
+        Update: {
+          allowed_plan_tiers?: string[]
+          cooldown_hours?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_capture_count?: number
+          min_memory_count?: number
+          min_project_count?: number
+          min_readiness_score?: number
+          min_referral_count?: number
+          priority_weight?: number
+          prompt_strength?: string
+          prompt_type?: string
+          recent_activity_window_hours?: number
+          require_recent_activity?: boolean
+          rule_name?: string
           updated_at?: string
         }
         Relationships: []
@@ -709,6 +813,11 @@ export type Database = {
     Functions: {
       get_admin_analytics: { Args: never; Returns: Json }
       get_conversion_candidates: { Args: never; Returns: Json }
+      get_prompt_performance_summary: { Args: never; Returns: Json }
+      get_upgrade_prompt_decision: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       submit_waitlist: {
         Args: {
           p_email: string
