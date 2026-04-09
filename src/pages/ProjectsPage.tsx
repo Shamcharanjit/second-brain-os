@@ -142,13 +142,13 @@ export default function ProjectsPage() {
 
       {/* Filters + Search */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
           {filterTabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setFilter(t.key)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium border transition-all shrink-0 ${
-                filter === t.key ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:bg-muted/50"
+                filter === t.key ? "border-primary bg-primary/10 text-primary shadow-sm" : "border-border bg-card text-muted-foreground hover:bg-muted/50"
               }`}
             >
               {t.label} ({t.count})
