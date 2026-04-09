@@ -18,6 +18,7 @@ import ConversionIntelligencePanel from "@/components/dashboard/ConversionIntell
 import ConversionCampaignPanel from "@/components/dashboard/ConversionCampaignPanel";
 import PromptExperimentationPanel from "@/components/dashboard/PromptExperimentationPanel";
 import UpgradeTimingPanel from "@/components/dashboard/UpgradeTimingPanel";
+import PaywallIntelligencePanel from "@/components/dashboard/PaywallIntelligencePanel";
 
 /* ── types ── */
 
@@ -1218,6 +1219,11 @@ export default function AdminAnalyticsPage() {
             {/* ═══ UPGRADE TIMING ENGINE ═══ */}
             <section className="space-y-3">
               <UpgradeTimingPanel />
+            </section>
+
+            {/* ═══ PAYWALL INTELLIGENCE ═══ */}
+            <section className="space-y-3">
+              <PaywallIntelligencePanel />
             </section>
 
             <section className="space-y-3">

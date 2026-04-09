@@ -224,8 +224,12 @@ export type Database = {
         Row: {
           campaign_id: string | null
           created_at: string
+          displayed_currency: string | null
+          displayed_price: string | null
           event_type: string
           id: string
+          paywall_variant_id: string | null
+          paywall_variant_name: string | null
           prompt_strength: string
           prompt_type: string
           trigger_source: string
@@ -234,8 +238,12 @@ export type Database = {
         Insert: {
           campaign_id?: string | null
           created_at?: string
+          displayed_currency?: string | null
+          displayed_price?: string | null
           event_type?: string
           id?: string
+          paywall_variant_id?: string | null
+          paywall_variant_name?: string | null
           prompt_strength?: string
           prompt_type?: string
           trigger_source?: string
@@ -244,8 +252,12 @@ export type Database = {
         Update: {
           campaign_id?: string | null
           created_at?: string
+          displayed_currency?: string | null
+          displayed_price?: string | null
           event_type?: string
           id?: string
+          paywall_variant_id?: string | null
+          paywall_variant_name?: string | null
           prompt_strength?: string
           prompt_type?: string
           trigger_source?: string
@@ -260,6 +272,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      paywall_variants: {
+        Row: {
+          allowed_prompt_strengths: string[]
+          badge_text: string
+          created_at: string
+          cta_text: string
+          discount_hint_text: string
+          headline: string
+          id: string
+          is_active: boolean
+          min_readiness_score: number
+          pricing_label: string
+          priority_weight: number
+          show_discount_hint: boolean
+          show_feature_comparison: boolean
+          show_testimonial_block: boolean
+          social_proof_text: string
+          subheadline: string
+          target_region: string
+          target_segment: string
+          updated_at: string
+          urgency_text: string
+          variant_name: string
+        }
+        Insert: {
+          allowed_prompt_strengths?: string[]
+          badge_text?: string
+          created_at?: string
+          cta_text?: string
+          discount_hint_text?: string
+          headline?: string
+          id?: string
+          is_active?: boolean
+          min_readiness_score?: number
+          pricing_label?: string
+          priority_weight?: number
+          show_discount_hint?: boolean
+          show_feature_comparison?: boolean
+          show_testimonial_block?: boolean
+          social_proof_text?: string
+          subheadline?: string
+          target_region?: string
+          target_segment?: string
+          updated_at?: string
+          urgency_text?: string
+          variant_name: string
+        }
+        Update: {
+          allowed_prompt_strengths?: string[]
+          badge_text?: string
+          created_at?: string
+          cta_text?: string
+          discount_hint_text?: string
+          headline?: string
+          id?: string
+          is_active?: boolean
+          min_readiness_score?: number
+          pricing_label?: string
+          priority_weight?: number
+          show_discount_hint?: boolean
+          show_feature_comparison?: boolean
+          show_testimonial_block?: boolean
+          social_proof_text?: string
+          subheadline?: string
+          target_region?: string
+          target_segment?: string
+          updated_at?: string
+          urgency_text?: string
+          variant_name?: string
+        }
+        Relationships: []
       }
       rollout_decisions: {
         Row: {
@@ -813,6 +897,11 @@ export type Database = {
     Functions: {
       get_admin_analytics: { Args: never; Returns: Json }
       get_conversion_candidates: { Args: never; Returns: Json }
+      get_paywall_variant_decision: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      get_paywall_variant_performance: { Args: never; Returns: Json }
       get_prompt_performance_summary: { Args: never; Returns: Json }
       get_upgrade_prompt_decision: {
         Args: { p_user_id: string }
