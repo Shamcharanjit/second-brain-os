@@ -199,6 +199,21 @@ Deno.serve(async (req) => {
 
     console.log(`Waitlist confirmation email sent to ${email}`);
 
+    // Log funnel event
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (supabaseUrl && serviceKey) {
+        const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.49.4");
+        const sb = createClient(supabaseUrl, serviceKey);
+        await sb.from("activation_funnel_events").insert({
+          waitlist_signup_email: email,
+          event_type: "waitlist_email_sent",
+          event_source: "send-waitlist-confirmation-email",
+        });
+      }
+    } catch (funnelErr) { console.error("Funnel log error:", funnelErr); }
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

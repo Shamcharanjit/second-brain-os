@@ -9,9 +9,21 @@ import CloudUpgradeNudge from "@/components/dashboard/CloudUpgradeNudge";
 import CaptureInput from "@/components/CaptureInput";
 import { Sparkles } from "lucide-react";
 import { useFirstRun } from "@/hooks/useFirstRun";
+import { useActivationFunnelTracker } from "@/hooks/useActivationFunnelTracker";
+import { useFirstProductActions } from "@/hooks/useFirstProductActions";
+import { useBrain } from "@/context/BrainContext";
+import { useProjects } from "@/context/ProjectContext";
+import { useMemory } from "@/context/MemoryContext";
 
 export default function Dashboard() {
   const isFirstRun = useFirstRun();
+  const { captures } = useBrain();
+  const { projects } = useProjects();
+  const { memories } = useMemory();
+
+  // Activation funnel tracking
+  useActivationFunnelTracker();
+  useFirstProductActions(captures.length, projects.length, memories.length);
 
   if (isFirstRun) {
     return (
