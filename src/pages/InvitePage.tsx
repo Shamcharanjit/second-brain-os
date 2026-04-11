@@ -32,13 +32,29 @@ export default function InvitePage() {
         const { data, error } = await supabase.functions.invoke("check-invite-token", {
           body: { token },
         });
-        if (error || !data?.valid || !data?.email) {
+
+        if (error) {
+          console.error("[InvitePage] check-invite-token error:", error);
           setStatus("invalid");
           return;
         }
-        setEmail(data.email);
+
+        // supabase.functions.invoke may return parsed JSON or a string
+        let parsed = data;
+        if (typeof data === "string") {
+          try { parsed = JSON.parse(data); } catch { /* keep as-is */ }
+        }
+
+        console.log("[InvitePage] check-invite-token response:", parsed);
+
+        if (!parsed?.valid || !parsed?.email) {
+          setStatus("invalid");
+          return;
+        }
+        setEmail(parsed.email);
         setStatus("ready");
-      } catch {
+      } catch (err) {
+        console.error("[InvitePage] check-invite-token exception:", err);
         setStatus("invalid");
       }
     })();
@@ -60,8 +76,16 @@ export default function InvitePage() {
         body: { token, password },
       });
 
-      if (error || !data?.success) {
-        const msg = data?.error || error?.message || "Activation failed";
+      // supabase.functions.invoke may return parsed JSON or a string
+      let parsed = data;
+      if (typeof data === "string") {
+        try { parsed = JSON.parse(data); } catch { /* keep as-is */ }
+      }
+
+      console.log("[InvitePage] activate-invite response:", parsed);
+
+      if (error || !parsed?.success) {
+        const msg = parsed?.error || error?.message || "Activation failed";
 
         // If account already exists, redirect to sign-in
         if (msg.includes("already exists")) {
@@ -76,10 +100,10 @@ export default function InvitePage() {
       }
 
       // If we got a session, set it directly
-      if (data.session) {
+      if (parsed.session) {
         await supabase.auth.setSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
+          access_token: parsed.session.access_token,
+          refresh_token: parsed.session.refresh_token,
         });
         toast.success("Welcome to InsightHalo!");
         navigate("/app", { replace: true });
