@@ -263,6 +263,16 @@ Deno.serve(async (req) => {
           })
           .eq("id", user.id);
 
+        // Log funnel event
+        try {
+          const funnelType = emailType === "approval" ? "approval_email_sent" : "waitlist_email_sent";
+          await sb.from("activation_funnel_events").insert({
+            waitlist_signup_email: user.email,
+            event_type: funnelType,
+            event_source: "send-invite-email",
+          });
+        } catch (funnelErr) { console.error("Funnel log error:", funnelErr); }
+
         results.sent++;
         results.ids.push(user.id);
       } else {
