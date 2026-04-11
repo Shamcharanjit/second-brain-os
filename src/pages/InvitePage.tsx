@@ -32,13 +32,29 @@ export default function InvitePage() {
         const { data, error } = await supabase.functions.invoke("check-invite-token", {
           body: { token },
         });
-        if (error || !data?.valid || !data?.email) {
+
+        if (error) {
+          console.error("[InvitePage] check-invite-token error:", error);
           setStatus("invalid");
           return;
         }
-        setEmail(data.email);
+
+        // supabase.functions.invoke may return parsed JSON or a string
+        let parsed = data;
+        if (typeof data === "string") {
+          try { parsed = JSON.parse(data); } catch { /* keep as-is */ }
+        }
+
+        console.log("[InvitePage] check-invite-token response:", parsed);
+
+        if (!parsed?.valid || !parsed?.email) {
+          setStatus("invalid");
+          return;
+        }
+        setEmail(parsed.email);
         setStatus("ready");
-      } catch {
+      } catch (err) {
+        console.error("[InvitePage] check-invite-token exception:", err);
         setStatus("invalid");
       }
     })();
