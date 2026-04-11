@@ -267,7 +267,7 @@ export default function AdminWaitlistPage() {
     setBatchSending(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-invite-email", {
-        body: { batch_size: batchSize },
+        body: { batch_size: batchSize, approval: true },
       });
       if (error) throw error;
       if (data?.success) {
