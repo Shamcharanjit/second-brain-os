@@ -16,6 +16,15 @@ import { createPortalSession } from "@/lib/stripe/billing";
 import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLocalData } from "@/lib/data-export";
 import type { InsightHaloBackup } from "@/lib/data-export";
 
+/* ── Access-level label logic ── */
+function getAccessLabel(isEarlyAccess: boolean, isPro: boolean, user: any): string {
+  if (isPro && !isEarlyAccess) return "Pro Member";
+  if (isEarlyAccess) return "Early Access Member";
+  // Check if user was approved via invite (has user_metadata set during activation)
+  if (user?.user_metadata?.invite_token || user?.user_metadata?.activated) return "Approved Invite";
+  return "Pending Waitlist";
+}
+
 export default function SettingsPage() {
   const { user, cloudAvailable, signOut } = useAuth();
   const { plan, isPro, isEarlyAccess, aiTriageRemaining, aiTriageUsedToday, limits, billingEnabled, subscriptionStatus, currentPeriodEnd, loadingSubscription } = useSubscription();
@@ -25,6 +34,41 @@ export default function SettingsPage() {
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [pendingBackup, setPendingBackup] = useState<InsightHaloBackup | null>(null);
 
+  // Editable name state
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState("");
+  const [savingName, setSavingName] = useState(false);
+
+  const currentName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "—";
+
+  const handleStartEdit = () => {
+    setNameValue(user?.user_metadata?.full_name || user?.user_metadata?.name || "");
+    setEditingName(true);
+  };
+
+  const handleSaveName = async () => {
+    const trimmed = nameValue.trim();
+    if (trimmed.length < 2) {
+      toast.error("Name must be at least 2 characters.");
+      return;
+    }
+    setSavingName(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ data: { full_name: trimmed } });
+      if (error) throw error;
+      toast.success("Name updated successfully.");
+      setEditingName(false);
+    } catch {
+      toast.error("Could not update name. Please try again.");
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingName(false);
+    setNameValue("");
+  };
   const handleExport = () => {
     downloadBackup();
     toast.success("Backup downloaded");
