@@ -501,7 +501,7 @@ export default function AdminAnalyticsPage() {
       if (decision !== "pause" && actualSent > 0) {
         const candidateIds = activeCandidates.slice(0, actualSent).map(c => c.id);
         const { data, error } = await supabase.functions.invoke("send-invite-email", {
-          body: { batch_size: actualSent },
+          body: { batch_size: actualSent, approval: true },
         });
         if (error) {
           toast.error("Batch invite failed");
