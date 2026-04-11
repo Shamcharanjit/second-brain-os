@@ -5,10 +5,14 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { logFunnelEvent } from "@/lib/activation-funnel";
-import { supabase } from "@/lib/supabase/client";
 
 const SESSION_KEY = "insighthalo_session_count";
 const FIRST_LOGIN_KEY = "insighthalo_first_login_at";
+
+/** Get user-scoped key to prevent cross-account contamination */
+function userKey(base: string, userId: string) {
+  return `${base}_${userId}`;
+}
 
 export function useActivationFunnelTracker() {
   const { user, cloudAvailable } = useAuth();
@@ -23,15 +27,18 @@ export function useActivationFunnelTracker() {
     // Track first_login
     logFunnelEvent("first_login", { userId, source: "auth_session" });
 
-    // Track session count for second_session_returned
+    // Track session count for second_session_returned (user-scoped)
     const now = Date.now();
-    const firstLoginAt = localStorage.getItem(FIRST_LOGIN_KEY);
+    const firstLoginKey = userKey(FIRST_LOGIN_KEY, userId);
+    const sessionKey = userKey(SESSION_KEY, userId);
+
+    const firstLoginAt = localStorage.getItem(firstLoginKey);
     if (!firstLoginAt) {
-      localStorage.setItem(FIRST_LOGIN_KEY, String(now));
+      localStorage.setItem(firstLoginKey, String(now));
     }
 
-    const sessionCount = parseInt(localStorage.getItem(SESSION_KEY) || "0", 10) + 1;
-    localStorage.setItem(SESSION_KEY, String(sessionCount));
+    const sessionCount = parseInt(localStorage.getItem(sessionKey) || "0", 10) + 1;
+    localStorage.setItem(sessionKey, String(sessionCount));
 
     if (sessionCount >= 2) {
       logFunnelEvent("second_session_returned", { userId, source: "session_tracker" });

@@ -50,7 +50,7 @@ interface SubscriptionContextType {
 
 const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
 
-const USAGE_KEY = "insighthalo_ai_usage";
+const USAGE_KEY = "insighthalo_ai_usage"; // Scoped via persistence.ts
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
