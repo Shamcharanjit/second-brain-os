@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
 import { toast } from "sonner";
+import { logFunnelEvent } from "@/lib/activation-funnel";
 
 type InviteStatus = "loading" | "invalid" | "ready" | "activating" | "done";
 
@@ -28,6 +29,8 @@ export default function InvitePage() {
     }
 
     (async () => {
+      // Log that invite link was opened
+      logFunnelEvent("invite_link_opened", { source: "invite_page", metadata: { token: token.slice(0, 8) } });
       try {
         const { data, error } = await supabase.functions.invoke("check-invite-token", {
           body: { token },
@@ -52,6 +55,7 @@ export default function InvitePage() {
           return;
         }
         setEmail(parsed.email);
+        logFunnelEvent("invite_token_validated", { email: parsed.email, source: "invite_page" });
         setStatus("ready");
       } catch (err) {
         console.error("[InvitePage] check-invite-token exception:", err);
@@ -98,6 +102,10 @@ export default function InvitePage() {
         setStatus("ready");
         return;
       }
+
+      // Log funnel events
+      logFunnelEvent("password_set", { email, source: "invite_page" });
+      logFunnelEvent("activation_completed", { email, source: "invite_page" });
 
       // If we got a session, set it directly
       if (parsed.session) {

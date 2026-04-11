@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { logFunnelEvent } from "@/lib/activation-funnel";
 
 const USE_CASES = [
   "Work",
@@ -74,6 +75,8 @@ export default function WaitlistPage() {
         setReferralCode(result?.referral_code ?? null);
         setReferralCount(result?.referral_count ?? 0);
         setSubmitted(true);
+        // Log funnel event
+        logFunnelEvent("waitlist_signed_up", { email: email.trim().toLowerCase(), source: "waitlist_page" });
         // Fire-and-forget: send confirmation email (don't block UI)
         supabase.functions
           .invoke("send-waitlist-confirmation-email", {
