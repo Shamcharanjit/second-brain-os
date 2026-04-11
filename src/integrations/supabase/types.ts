@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      activation_funnel_events: {
+        Row: {
+          created_at: string
+          event_source: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          user_id: string | null
+          waitlist_signup_email: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_source?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+          waitlist_signup_email?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_source?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+          waitlist_signup_email?: string | null
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           created_at: string
@@ -895,6 +925,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_activation_cohorts: { Args: never; Returns: Json }
+      get_activation_funnel_summary: { Args: never; Returns: Json }
+      get_activation_health_score: { Args: never; Returns: Json }
       get_admin_analytics: { Args: never; Returns: Json }
       get_conversion_candidates: { Args: never; Returns: Json }
       get_paywall_variant_decision: {
