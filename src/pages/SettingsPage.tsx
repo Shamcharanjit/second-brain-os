@@ -138,24 +138,47 @@ export default function SettingsPage() {
             <User className="h-4 w-4 text-primary" /> Profile
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            {/* Full Name */}
+            {/* Full Name — editable */}
             <div className="space-y-0.5">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Full Name</p>
-              <p className="text-sm font-medium">
-                {user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "—"}
-              </p>
+              {editingName ? (
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    className="h-8 text-sm"
+                    value={nameValue}
+                    onChange={(e) => setNameValue(e.target.value)}
+                    placeholder="Your full name"
+                    disabled={savingName}
+                    autoFocus
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") handleCancelEdit(); }}
+                  />
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-primary" onClick={handleSaveName} disabled={savingName}>
+                    {savingName ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground" onClick={handleCancelEdit} disabled={savingName}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-medium">{currentName}</p>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={handleStartEdit}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
             </div>
             {/* Email */}
             <div className="space-y-0.5">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Email Address</p>
               <p className="text-sm font-medium">{user.email}</p>
             </div>
-            {/* Access Level */}
+            {/* Access Level — refined */}
             <div className="space-y-0.5">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Access Level</p>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium">
-                  {isEarlyAccess ? "Early Access" : isPro ? "Pro Member" : "Public"}
+                  {getAccessLabel(isEarlyAccess, isPro, user)}
                 </p>
                 {isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Sparkles className="h-2.5 w-2.5" />Early Access</Badge>}
                 {isPro && !isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Crown className="h-2.5 w-2.5" />Pro Member</Badge>}
