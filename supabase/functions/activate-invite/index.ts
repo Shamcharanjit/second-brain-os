@@ -77,12 +77,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 4. Update waitlist status to "activated" and record acceptance time
+    // 4. Update waitlist status to "activated" and record timestamps
     await supabase
       .from("waitlist_signups")
       .update({
         status: "activated",
         invite_accepted_at: new Date().toISOString(),
+        activation_completed_at: new Date().toISOString(),
       })
       .eq("invite_token", token.trim());
 
