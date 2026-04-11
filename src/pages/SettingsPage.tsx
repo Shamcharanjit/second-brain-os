@@ -85,6 +85,67 @@ export default function SettingsPage() {
         <p className="text-sm text-muted-foreground mt-1">Control your data, backups, and privacy.</p>
       </div>
 
+      {/* Profile */}
+      {user && (
+        <section className="rounded-xl border bg-card p-5 space-y-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <User className="h-4 w-4 text-primary" /> Profile
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {/* Full Name */}
+            <div className="space-y-0.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Full Name</p>
+              <p className="text-sm font-medium">
+                {user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "—"}
+              </p>
+            </div>
+            {/* Email */}
+            <div className="space-y-0.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Email Address</p>
+              <p className="text-sm font-medium">{user.email}</p>
+            </div>
+            {/* Access Level */}
+            <div className="space-y-0.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Access Level</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium">
+                  {isEarlyAccess ? "Early Access" : isPro ? "Pro Member" : "Public"}
+                </p>
+                {isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Sparkles className="h-2.5 w-2.5" />Early Access</Badge>}
+                {isPro && !isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Crown className="h-2.5 w-2.5" />Pro Member</Badge>}
+              </div>
+            </div>
+            {/* Current Plan */}
+            <div className="space-y-0.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Current Plan</p>
+              <p className="text-sm font-medium capitalize">{plan}</p>
+            </div>
+            {/* Member Since */}
+            <div className="space-y-0.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Member Since</p>
+              <p className="text-sm font-medium">
+                {user.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"}
+              </p>
+            </div>
+            {/* Support ID */}
+            <div className="space-y-0.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Support ID</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs text-muted-foreground font-mono truncate max-w-[180px]">{user.id}</p>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 shrink-0"
+                  onClick={() => { navigator.clipboard.writeText(user.id); toast.success("Support ID copied"); }}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Account & Sync Status */}
       <section className="rounded-xl border bg-card p-5 space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
