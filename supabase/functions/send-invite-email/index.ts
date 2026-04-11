@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
 
       if (isApproval && user.invited && token && user.last_email_type_sent !== "approval") {
         // Approval email
-        const activationLink = `https://insighthalo.com/activate?token=${token}`;
+        const activationLink = `https://insighthalo.com/invite?token=${token}`;
         subject = "You're in — welcome to InsightHalo Early Access";
         html = buildApprovalHtml(user.name, activationLink);
         emailType = "approval";
