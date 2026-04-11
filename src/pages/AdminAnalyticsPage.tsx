@@ -19,6 +19,7 @@ import ConversionCampaignPanel from "@/components/dashboard/ConversionCampaignPa
 import PromptExperimentationPanel from "@/components/dashboard/PromptExperimentationPanel";
 import UpgradeTimingPanel from "@/components/dashboard/UpgradeTimingPanel";
 import PaywallIntelligencePanel from "@/components/dashboard/PaywallIntelligencePanel";
+import ActivationFunnelPanel from "@/components/dashboard/ActivationFunnelPanel";
 
 /* ── types ── */
 
@@ -1145,6 +1146,11 @@ export default function AdminAnalyticsPage() {
                 <Crown className="h-3.5 w-3.5" /> Manage Plans
               </Button>
             </div>
+          </section>
+
+          {/* ═══ ACTIVATION FUNNEL INTELLIGENCE ═══ */}
+          <section className="space-y-3">
+            <ActivationFunnelPanel />
           </section>
 
           {/* ═══ WAITLIST METRICS ═══ */}
