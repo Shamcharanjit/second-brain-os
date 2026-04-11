@@ -4,12 +4,14 @@ import { useAuth } from "@/context/AuthContext";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   Settings, Shield, Cloud, HardDrive, Download, Upload,
   Trash2, RefreshCw, ArrowLeft, CheckCircle2, AlertTriangle, Heart,
-  Sparkles, Crown, CreditCard, User, Copy,
+  Sparkles, Crown, CreditCard, User, Copy, Pencil, Loader2, X, Check,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 import { createPortalSession } from "@/lib/stripe/billing";
 import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLocalData } from "@/lib/data-export";
 import type { InsightHaloBackup } from "@/lib/data-export";
