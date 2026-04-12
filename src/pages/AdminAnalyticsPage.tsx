@@ -20,6 +20,7 @@ import PromptExperimentationPanel from "@/components/dashboard/PromptExperimenta
 import UpgradeTimingPanel from "@/components/dashboard/UpgradeTimingPanel";
 import PaywallIntelligencePanel from "@/components/dashboard/PaywallIntelligencePanel";
 import ActivationFunnelPanel from "@/components/dashboard/ActivationFunnelPanel";
+import ReferralVelocityPanel from "@/components/dashboard/ReferralVelocityPanel";
 
 /* ── types ── */
 
