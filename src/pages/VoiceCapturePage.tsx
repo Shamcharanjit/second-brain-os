@@ -40,12 +40,42 @@ export default function VoiceCapturePage() {
   // Whether we just saved
   const [saved, setSaved] = useState(false);
 
+  // Ref to track driving mode inside callbacks without stale closure
+  const drivingModeRef = useRef(drivingMode);
+  useEffect(() => { drivingModeRef.current = drivingMode; }, [drivingMode]);
+
+  // Flag to prevent duplicate saves from both onResult and onEnd
+  const savingRef = useRef(false);
+
+  const doSave = useCallback((transcript: string) => {
+    if (savingRef.current) return;
+    const trimmed = transcript.trim();
+    if (!trimmed) return;
+    savingRef.current = true;
+    addCapture(trimmed, "voice");
+    setSaved(true);
+    setEditing(false);
+    setEditableTranscript(trimmed);
+    toast.success("Voice capture saved.", { description: "Organized and ready in your Inbox." });
+    setTimeout(() => {
+      setSaved(false);
+      setEditableTranscript("");
+      savingRef.current = false;
+      speech.reset();
+    }, drivingModeRef.current ? 1500 : 1000);
+  }, [addCapture, speech]);
+
   const speech = useSpeechRecognition({
     minConfidence: 0.4,
     onResult: (transcript) => {
-      // Recognition finished with a final result — move to editing
-      setEditableTranscript(transcript);
-      setEditing(true);
+      if (drivingModeRef.current) {
+        // Driving Mode: auto-save immediately on final result
+        doSave(transcript);
+      } else {
+        // Normal Mode: show editable preview first
+        setEditableTranscript(transcript);
+        setEditing(true);
+      }
     },
   });
 
