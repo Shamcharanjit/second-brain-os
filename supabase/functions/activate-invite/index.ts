@@ -77,15 +77,52 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 4. Update waitlist status to "activated" and record timestamps
-    await supabase
+    // 4. Guarantee waitlist_signups row exists and is updated
+    const now = new Date().toISOString();
+    const nameFallback = email.split("@")[0] || "User";
+
+    // Try update by email (case-insensitive) first
+    const { data: updatedRows, error: updateErr } = await supabase
       .from("waitlist_signups")
       .update({
         status: "activated",
-        invite_accepted_at: new Date().toISOString(),
-        activation_completed_at: new Date().toISOString(),
+        invited: true,
+        invite_accepted_at: now,
+        activation_completed_at: now,
+        last_email_type_sent: "invite",
       })
-      .eq("invite_token", token.trim());
+      .ilike("email", email)
+      .select("id");
+
+    const rowUpdated = !updateErr && updatedRows && updatedRows.length > 0;
+
+    if (!rowUpdated) {
+      // No existing row — create one so metadata is never missing
+      const { error: insertErr } = await supabase
+        .from("waitlist_signups")
+        .insert({
+          email: email.toLowerCase(),
+          name: nameFallback,
+          status: "activated",
+          invited: true,
+          invite_token: token.trim(),
+          invite_sent_at: now,
+          invite_accepted_at: now,
+          activation_completed_at: now,
+          last_email_type_sent: "invite",
+        });
+
+      if (insertErr) {
+        console.error("Failed to create waitlist_signups row:", insertErr);
+      }
+    } else {
+      // Also update invite_sent_at if it was null
+      await supabase
+        .from("waitlist_signups")
+        .update({ invite_sent_at: now })
+        .ilike("email", email)
+        .is("invite_sent_at", null);
+    }
 
     // 5. Sign in the user to get a session
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
