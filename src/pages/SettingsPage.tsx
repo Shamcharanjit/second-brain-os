@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useSubscription } from "@/context/SubscriptionContext";
@@ -17,18 +17,21 @@ import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLoc
 import type { InsightHaloBackup } from "@/lib/data-export";
 
 /* ── Access-level label logic ── */
-function getAccessLabel(isEarlyAccess: boolean, isPro: boolean, user: any, subscriptionStatus: string): string {
-  // Priority: Pro > Early Access > Approved Invite > Pending Waitlist
+interface WaitlistMeta {
+  invited?: boolean;
+  activation_completed_at?: string | null;
+}
+
+function getAccessLabel(isPro: boolean, isEarlyAccess: boolean, subscriptionStatus: string, waitlist: WaitlistMeta | null): string {
+  // 1. Pro Member — paid subscription active
   if (isPro && !isEarlyAccess) return "Pro Member";
+  // 2. Early Access Member — activation completed (from user_subscriptions.is_early_access OR waitlist activation)
   if (isEarlyAccess) return "Early Access Member";
-  // User completed activation (password set, account active) or was invited
-  if (
-    user?.user_metadata?.activated ||
-    user?.user_metadata?.activation_completed_at ||
-    user?.user_metadata?.invite_token ||
-    subscriptionStatus === "active" ||
-    subscriptionStatus === "trialing"
-  ) return "Approved Invite";
+  if (waitlist?.activation_completed_at) return "Early Access Member";
+  // 3. Approved Invite — invited but not yet fully activated
+  if (waitlist?.invited) return "Approved Invite";
+  if (subscriptionStatus === "active" || subscriptionStatus === "trialing") return "Approved Invite";
+  // 4. Pending Waitlist
   return "Pending Waitlist";
 }
 
@@ -40,6 +43,20 @@ export default function SettingsPage() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [pendingBackup, setPendingBackup] = useState<InsightHaloBackup | null>(null);
+
+  // Fetch waitlist metadata for access-level display
+  const [waitlistMeta, setWaitlistMeta] = useState<WaitlistMeta | null>(null);
+  useEffect(() => {
+    if (!user?.email) { setWaitlistMeta(null); return; }
+    supabase
+      .from("waitlist_signups")
+      .select("invited, activation_completed_at")
+      .ilike("email", user.email)
+      .maybeSingle()
+      .then(({ data }) => {
+        setWaitlistMeta(data ? { invited: data.invited, activation_completed_at: data.activation_completed_at } : null);
+      });
+  }, [user?.email]);
 
   // Editable name state
   const [editingName, setEditingName] = useState(false);
@@ -185,10 +202,10 @@ export default function SettingsPage() {
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Access Level</p>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium">
-                  {getAccessLabel(isEarlyAccess, isPro, user, subscriptionStatus)}
+                  {getAccessLabel(isPro, isEarlyAccess, subscriptionStatus, waitlistMeta)}
                 </p>
-                {isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Sparkles className="h-2.5 w-2.5" />Early Access</Badge>}
-                {isPro && !isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Crown className="h-2.5 w-2.5" />Pro Member</Badge>}
+                {(isEarlyAccess || waitlistMeta?.activation_completed_at) && !isPro && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Sparkles className="h-2.5 w-2.5" />Early Access</Badge>}
+                {isPro && !isEarlyAccess && !waitlistMeta?.activation_completed_at && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Crown className="h-2.5 w-2.5" />Pro Member</Badge>}
               </div>
             </div>
             {/* Current Plan */}
