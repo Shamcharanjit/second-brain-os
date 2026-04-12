@@ -294,10 +294,10 @@ export default function AdminAnalyticsPage() {
     const accepted = wlMetrics.accepted;
     const activated = wlMetrics.activated;
 
-    const pctInvited = total > 0 ? Math.round((invited / total) * 100) : 0;
-    const pctOpened = invited > 0 ? Math.round((opened / invited) * 100) : 0;
-    const pctAccepted = opened > 0 ? Math.round((accepted / opened) * 100) : 0;
-    const pctActivated = accepted > 0 ? Math.round((activated / accepted) * 100) : 0;
+    const pctInvited = total > 0 ? Math.min(100, Math.round((invited / total) * 100)) : 0;
+    const pctOpened = invited > 0 ? Math.min(100, Math.round((opened / invited) * 100)) : 0;
+    const pctAccepted = opened > 0 ? Math.min(100, Math.round((accepted / opened) * 100)) : 0;
+    const pctActivated = accepted > 0 ? Math.min(100, Math.round((activated / accepted) * 100)) : 0;
 
     const now = new Date();
     const d3 = subDays(now, 3);
@@ -399,7 +399,7 @@ export default function AdminAnalyticsPage() {
        ...memories.map((m) => ({ user_id: m.user_id, updated_at: m.created_at }))],
       h24
     );
-    const activationRate = sentToday > 0 ? Math.round((acceptedToday / sentToday) * 100) : (activation.totalRegistered > 0 ? 50 : 0);
+    const activationRate = sentToday > 0 ? Math.min(100, Math.round((acceptedToday / sentToday) * 100)) : (activation.totalRegistered > 0 ? 50 : 0);
 
     const retentionRate = activation.totalRegistered > 0 ? Math.round((activation.active7d / activation.totalRegistered) * 100) : 0;
     const refScore = referralVelocity.viralAccelerating ? 20 : referralVelocity.refs24h > 0 ? 10 : 0;
