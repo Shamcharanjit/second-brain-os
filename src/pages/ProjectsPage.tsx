@@ -171,14 +171,21 @@ export default function ProjectsPage() {
 
       {/* Project Cards */}
       {filtered.length === 0 ? (
-        <div className="rounded-xl border bg-card p-8 text-center space-y-3">
-          <FolderKanban className="h-10 w-10 text-muted-foreground/30 mx-auto" />
-          <p className="text-sm font-medium text-muted-foreground">
-            {search.trim() ? "No projects match your search." : projects.length === 0 ? "No projects yet." : "No projects match this filter."}
-          </p>
+        <div className="rounded-xl border bg-card p-10 text-center space-y-4">
+          <FolderKanban className="h-12 w-12 text-muted-foreground/20 mx-auto" />
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-foreground">
+              {search.trim() ? "No projects match your search." : projects.length === 0 ? "No projects yet" : "No projects match this filter."}
+            </p>
+            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+              {projects.length === 0
+                ? "Create your first project from a capture or start one manually to begin tracking momentum."
+                : "Try adjusting your filters or search query."}
+            </p>
+          </div>
           {projects.length === 0 && (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>
-              <Plus className="h-3 w-3" /> Create your first project
+            <Button variant="default" size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>
+              <Plus className="h-3.5 w-3.5" /> Create your first project
             </Button>
           )}
         </div>

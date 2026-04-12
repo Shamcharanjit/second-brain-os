@@ -43,20 +43,29 @@ function UpgradePromptBanner({ strength, onShow, onClick, onDismiss }: {
   );
 }
 
-const NAV_LINKS = [
+// Sidebar nav grouped for clarity
+const NAV_PRIMARY = [
   { to: "/app", label: "Dashboard", icon: () => <InsightHaloIcon size="xs" animated={false} /> },
   { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/today", label: "Today", icon: CalendarDays },
   { to: "/projects", label: "Projects", icon: FolderKanban },
+  { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
+  { to: "/memory", label: "Memory", icon: Search },
+];
+
+const NAV_SECONDARY = [
   { to: "/ai-review", label: "AI Review", icon: BrainCircuit },
   { to: "/voice", label: "Voice Capture", icon: Mic },
   { to: "/capture-gateway", label: "Capture Gateway", icon: Radio },
   { to: "/review", label: "Review Rituals", icon: RotateCcw },
-  { to: "/memory", label: "Memory", icon: Search },
-  { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
+];
+
+const NAV_ACCOUNT = [
   { to: "/settings", label: "Settings", icon: Settings },
   { to: "/upgrade", label: "Upgrade", icon: Crown },
 ];
+
+const NAV_LINKS = [...NAV_PRIMARY, ...NAV_SECONDARY, ...NAV_ACCOUNT];
 
 export default function AppLayout({ children }: { children?: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -84,21 +93,28 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
           </Button>
         </div>
 
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
-          {NAV_LINKS.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                }`
-              }
-            >
-              <l.icon className="h-4 w-4" />
-              {l.label}
+        <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
+          <p className="px-3 pt-2 pb-1 text-[9px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">Workspace</p>
+          {NAV_PRIMARY.map((l) => (
+            <NavLink key={l.to} to={l.to} className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}`}>
+              <l.icon className="h-4 w-4" />{l.label}
+            </NavLink>
+          ))}
+
+          <p className="px-3 pt-4 pb-1 text-[9px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">Tools</p>
+          {NAV_SECONDARY.map((l) => (
+            <NavLink key={l.to} to={l.to} className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}`}>
+              <l.icon className="h-4 w-4" />{l.label}
+            </NavLink>
+          ))}
+
+          <p className="px-3 pt-4 pb-1 text-[9px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">Account</p>
+          {NAV_ACCOUNT.map((l) => (
+            <NavLink key={l.to} to={l.to} className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}`}>
+              <l.icon className="h-4 w-4" />{l.label}
             </NavLink>
           ))}
         </nav>
@@ -136,7 +152,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
         {/* Mobile nav overlay */}
         {mobileOpen && (
-          <div className="md:hidden absolute inset-0 z-50 bg-background/95 backdrop-blur-sm pt-14 px-4">
+           <div className="md:hidden absolute inset-0 z-50 bg-background/95 backdrop-blur-sm pt-14 px-4 overflow-y-auto pb-20">
             <nav className="space-y-1">
               {NAV_LINKS.map((l) => (
                 <NavLink
@@ -154,6 +170,17 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
                 </NavLink>
               ))}
             </nav>
+            {/* Mobile logout */}
+            {cloudAvailable && user && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <button
+                  onClick={() => { setMobileOpen(false); signOut(); }}
+                  className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors w-full"
+                >
+                  <LogOut className="h-4 w-4" /> Sign out
+                </button>
+              </div>
+            )}
           </div>
         )}
 

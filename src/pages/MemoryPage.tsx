@@ -183,11 +183,16 @@ export default function MemoryPage() {
       <section className="space-y-3">
         <p className="text-xs text-muted-foreground">{filtered.length} memor{filtered.length !== 1 ? "ies" : "y"}</p>
         {filtered.length === 0 ? (
-          <div className="rounded-xl border bg-card p-8 text-center space-y-2">
-            <Brain className="h-10 w-10 text-muted-foreground/30 mx-auto" />
-            <p className="text-sm font-medium">No memories match your filter.</p>
-            <Button variant="outline" size="sm" className="gap-1" onClick={() => setShowCreate(true)}>
-              <Plus className="h-3 w-3" /> Save your first memory
+          <div className="rounded-xl border bg-card p-10 text-center space-y-4">
+            <Brain className="h-12 w-12 text-muted-foreground/20 mx-auto" />
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">No memories yet</p>
+              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                Save decisions, insights, and references here. Knowledge compounds when it's findable.
+              </p>
+            </div>
+            <Button variant="default" size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>
+              <Plus className="h-3.5 w-3.5" /> Save your first memory
             </Button>
           </div>
         ) : (

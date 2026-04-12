@@ -7,13 +7,22 @@ import DashboardMomentum from "@/components/dashboard/DashboardMomentum";
 import DashboardAlerts from "@/components/dashboard/DashboardAlerts";
 import CloudUpgradeNudge from "@/components/dashboard/CloudUpgradeNudge";
 import CaptureInput from "@/components/CaptureInput";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Inbox, FolderKanban, Brain, BarChart3 } from "lucide-react";
 import { useFirstRun } from "@/hooks/useFirstRun";
 import { useActivationFunnelTracker } from "@/hooks/useActivationFunnelTracker";
 import { useFirstProductActions } from "@/hooks/useFirstProductActions";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useMemory } from "@/context/MemoryContext";
+
+function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+  return (
+    <div className="flex items-center gap-2 pt-2">
+      <Icon className="h-4 w-4 text-primary" />
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{label}</h2>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const isFirstRun = useFirstRun();
@@ -36,21 +45,27 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <DashboardHero />
+
+      <SectionHeader icon={Inbox} label="Signals" />
       <DashboardSignals />
 
       <CloudUpgradeNudge />
 
       <section className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Quick Capture</h2>
-        </div>
+        <SectionHeader icon={Sparkles} label="Quick Capture" />
         <CaptureInput />
       </section>
 
+      <SectionHeader icon={Inbox} label="Alerts" />
       <DashboardAlerts />
+
+      <SectionHeader icon={FolderKanban} label="Active Work" />
       <DashboardActiveWork />
+
+      <SectionHeader icon={Brain} label="Strategy" />
       <DashboardStrategy />
+
+      <SectionHeader icon={BarChart3} label="Momentum" />
       <DashboardMomentum />
     </div>
   );
