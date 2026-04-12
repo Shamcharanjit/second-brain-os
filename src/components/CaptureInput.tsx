@@ -238,33 +238,77 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     }, 3000);
   }, [capturedText, pendingFiles, addCapture, onComplete, uploadFiles, reportUploadResults]);
 
+  // --- Real voice capture via Web Speech API ---
+  const speechRecognitionRef = useRef<any>(null);
+
   const handleVoice = () => {
     if (phase === "recording") {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      finishRecording();
+      // Stop recording
+      if (speechRecognitionRef.current) {
+        try { speechRecognitionRef.current.stop(); } catch {}
+      }
+      setPhase("idle");
     } else if (phase === "idle") {
+      const SpeechRecognitionCtor =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+      if (!SpeechRecognitionCtor) {
+        toast.error("Speech recognition not supported in this browser.");
+        return;
+      }
+
       setPhase("recording");
       setText("");
       setLastResult(null);
       setTriageResult(null);
-      timerRef.current = setTimeout(() => finishRecording(), 2500);
-    }
-  };
 
-  const finishRecording = () => {
-    setPhase("transcribing");
-    const transcript = VOICE_TRANSCRIPTS[Math.floor(Math.random() * VOICE_TRANSCRIPTS.length)];
-    const words = transcript.split(" ");
-    let current = "";
-    words.forEach((word, i) => {
-      setTimeout(() => {
-        current += (i === 0 ? "" : " ") + word;
-        setText(current);
-        if (i === words.length - 1) {
-          setTimeout(() => setPhase("idle"), 400);
+      const recognition = new SpeechRecognitionCtor();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = navigator.language || "en-US";
+      speechRecognitionRef.current = recognition;
+
+      recognition.onresult = (event: any) => {
+        let interim = "";
+        let final = "";
+        for (let i = 0; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            final += result[0].transcript;
+          } else {
+            interim += result[0].transcript;
+          }
         }
-      }, i * 80);
-    });
+        if (final) {
+          setText(final.trim());
+          setPhase("idle");
+        } else if (interim) {
+          setText(interim);
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        if (event.error === "no-speech") {
+          toast.info("No speech detected. Please try again.");
+        } else if (event.error !== "aborted") {
+          toast.error(`Voice error: ${event.error}`);
+        }
+        setPhase("idle");
+      };
+
+      recognition.onend = () => {
+        if (phase === "recording") {
+          setPhase("idle");
+        }
+      };
+
+      try {
+        recognition.start();
+      } catch {
+        toast.error("Could not start voice recognition.");
+        setPhase("idle");
+      }
+    }
   };
 
   const isModal = variant === "modal";
