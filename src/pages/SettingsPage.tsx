@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useSubscription } from "@/context/SubscriptionContext";
@@ -43,6 +43,20 @@ export default function SettingsPage() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [pendingBackup, setPendingBackup] = useState<InsightHaloBackup | null>(null);
+
+  // Fetch waitlist metadata for access-level display
+  const [waitlistMeta, setWaitlistMeta] = useState<WaitlistMeta | null>(null);
+  useEffect(() => {
+    if (!user?.email) { setWaitlistMeta(null); return; }
+    supabase
+      .from("waitlist_signups")
+      .select("invited, activation_completed_at")
+      .ilike("email", user.email)
+      .maybeSingle()
+      .then(({ data }) => {
+        setWaitlistMeta(data ? { invited: data.invited, activation_completed_at: data.activation_completed_at } : null);
+      });
+  }, [user?.email]);
 
   // Editable name state
   const [editingName, setEditingName] = useState(false);
@@ -188,7 +202,7 @@ export default function SettingsPage() {
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Access Level</p>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium">
-                  {getAccessLabel(isEarlyAccess, isPro, user, subscriptionStatus)}
+                  {getAccessLabel(isPro, isEarlyAccess, subscriptionStatus, waitlistMeta)}
                 </p>
                 {isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Sparkles className="h-2.5 w-2.5" />Early Access</Badge>}
                 {isPro && !isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Crown className="h-2.5 w-2.5" />Pro Member</Badge>}
