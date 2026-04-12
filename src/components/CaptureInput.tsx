@@ -14,14 +14,6 @@ import CreateProjectDialog from "@/components/projects/CreateProjectDialog";
 import { runAITriage, isAITriageAvailable, triageToAIData, type AITriageResult } from "@/lib/ai-triage";
 import { useUploadAttachments, type UploadResult } from "@/hooks/useUploadAttachments";
 
-const VOICE_TRANSCRIPTS = [
-  "Remind me to send the project update to the team by tomorrow",
-  "Idea: build a weekly digest email for all captured thoughts",
-  "Call the accountant about quarterly tax filing",
-  "Follow up with design team about the new landing page mockups",
-  "Maybe later: explore integrating calendar sync with this app",
-  "Buy office supplies and restock printer paper today",
-];
 
 const PLACEHOLDERS = [
   "Remind me to send proposal tomorrow…",
