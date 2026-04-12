@@ -30,7 +30,7 @@ interface UseSpeechRecognitionReturn {
   errorMessage: string | null;
   /** Confidence of the last final result (0-1) */
   confidence: number;
-  startListening: () => Promise<void>;
+  startListening: () => void;
   stopListening: () => void;
   reset: () => void;
 }
