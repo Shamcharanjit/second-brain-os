@@ -109,18 +109,16 @@ export default function VoiceCapturePage() {
   }, [speech]);
 
   const handleSave = useCallback(() => {
-    const trimmed = editableTranscript.trim();
-    if (!trimmed) return;
-    addCapture(trimmed, "voice");
-    setSaved(true);
+    doSave(editableTranscript);
+  }, [editableTranscript, doSave]);
+
+  const startRecording = useCallback(async () => {
+    setSaved(false);
     setEditing(false);
-    toast.success("Voice capture saved.", { description: "Organized and ready in your Inbox." });
-    setTimeout(() => {
-      setSaved(false);
-      setEditableTranscript("");
-      speech.reset();
-    }, drivingMode ? 1500 : 1000);
-  }, [editableTranscript, addCapture, drivingMode, speech]);
+    setEditableTranscript("");
+    savingRef.current = false;
+    await speech.startListening();
+  }, [speech]);
 
   const handleDiscard = useCallback(() => {
     setEditing(false);
