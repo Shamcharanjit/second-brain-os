@@ -40,14 +40,46 @@ export default function VoiceCapturePage() {
   // Whether we just saved
   const [saved, setSaved] = useState(false);
 
+  // Ref to track driving mode inside callbacks without stale closure
+  const drivingModeRef = useRef(drivingMode);
+  useEffect(() => { drivingModeRef.current = drivingMode; }, [drivingMode]);
+
+  // Flag to prevent duplicate saves from both onResult and onEnd
+  const savingRef = useRef(false);
+  const speechResetRef = useRef<() => void>(() => {});
+
+  const doSave = useCallback((transcript: string) => {
+    if (savingRef.current) return;
+    const trimmed = transcript.trim();
+    if (!trimmed) return;
+    savingRef.current = true;
+    addCapture(trimmed, "voice");
+    setSaved(true);
+    setEditing(false);
+    setEditableTranscript(trimmed);
+    toast.success("Voice capture saved.", { description: "Organized and ready in your Inbox." });
+    setTimeout(() => {
+      setSaved(false);
+      setEditableTranscript("");
+      savingRef.current = false;
+      speechResetRef.current();
+    }, drivingModeRef.current ? 1500 : 1000);
+  }, [addCapture]);
+
   const speech = useSpeechRecognition({
     minConfidence: 0.4,
     onResult: (transcript) => {
-      // Recognition finished with a final result — move to editing
-      setEditableTranscript(transcript);
-      setEditing(true);
+      if (drivingModeRef.current) {
+        doSave(transcript);
+      } else {
+        setEditableTranscript(transcript);
+        setEditing(true);
+      }
     },
   });
+
+  // Keep reset ref in sync
+  useEffect(() => { speechResetRef.current = speech.reset; }, [speech.reset]);
 
   const voiceCaptures = useMemo(
     () => captures.filter((c) => c.input_type === "voice").slice(0, 6),
@@ -69,6 +101,7 @@ export default function VoiceCapturePage() {
     setSaved(false);
     setEditing(false);
     setEditableTranscript("");
+    savingRef.current = false;
     await speech.startListening();
   }, [speech]);
 
@@ -77,18 +110,8 @@ export default function VoiceCapturePage() {
   }, [speech]);
 
   const handleSave = useCallback(() => {
-    const trimmed = editableTranscript.trim();
-    if (!trimmed) return;
-    addCapture(trimmed, "voice");
-    setSaved(true);
-    setEditing(false);
-    toast.success("Voice capture saved.", { description: "Organized and ready in your Inbox." });
-    setTimeout(() => {
-      setSaved(false);
-      setEditableTranscript("");
-      speech.reset();
-    }, drivingMode ? 1500 : 1000);
-  }, [editableTranscript, addCapture, drivingMode, speech]);
+    doSave(editableTranscript);
+  }, [editableTranscript, doSave]);
 
   const handleDiscard = useCallback(() => {
     setEditing(false);
