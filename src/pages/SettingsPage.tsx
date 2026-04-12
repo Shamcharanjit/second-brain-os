@@ -17,18 +17,21 @@ import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLoc
 import type { InsightHaloBackup } from "@/lib/data-export";
 
 /* ── Access-level label logic ── */
-function getAccessLabel(isEarlyAccess: boolean, isPro: boolean, user: any, subscriptionStatus: string): string {
-  // Priority: Pro > Early Access > Approved Invite > Pending Waitlist
+interface WaitlistMeta {
+  invited?: boolean;
+  activation_completed_at?: string | null;
+}
+
+function getAccessLabel(isPro: boolean, isEarlyAccess: boolean, subscriptionStatus: string, waitlist: WaitlistMeta | null): string {
+  // 1. Pro Member — paid subscription active
   if (isPro && !isEarlyAccess) return "Pro Member";
+  // 2. Early Access Member — activation completed (from user_subscriptions.is_early_access OR waitlist activation)
   if (isEarlyAccess) return "Early Access Member";
-  // User completed activation (password set, account active) or was invited
-  if (
-    user?.user_metadata?.activated ||
-    user?.user_metadata?.activation_completed_at ||
-    user?.user_metadata?.invite_token ||
-    subscriptionStatus === "active" ||
-    subscriptionStatus === "trialing"
-  ) return "Approved Invite";
+  if (waitlist?.activation_completed_at) return "Early Access Member";
+  // 3. Approved Invite — invited but not yet fully activated
+  if (waitlist?.invited) return "Approved Invite";
+  if (subscriptionStatus === "active" || subscriptionStatus === "trialing") return "Approved Invite";
+  // 4. Pending Waitlist
   return "Pending Waitlist";
 }
 
