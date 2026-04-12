@@ -3,27 +3,14 @@ import {
   Mic, MicOff, Square, Check, Sparkles, Car, Clock,
   ArrowRight, FolderOpen, ShieldCheck, ShieldQuestion,
   Lightbulb, ListChecks, Bell, Users, BrainCircuit, Volume2,
+  AlertTriangle,
 } from "lucide-react";
 import { useBrain } from "@/context/BrainContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
-
-const VOICE_TRANSCRIPTS = [
-  "Remind me to call the supplier at 4 pm tomorrow",
-  "Idea: build a free tier pricing experiment for leads",
-  "Need to follow up with Rahul about the client proposal next week",
-  "Business idea: create a WhatsApp-based capture assistant",
-  "Send the Q4 financial summary to the board before Friday",
-  "Schedule a meeting with the design team to review mockups",
-  "What if we offered a referral program with tiered rewards?",
-  "Ask accountant about GST filing deadline this quarter",
-  "Book flights for the Toronto conference next month",
-  "Need to handle the vendor invoice dispute before end of week",
-];
-
-type VoicePhase = "idle" | "recording" | "transcribing" | "editing" | "processing" | "done";
+import { useSpeechRecognition, type SpeechState } from "@/hooks/useSpeechRecognition";
 
 const DEST_LABELS: Record<string, { label: string; color: string }> = {
   today: { label: "Today", color: "text-[hsl(var(--brain-teal))]" },
@@ -42,103 +29,94 @@ const QUICK_ACTIONS = [
 
 export default function VoiceCapturePage() {
   const { captures, addCapture } = useBrain();
-  const [phase, setPhase] = useState<VoicePhase>("idle");
-  const [transcript, setTranscript] = useState("");
   const [drivingMode, setDrivingMode] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const [activeHint, setActiveHint] = useState("");
+
+  // Editable transcript shown after recognition completes
+  const [editableTranscript, setEditableTranscript] = useState("");
+  // Whether we're in the editing phase (post-recognition, pre-save)
+  const [editing, setEditing] = useState(false);
+  // Whether we just saved
+  const [saved, setSaved] = useState(false);
+
+  const speech = useSpeechRecognition({
+    minConfidence: 0.4,
+    onResult: (transcript) => {
+      // Recognition finished with a final result — move to editing
+      setEditableTranscript(transcript);
+      setEditing(true);
+    },
+  });
 
   const voiceCaptures = useMemo(
     () => captures.filter((c) => c.input_type === "voice").slice(0, 6),
     [captures]
   );
 
-  const voiceToday = useMemo(
-    () => captures.filter((c) => c.input_type === "voice" && (Date.now() - new Date(c.created_at).getTime()) < 86400000).length,
-    [captures]
-  );
-
   // Recording timer
   useEffect(() => {
-    if (phase === "recording") {
+    if (speech.state === "listening") {
       setRecordingTime(0);
       timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [phase]);
+  }, [speech.state]);
 
-  useEffect(() => {
-    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
-  }, []);
-
-  const startRecording = useCallback((hint = "") => {
-    setActiveHint(hint);
-    setTranscript("");
-    setPhase("recording");
-
-    timeoutRef.current = setTimeout(() => {
-      finishRecording(hint);
-    }, drivingMode ? 3500 : 2500);
-  }, [drivingMode]);
+  const startRecording = useCallback(async () => {
+    setSaved(false);
+    setEditing(false);
+    setEditableTranscript("");
+    await speech.startListening();
+  }, [speech]);
 
   const stopRecording = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    finishRecording(activeHint);
-  }, [activeHint]);
-
-  const finishRecording = (hint: string) => {
-    setPhase("transcribing");
-    // Pick transcript — bias toward hint if provided
-    let pool = VOICE_TRANSCRIPTS;
-    if (hint) {
-      const hinted = pool.filter((t) => t.toLowerCase().includes(hint.toLowerCase()));
-      if (hinted.length > 0) pool = hinted;
-    }
-    const chosen = pool[Math.floor(Math.random() * pool.length)];
-
-    const words = chosen.split(" ");
-    let current = "";
-    words.forEach((word, i) => {
-      setTimeout(() => {
-        current += (i === 0 ? "" : " ") + word;
-        setTranscript(current);
-        if (i === words.length - 1) {
-          setTimeout(() => setPhase("editing"), 300);
-        }
-      }, i * 70);
-    });
-  };
+    speech.stopListening();
+  }, [speech]);
 
   const handleSave = useCallback(() => {
-    const trimmed = transcript.trim();
-    if (!trimmed || phase !== "editing") return;
-    setPhase("processing");
+    const trimmed = editableTranscript.trim();
+    if (!trimmed) return;
+    addCapture(trimmed, "voice");
+    setSaved(true);
+    setEditing(false);
+    toast.success("Voice capture saved.", { description: "Organized and ready in your Inbox." });
     setTimeout(() => {
-      addCapture(trimmed, "voice");
-      setPhase("done");
-      toast.success("Voice capture saved.", { description: "Organized and ready in your Inbox." });
-      setTimeout(() => {
-        setPhase("idle");
-        setTranscript("");
-      }, drivingMode ? 1500 : 1000);
-    }, 1200);
-  }, [transcript, phase, addCapture, drivingMode]);
+      setSaved(false);
+      setEditableTranscript("");
+      speech.reset();
+    }, drivingMode ? 1500 : 1000);
+  }, [editableTranscript, addCapture, drivingMode, speech]);
 
-  const handleDiscard = () => {
-    setPhase("idle");
-    setTranscript("");
-  };
+  const handleDiscard = useCallback(() => {
+    setEditing(false);
+    setEditableTranscript("");
+    speech.reset();
+  }, [speech]);
+
+  const handleRetry = useCallback(() => {
+    speech.reset();
+    setEditing(false);
+    setEditableTranscript("");
+  }, [speech]);
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
+  // Derived display state
+  const displayTranscript = editing ? editableTranscript : speech.interimTranscript;
+  const isIdle = speech.state === "idle" && !editing && !saved;
+  const isListening = speech.state === "listening";
+  const isProcessing = speech.state === "processing" && !editing;
+  const isError = speech.state === "error";
+  const isUnsupported = speech.state === "unsupported";
+  const canRecord = isIdle || isError;
+
+  // ─── Driving Mode ───
   if (drivingMode) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center space-y-8 px-4">
-        {/* Driving mode header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2">
             <Car className="h-6 w-6 text-primary" />
@@ -147,53 +125,74 @@ export default function VoiceCapturePage() {
           <p className="text-sm text-muted-foreground">Hands-free friendly capture for moments on the move.</p>
         </div>
 
-        {/* Large mic */}
+        {/* Large mic button */}
         <button
-          onClick={phase === "recording" ? stopRecording : phase === "idle" ? () => startRecording() : undefined}
-          disabled={phase === "processing" || phase === "done"}
+          onClick={isListening ? stopRecording : canRecord ? startRecording : undefined}
+          disabled={saved || isProcessing || isUnsupported}
           className={`relative h-36 w-36 rounded-full flex items-center justify-center transition-all ${
-            phase === "recording"
+            isListening
               ? "bg-destructive text-destructive-foreground scale-110"
-              : phase === "processing" || phase === "done"
+              : saved
                 ? "bg-primary/20 text-primary"
-                : "bg-primary text-primary-foreground hover:scale-105 active:scale-95"
+                : isError
+                  ? "bg-destructive/20 text-destructive"
+                  : "bg-primary text-primary-foreground hover:scale-105 active:scale-95"
           }`}
         >
-          {phase === "recording" && (
+          {isListening && (
             <>
               <span className="absolute inset-0 rounded-full animate-ping bg-destructive/30" />
               <span className="absolute inset-[-8px] rounded-full animate-pulse bg-destructive/10" />
             </>
           )}
-          {phase === "recording" ? <Square className="h-12 w-12" /> :
-            phase === "processing" ? <Sparkles className="h-12 w-12 animate-pulse" /> :
-              phase === "done" ? <Check className="h-12 w-12" /> :
-                <Mic className="h-12 w-12" />}
+          {isListening ? <Square className="h-12 w-12" /> :
+            isProcessing ? <Sparkles className="h-12 w-12 animate-pulse" /> :
+              saved ? <Check className="h-12 w-12" /> :
+                isError ? <AlertTriangle className="h-12 w-12" /> :
+                  <Mic className="h-12 w-12" />}
         </button>
 
-        {/* Status text - large for driving */}
+        {/* Status text */}
         <div className="text-center space-y-1">
-          {phase === "idle" && <p className="text-xl font-semibold">Tap to Speak</p>}
-          {phase === "recording" && (
+          {isUnsupported && (
+            <div className="space-y-1">
+              <p className="text-xl font-semibold text-destructive">Not Supported</p>
+              <p className="text-sm text-muted-foreground">Speech recognition is not available in this browser.</p>
+            </div>
+          )}
+          {isIdle && <p className="text-xl font-semibold">Tap to Speak</p>}
+          {isListening && (
             <div className="space-y-1">
               <p className="text-xl font-semibold text-destructive">Listening… {formatTime(recordingTime)}</p>
               <p className="text-sm text-muted-foreground">Tap to stop</p>
             </div>
           )}
-          {phase === "transcribing" && <p className="text-xl font-semibold text-primary animate-pulse">Transcribing…</p>}
-          {phase === "processing" && <p className="text-xl font-semibold text-primary animate-pulse">AI is organizing…</p>}
-          {phase === "done" && <p className="text-xl font-semibold text-[hsl(var(--brain-teal))]">✓ Saved</p>}
+          {isProcessing && <p className="text-xl font-semibold text-primary animate-pulse">Processing…</p>}
+          {saved && <p className="text-xl font-semibold text-[hsl(var(--brain-teal))]">✓ Saved</p>}
+          {isError && (
+            <div className="space-y-1">
+              <p className="text-lg font-semibold text-destructive">{speech.errorMessage}</p>
+              <p className="text-sm text-muted-foreground">Tap the button to try again</p>
+            </div>
+          )}
         </div>
 
-        {/* Transcript - large */}
-        {(phase === "transcribing" || phase === "editing") && transcript && (
+        {/* Live interim preview */}
+        {isListening && speech.interimTranscript && (
           <div className="w-full max-w-lg rounded-xl border bg-card p-6 text-center">
-            <p className="text-lg leading-relaxed">"{transcript}"</p>
+            <p className="text-lg leading-relaxed text-muted-foreground italic">"{speech.interimTranscript}"</p>
           </div>
         )}
 
-        {/* Save/Discard - large buttons */}
-        {phase === "editing" && (
+        {/* Editable transcript */}
+        {editing && editableTranscript && (
+          <div className="w-full max-w-lg rounded-xl border bg-card p-6 text-center">
+            <p className="text-lg leading-relaxed">"{editableTranscript}"</p>
+          </div>
+        )}
+
+        {/* Save/Discard */}
+        {editing && (
           <div className="flex gap-4">
             <Button size="lg" onClick={handleSave} className="gap-2 text-base px-8">
               <Check className="h-5 w-5" /> Save
@@ -204,7 +203,6 @@ export default function VoiceCapturePage() {
           </div>
         )}
 
-        {/* Exit driving mode */}
         <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setDrivingMode(false)}>
           Exit Driving Mode
         </Button>
@@ -212,6 +210,7 @@ export default function VoiceCapturePage() {
     );
   }
 
+  // ─── Normal Mode ───
   return (
     <div className="space-y-10">
       {/* Header */}
@@ -227,41 +226,57 @@ export default function VoiceCapturePage() {
         </Button>
       </div>
 
+      {/* Unsupported banner */}
+      {isUnsupported && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-destructive">Speech Recognition Unavailable</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Your browser does not support the Web Speech API. Please use Chrome, Edge, or Safari for voice capture.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Main Voice Panel */}
       <section className="rounded-2xl border bg-card shadow-sm p-8">
         <div className="flex flex-col items-center space-y-6">
           {/* Mic button */}
           <button
-            onClick={phase === "recording" ? stopRecording : phase === "idle" ? () => startRecording() : undefined}
-            disabled={phase === "processing" || phase === "done"}
+            onClick={isListening ? stopRecording : canRecord ? startRecording : undefined}
+            disabled={saved || isProcessing || isUnsupported}
             className={`relative h-24 w-24 rounded-full flex items-center justify-center transition-all shadow-lg ${
-              phase === "recording"
+              isListening
                 ? "bg-destructive text-destructive-foreground scale-110"
-                : phase === "processing" || phase === "done"
+                : saved
                   ? "bg-primary/20 text-primary"
-                  : "bg-primary text-primary-foreground hover:scale-105 active:scale-95 hover:shadow-xl"
+                  : isError
+                    ? "bg-destructive/20 text-destructive hover:bg-destructive/30"
+                    : "bg-primary text-primary-foreground hover:scale-105 active:scale-95 hover:shadow-xl"
             }`}
           >
-            {phase === "recording" && (
+            {isListening && (
               <>
                 <span className="absolute inset-0 rounded-full animate-ping bg-destructive/30" />
                 <span className="absolute inset-[-6px] rounded-full animate-pulse bg-destructive/10" />
               </>
             )}
-            {phase === "recording" ? <Square className="h-8 w-8" /> :
-              phase === "processing" ? <Sparkles className="h-8 w-8 animate-pulse" /> :
-                phase === "done" ? <Check className="h-8 w-8" /> :
-                  <Mic className="h-8 w-8" />}
+            {isListening ? <Square className="h-8 w-8" /> :
+              isProcessing ? <Sparkles className="h-8 w-8 animate-pulse" /> :
+                saved ? <Check className="h-8 w-8" /> :
+                  isError ? <AlertTriangle className="h-8 w-8" /> :
+                    <Mic className="h-8 w-8" />}
           </button>
 
           {/* Status */}
-          {phase === "idle" && (
+          {isIdle && (
             <div className="text-center space-y-1">
               <p className="text-base font-semibold">Tap to Speak</p>
               <p className="text-xs text-muted-foreground">Speak naturally. AI will organize it for you.</p>
             </div>
           )}
-          {phase === "recording" && (
+          {isListening && (
             <div className="text-center space-y-1">
               <div className="flex items-center gap-2 justify-center">
                 <span className="relative flex h-2.5 w-2.5">
@@ -273,27 +288,37 @@ export default function VoiceCapturePage() {
               <p className="text-xs text-muted-foreground">Tap the button to stop</p>
             </div>
           )}
-          {phase === "transcribing" && (
+          {isProcessing && (
             <div className="flex items-center gap-2">
               <Volume2 className="h-4 w-4 text-primary animate-pulse" />
-              <p className="text-sm font-medium text-primary">Transcribing…</p>
+              <p className="text-sm font-medium text-primary">Processing…</p>
             </div>
           )}
-          {phase === "processing" && (
-            <div className="flex items-center gap-2 animate-pulse">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <p className="text-sm font-medium text-primary">AI is organizing your thought…</p>
-            </div>
-          )}
-          {phase === "done" && (
+          {saved && (
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-[hsl(var(--brain-teal))]" />
               <p className="text-sm font-medium text-[hsl(var(--brain-teal))]">Saved to Inbox</p>
             </div>
           )}
+          {isError && (
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium text-destructive">{speech.errorMessage}</p>
+              <Button size="sm" variant="outline" onClick={handleRetry} className="mt-2 text-xs">
+                Try Again
+              </Button>
+            </div>
+          )}
 
-          {/* Transcript preview */}
-          {(phase === "transcribing" || phase === "editing") && transcript && (
+          {/* Live interim transcript */}
+          {isListening && speech.interimTranscript && (
+            <div className="w-full rounded-xl border border-dashed bg-secondary/20 p-4">
+              <p className="text-sm leading-relaxed italic text-muted-foreground">"{speech.interimTranscript}"</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-1">Live preview — not yet saved</p>
+            </div>
+          )}
+
+          {/* Editable transcript after recognition */}
+          {editing && editableTranscript && (
             <div className="w-full rounded-xl border bg-secondary/40 p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -302,24 +327,24 @@ export default function VoiceCapturePage() {
                     <Mic className="h-2.5 w-2.5" /> Voice
                   </Badge>
                 </div>
-                <span className="text-[10px] text-muted-foreground">
-                  Confidence: <span className="font-semibold text-[hsl(var(--brain-teal))]">High</span>
-                </span>
+                {speech.confidence > 0 && (
+                  <span className="text-[10px] text-muted-foreground">
+                    Confidence: <span className={`font-semibold ${speech.confidence >= 0.8 ? "text-[hsl(var(--brain-teal))]" : speech.confidence >= 0.6 ? "text-[hsl(var(--brain-amber))]" : "text-destructive"}`}>
+                      {speech.confidence >= 0.8 ? "High" : speech.confidence >= 0.6 ? "Medium" : "Low"}
+                    </span>
+                  </span>
+                )}
               </div>
-              {phase === "editing" ? (
-                <textarea
-                  value={transcript}
-                  onChange={(e) => setTranscript(e.target.value)}
-                  className="w-full text-sm leading-relaxed bg-transparent border-0 outline-none resize-none min-h-[60px]"
-                />
-              ) : (
-                <p className="text-sm leading-relaxed italic">"{transcript}"</p>
-              )}
+              <textarea
+                value={editableTranscript}
+                onChange={(e) => setEditableTranscript(e.target.value)}
+                className="w-full text-sm leading-relaxed bg-transparent border-0 outline-none resize-none min-h-[60px]"
+              />
             </div>
           )}
 
           {/* Actions */}
-          {phase === "editing" && (
+          {editing && (
             <div className="flex gap-3">
               <Button onClick={handleSave} className="gap-1.5">
                 <Check className="h-4 w-4" /> Save Capture
@@ -342,8 +367,8 @@ export default function VoiceCapturePage() {
           {QUICK_ACTIONS.map((action) => (
             <button
               key={action.label}
-              onClick={() => startRecording(action.hint)}
-              disabled={phase !== "idle"}
+              onClick={() => startRecording()}
+              disabled={!canRecord || isUnsupported}
               className="rounded-xl border bg-card p-4 space-y-2 text-center hover:shadow-md transition-all hover:border-primary/20 disabled:opacity-50"
             >
               <div
