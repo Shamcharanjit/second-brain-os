@@ -228,16 +228,22 @@ function KPICard({ icon, label, value, accent, highlight }: {
 
 function EmptyState({ message, isSearch }: { message: string; isSearch?: boolean }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
+    <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
       {isSearch ? (
-        <Search className="h-10 w-10 text-muted-foreground/30 mb-1" />
+        <Search className="h-12 w-12 text-muted-foreground/20 mb-1" />
       ) : (
-        <CheckCircle2 className="h-10 w-10 text-muted-foreground/30 mb-1" />
+        <CheckCircle2 className="h-12 w-12 text-muted-foreground/20 mb-1" />
       )}
-      <p className="text-sm font-medium text-muted-foreground">{message}</p>
-      {isSearch && (
-        <p className="text-xs text-muted-foreground/70">Try a different keyword or clear filters.</p>
-      )}
+      <div className="space-y-1">
+        <p className="text-sm font-semibold text-foreground">{message}</p>
+        {isSearch ? (
+          <p className="text-xs text-muted-foreground max-w-xs mx-auto">Try a different keyword or clear filters.</p>
+        ) : (
+          <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+            New captures will appear here for you to review, edit, and route to the right place.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

@@ -251,10 +251,14 @@ function KPICard({ icon, label, value, accent, highlight }: {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
-      <Lightbulb className="h-10 w-10 text-muted-foreground/30 mb-1" />
-      <p className="text-sm font-medium text-muted-foreground">{message}</p>
-      <p className="text-xs text-muted-foreground/70">Capture a thought and it may end up here.</p>
+    <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+      <Lightbulb className="h-12 w-12 text-muted-foreground/20 mb-1" />
+      <div className="space-y-1">
+        <p className="text-sm font-semibold text-foreground">{message}</p>
+        <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+          Capture a creative thought and it'll appear here for you to explore, park, or convert into a project.
+        </p>
+      </div>
     </div>
   );
 }

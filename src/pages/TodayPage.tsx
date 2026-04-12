@@ -179,10 +179,14 @@ export default function TodayPage() {
           {queue.length > 0 && <Badge variant="secondary" className="text-[10px] px-2 py-0.5">{queue.length}</Badge>}
         </div>
         {active.length === 0 && pinned.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <CalendarCheck className="h-10 w-10 text-muted-foreground/30 mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">No items for today yet.</p>
-            <p className="text-xs text-muted-foreground mt-1">Route items from Inbox or capture a new thought.</p>
+          <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+            <CalendarCheck className="h-12 w-12 text-muted-foreground/20 mb-1" />
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">No items for today yet</p>
+              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                Route items from your Inbox or capture a new thought to build your daily focus list.
+              </p>
+            </div>
           </div>
         ) : queue.length === 0 && pinned.length > 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">All items are pinned as Top Focus.</p>
