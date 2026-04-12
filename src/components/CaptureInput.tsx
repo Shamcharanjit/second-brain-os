@@ -232,14 +232,14 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
 
   // --- Real voice capture via Web Speech API ---
   const speechRecognitionRef = useRef<any>(null);
+  const voiceCommittedRef = useRef(false);
 
   const handleVoice = () => {
     if (phase === "recording") {
-      // Stop recording
+      // Stop recording — do NOT reset phase here; let onresult/onend handle it
       if (speechRecognitionRef.current) {
         try { speechRecognitionRef.current.stop(); } catch {}
       }
-      setPhase("idle");
     } else if (phase === "idle") {
       const SpeechRecognitionCtor =
         (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -253,6 +253,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       setText("");
       setLastResult(null);
       setTriageResult(null);
+      voiceCommittedRef.current = false;
 
       const recognition = new SpeechRecognitionCtor();
       recognition.continuous = false;
@@ -271,9 +272,10 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
             interim += result[0].transcript;
           }
         }
-        if (final) {
+        if (final && !voiceCommittedRef.current) {
+          voiceCommittedRef.current = true;
           setText(final.trim());
-          setPhase("idle");
+          // Don't set phase to idle yet — onend will finalize
         } else if (interim) {
           setText(interim);
         }
@@ -290,6 +292,8 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
 
       recognition.onend = () => {
         speechRecognitionRef.current = null;
+        // Transition back to idle so user can review and submit
+        setPhase("idle");
       };
 
       try {
