@@ -69,14 +69,28 @@ export default function VoiceCapturePage() {
   const speech = useSpeechRecognition({
     minConfidence: 0.4,
     onResult: (transcript) => {
-      if (drivingModeRef.current) {
-        doSave(transcript);
-      } else {
-        setEditableTranscript(transcript);
+      // Store transcript for both modes; actual save happens on "captured" state
+      setEditableTranscript(transcript);
+      if (!drivingModeRef.current) {
         setEditing(true);
       }
     },
   });
+
+  // When recognition completes and transitions to "captured", trigger save in Drive Mode
+  useEffect(() => {
+    if (speech.state === "captured" && drivingModeRef.current && speech.finalTranscript) {
+      doSave(speech.finalTranscript);
+    }
+  }, [speech.state, speech.finalTranscript, doSave]);
+
+  // In normal mode, when state becomes "captured", ensure editing is shown
+  useEffect(() => {
+    if (speech.state === "captured" && !drivingModeRef.current && speech.finalTranscript) {
+      setEditableTranscript(speech.finalTranscript);
+      setEditing(true);
+    }
+  }, [speech.state, speech.finalTranscript]);
 
   // Keep reset ref in sync
   useEffect(() => { speechResetRef.current = speech.reset; }, [speech.reset]);
@@ -131,7 +145,7 @@ export default function VoiceCapturePage() {
   const displayTranscript = editing ? editableTranscript : speech.interimTranscript;
   const isIdle = speech.state === "idle" && !editing && !saved;
   const isListening = speech.state === "listening";
-  const isProcessing = speech.state === "processing" && !editing;
+  const isProcessing = (speech.state === "processing" || speech.state === "captured") && !editing && !saved;
   const isError = speech.state === "error";
   const isUnsupported = speech.state === "unsupported";
   const canRecord = isIdle || isError;

@@ -54,7 +54,13 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
 
   const recognitionRef = useRef<any>(null);
   const onResultRef = useRef(onResult);
-  const stoppingRef = useRef(false); // track intentional stop
+  const stoppingRef = useRef(false);
+
+  // Track committed state and final transcript via refs to avoid stale closures
+  const committedRef = useRef(false);
+  const finalTranscriptRef = useRef("");
+  const finalConfidenceRef = useRef(0);
+  const errorStateRef = useRef(false);
 
   useEffect(() => {
     onResultRef.current = onResult;
@@ -87,9 +93,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
           return;
         }
       }
-      // Request mic access (also acts as permission prompt)
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Stop the tracks immediately — SpeechRecognition manages its own stream
       stream.getTracks().forEach((t) => t.stop());
     } catch (err: any) {
       setState("error");
@@ -109,13 +113,17 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     }
 
     const recognition = new SpeechRecognitionCtor();
-    recognition.continuous = false; // one utterance per session — prevents duplicates
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
     recognition.lang = lang || navigator.language || "en-US";
 
-    let committed = false;
+    // Reset refs
+    committedRef.current = false;
     stoppingRef.current = false;
+    finalTranscriptRef.current = "";
+    finalConfidenceRef.current = 0;
+    errorStateRef.current = false;
 
     recognition.onresult = (event: any) => {
       let interim = "";
@@ -139,18 +147,23 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
         setInterimTranscript(interim);
       }
 
-      if (final && !committed) {
+      if (final && !committedRef.current) {
         // Check confidence threshold
         if (bestConfidence > 0 && bestConfidence < minConfidence) {
-          // Low confidence — treat as noise
           setInterimTranscript("");
           setState("error");
+          errorStateRef.current = true;
           setErrorMessage("Could not understand speech clearly. Please try again.");
-          committed = true;
+          committedRef.current = true;
           return;
         }
 
-        committed = true;
+        // Store final transcript in ref for onend to use
+        finalTranscriptRef.current = final.trim();
+        finalConfidenceRef.current = bestConfidence;
+
+        // Commit
+        committedRef.current = true;
         setFinalTranscript(final.trim());
         setConfidence(bestConfidence);
         setInterimTranscript("");
@@ -163,32 +176,43 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       const err = event.error;
       if (err === "no-speech") {
         setState("error");
+        errorStateRef.current = true;
         setErrorMessage("No speech detected. Please try again.");
       } else if (err === "aborted" || err === "canceled") {
-        // Intentional abort — ignore
-        if (!committed) setState("idle");
+        if (!committedRef.current) setState("idle");
       } else if (err === "not-allowed") {
         setState("error");
+        errorStateRef.current = true;
         setErrorMessage("Microphone permission denied.");
       } else if (err === "network") {
         setState("error");
+        errorStateRef.current = true;
         setErrorMessage("Network error during speech recognition.");
       } else {
         setState("error");
+        errorStateRef.current = true;
         setErrorMessage(`Speech recognition error: ${err}`);
       }
     };
 
     recognition.onend = () => {
-      // If we never committed and didn't get an error, mark as no speech
-      if (!committed && state !== "error") {
-        if (!stoppingRef.current) {
-          // Natural end without result
-          setState("error");
-          setErrorMessage("No speech detected. Please try again.");
-        } else {
-          setState("idle");
-        }
+      // If we already committed a result via onresult, transition to captured
+      if (committedRef.current && !errorStateRef.current) {
+        setState("captured");
+        return;
+      }
+
+      // If we hit an error state, leave it as-is
+      if (errorStateRef.current) {
+        return;
+      }
+
+      // No result and no error — decide based on whether stop was intentional
+      if (stoppingRef.current) {
+        setState("idle");
+      } else {
+        setState("error");
+        setErrorMessage("No speech detected. Please try again.");
       }
     };
 
@@ -201,7 +225,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
 
     try {
       recognition.start();
-    } catch (err: any) {
+    } catch {
       setState("error");
       setErrorMessage("Failed to start speech recognition.");
     }
@@ -211,7 +235,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     stoppingRef.current = true;
     if (recognitionRef.current) {
       try {
-        recognitionRef.current.stop(); // triggers final result if available
+        recognitionRef.current.stop();
       } catch {}
     }
   }, []);
@@ -222,6 +246,10 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       recognitionRef.current = null;
     }
     stoppingRef.current = false;
+    committedRef.current = false;
+    finalTranscriptRef.current = "";
+    finalConfidenceRef.current = 0;
+    errorStateRef.current = false;
     setState(SpeechRecognitionCtor ? "idle" : "unsupported");
     setInterimTranscript("");
     setFinalTranscript("");
