@@ -111,12 +111,12 @@ export default function VoiceCapturePage() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [speech.state]);
 
-  const startRecording = useCallback(async () => {
+  const startRecording = useCallback(() => {
     setSaved(false);
     setEditing(false);
     setEditableTranscript("");
     savingRef.current = false;
-    await speech.startListening();
+    speech.startListening();
   }, [speech]);
 
   const stopRecording = useCallback(() => {
