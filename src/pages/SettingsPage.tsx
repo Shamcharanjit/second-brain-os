@@ -204,8 +204,8 @@ export default function SettingsPage() {
                 <p className="text-sm font-medium">
                   {getAccessLabel(isPro, isEarlyAccess, subscriptionStatus, waitlistMeta)}
                 </p>
-                {isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Sparkles className="h-2.5 w-2.5" />Early Access</Badge>}
-                {isPro && !isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Crown className="h-2.5 w-2.5" />Pro Member</Badge>}
+                {(isEarlyAccess || waitlistMeta?.activation_completed_at) && !isPro && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Sparkles className="h-2.5 w-2.5" />Early Access</Badge>}
+                {isPro && !isEarlyAccess && !waitlistMeta?.activation_completed_at && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Crown className="h-2.5 w-2.5" />Pro Member</Badge>}
               </div>
             </div>
             {/* Current Plan */}
