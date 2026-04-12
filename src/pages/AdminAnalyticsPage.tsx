@@ -399,7 +399,7 @@ export default function AdminAnalyticsPage() {
        ...memories.map((m) => ({ user_id: m.user_id, updated_at: m.created_at }))],
       h24
     );
-    const activationRate = sentToday > 0 ? Math.round((acceptedToday / sentToday) * 100) : (activation.totalRegistered > 0 ? 50 : 0);
+    const activationRate = sentToday > 0 ? Math.min(100, Math.round((acceptedToday / sentToday) * 100)) : (activation.totalRegistered > 0 ? 50 : 0);
 
     const retentionRate = activation.totalRegistered > 0 ? Math.round((activation.active7d / activation.totalRegistered) * 100) : 0;
     const refScore = referralVelocity.viralAccelerating ? 20 : referralVelocity.refs24h > 0 ? 10 : 0;
