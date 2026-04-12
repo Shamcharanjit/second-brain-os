@@ -185,7 +185,7 @@ export default function SettingsPage() {
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Access Level</p>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium">
-                  {getAccessLabel(isEarlyAccess, isPro, user)}
+                  {getAccessLabel(isEarlyAccess, isPro, user, subscriptionStatus)}
                 </p>
                 {isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Sparkles className="h-2.5 w-2.5" />Early Access</Badge>}
                 {isPro && !isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Crown className="h-2.5 w-2.5" />Pro Member</Badge>}
