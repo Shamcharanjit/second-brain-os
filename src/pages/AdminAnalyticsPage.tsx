@@ -294,10 +294,10 @@ export default function AdminAnalyticsPage() {
     const accepted = wlMetrics.accepted;
     const activated = wlMetrics.activated;
 
-    const pctInvited = total > 0 ? Math.round((invited / total) * 100) : 0;
-    const pctOpened = invited > 0 ? Math.round((opened / invited) * 100) : 0;
-    const pctAccepted = opened > 0 ? Math.round((accepted / opened) * 100) : 0;
-    const pctActivated = accepted > 0 ? Math.round((activated / accepted) * 100) : 0;
+    const pctInvited = total > 0 ? Math.min(100, Math.round((invited / total) * 100)) : 0;
+    const pctOpened = invited > 0 ? Math.min(100, Math.round((opened / invited) * 100)) : 0;
+    const pctAccepted = opened > 0 ? Math.min(100, Math.round((accepted / opened) * 100)) : 0;
+    const pctActivated = accepted > 0 ? Math.min(100, Math.round((activated / accepted) * 100)) : 0;
 
     const now = new Date();
     const d3 = subDays(now, 3);
