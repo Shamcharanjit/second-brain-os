@@ -145,7 +145,7 @@ export default function VoiceCapturePage() {
   const displayTranscript = editing ? editableTranscript : speech.interimTranscript;
   const isIdle = speech.state === "idle" && !editing && !saved;
   const isListening = speech.state === "listening";
-  const isProcessing = speech.state === "processing" && !editing;
+  const isProcessing = (speech.state === "processing" || speech.state === "captured") && !editing && !saved;
   const isError = speech.state === "error";
   const isUnsupported = speech.state === "unsupported";
   const canRecord = isIdle || isError;
