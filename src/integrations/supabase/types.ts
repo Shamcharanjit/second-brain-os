@@ -738,21 +738,27 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          referral_activation_at: string | null
           referred_user_email: string
+          referred_user_id: string | null
           referrer_user_id: string
           status: string
         }
         Insert: {
           created_at?: string
           id?: string
+          referral_activation_at?: string | null
           referred_user_email: string
+          referred_user_id?: string | null
           referrer_user_id: string
           status?: string
         }
         Update: {
           created_at?: string
           id?: string
+          referral_activation_at?: string | null
           referred_user_email?: string
+          referred_user_id?: string | null
           referrer_user_id?: string
           status?: string
         }
