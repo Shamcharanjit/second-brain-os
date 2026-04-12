@@ -101,6 +101,7 @@ export default function VoiceCapturePage() {
     setSaved(false);
     setEditing(false);
     setEditableTranscript("");
+    savingRef.current = false;
     await speech.startListening();
   }, [speech]);
 
@@ -111,14 +112,6 @@ export default function VoiceCapturePage() {
   const handleSave = useCallback(() => {
     doSave(editableTranscript);
   }, [editableTranscript, doSave]);
-
-  const startRecording = useCallback(async () => {
-    setSaved(false);
-    setEditing(false);
-    setEditableTranscript("");
-    savingRef.current = false;
-    await speech.startListening();
-  }, [speech]);
 
   const handleDiscard = useCallback(() => {
     setEditing(false);
