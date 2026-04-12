@@ -46,6 +46,7 @@ export default function VoiceCapturePage() {
 
   // Flag to prevent duplicate saves from both onResult and onEnd
   const savingRef = useRef(false);
+  const speechResetRef = useRef<() => void>(() => {});
 
   const doSave = useCallback((transcript: string) => {
     if (savingRef.current) return;
@@ -61,23 +62,24 @@ export default function VoiceCapturePage() {
       setSaved(false);
       setEditableTranscript("");
       savingRef.current = false;
-      speech.reset();
+      speechResetRef.current();
     }, drivingModeRef.current ? 1500 : 1000);
-  }, [addCapture, speech]);
+  }, [addCapture]);
 
   const speech = useSpeechRecognition({
     minConfidence: 0.4,
     onResult: (transcript) => {
       if (drivingModeRef.current) {
-        // Driving Mode: auto-save immediately on final result
         doSave(transcript);
       } else {
-        // Normal Mode: show editable preview first
         setEditableTranscript(transcript);
         setEditing(true);
       }
     },
   });
+
+  // Keep reset ref in sync
+  useEffect(() => { speechResetRef.current = speech.reset; }, [speech.reset]);
 
   const voiceCaptures = useMemo(
     () => captures.filter((c) => c.input_type === "voice").slice(0, 6),
