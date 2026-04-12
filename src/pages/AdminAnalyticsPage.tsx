@@ -20,6 +20,7 @@ import PromptExperimentationPanel from "@/components/dashboard/PromptExperimenta
 import UpgradeTimingPanel from "@/components/dashboard/UpgradeTimingPanel";
 import PaywallIntelligencePanel from "@/components/dashboard/PaywallIntelligencePanel";
 import ActivationFunnelPanel from "@/components/dashboard/ActivationFunnelPanel";
+import ReferralVelocityPanel from "@/components/dashboard/ReferralVelocityPanel";
 
 /* ── types ── */
 
@@ -842,60 +843,8 @@ export default function AdminAnalyticsPage() {
             <ConversionFunnel steps={funnelMetrics.steps} />
           </section>
 
-          {/* ═══ REFERRAL VELOCITY ═══ */}
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <Flame className="h-4 w-4" /> Referral Velocity
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <StatCard label="Referrals (24h)" value={referralVelocity.refs24h} icon={Zap} accent subtitle={referralVelocity.viralAccelerating ? "🔥 Accelerating" : ""} />
-              <StatCard label="Referrals (7d)" value={referralVelocity.refs7d} icon={TrendingUp} />
-              <StatCard label="Total Referrals" value={referralVelocity.totalRefs} icon={Users} />
-              <StatCard label="Avg / Invited User" value={referralVelocity.avgPerInvited} icon={BarChart3} />
-              <div className={cn(
-                "rounded-xl border p-5 space-y-2",
-                referralVelocity.viralAccelerating ? "border-primary/30 bg-primary/5" : "border-border bg-card"
-              )}>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Viral Signal</span>
-                  {referralVelocity.viralAccelerating ? <Flame className="h-4 w-4 text-primary" /> : <Minus className="h-4 w-4 text-muted-foreground" />}
-                </div>
-                <p className={cn("text-lg font-bold", referralVelocity.viralAccelerating ? "text-primary" : "text-muted-foreground")}>
-                  {referralVelocity.viralAccelerating ? "Accelerating" : "Stable"}
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  Today: {referralVelocity.refs24h} vs Yesterday: {referralVelocity.refsDayBefore}
-                </p>
-              </div>
-            </div>
-
-            {referralVelocity.topReferrers.length > 0 && (
-              <div className="rounded-xl border border-border bg-card overflow-hidden">
-                <div className="px-4 py-3 border-b bg-muted/30">
-                  <span className="text-xs font-medium text-muted-foreground">Top Referrers</span>
-                </div>
-                <div className="divide-y divide-border">
-                  {referralVelocity.topReferrers.map((r, i) => (
-                    <div key={r.id} className="flex items-center justify-between px-4 py-2.5 hover:bg-muted/20 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
-                        <span className="text-xs font-medium">{r.name}</span>
-                        <span className="text-[10px] text-muted-foreground">{maskEmail(r.email)}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-primary tabular-nums">{r.referral_count}</span>
-                        {r.referral_reward_level >= 3 && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
-                            <Star className="h-2 w-2" /> Fast-track
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
+          {/* ═══ REFERRAL VELOCITY ENGINE ═══ */}
+          <ReferralVelocityPanel waitlist={waitlist as any} />
 
           {/* ═══ ENGAGEMENT HEAT SIGNALS ═══ */}
           <section className="space-y-3">
