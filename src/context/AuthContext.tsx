@@ -38,9 +38,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         migrateUnscopedData(newUserId);
       }
 
-      // Handle sign-out: clear user scope
-      if (initializedRef.current && !newUserId) {
+      // Handle sign-out: clear user scope and redirect to homepage
+      if (initializedRef.current && !newUserId && _event === "SIGNED_OUT") {
         setCurrentUser(null);
+        // The signOut callback already triggers window.location.href = "/"
+        // but if triggered externally (e.g. token expiry), also redirect
       }
 
       setSession(sess);
@@ -84,6 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isSupabaseEnabled) return;
     setCurrentUser(null);
     await supabase.auth.signOut();
+    // Force full reload and redirect to homepage to clear all in-memory state
+    window.location.href = "/";
   }, []);
 
   return (

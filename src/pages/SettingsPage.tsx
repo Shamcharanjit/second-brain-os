@@ -17,11 +17,18 @@ import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLoc
 import type { InsightHaloBackup } from "@/lib/data-export";
 
 /* ── Access-level label logic ── */
-function getAccessLabel(isEarlyAccess: boolean, isPro: boolean, user: any): string {
+function getAccessLabel(isEarlyAccess: boolean, isPro: boolean, user: any, subscriptionStatus: string): string {
+  // Priority: Pro > Early Access > Approved Invite > Pending Waitlist
   if (isPro && !isEarlyAccess) return "Pro Member";
   if (isEarlyAccess) return "Early Access Member";
-  // Check if user was approved via invite (has user_metadata set during activation)
-  if (user?.user_metadata?.invite_token || user?.user_metadata?.activated) return "Approved Invite";
+  // User completed activation (password set, account active) or was invited
+  if (
+    user?.user_metadata?.activated ||
+    user?.user_metadata?.activation_completed_at ||
+    user?.user_metadata?.invite_token ||
+    subscriptionStatus === "active" ||
+    subscriptionStatus === "trialing"
+  ) return "Approved Invite";
   return "Pending Waitlist";
 }
 
@@ -178,7 +185,7 @@ export default function SettingsPage() {
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Access Level</p>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium">
-                  {getAccessLabel(isEarlyAccess, isPro, user)}
+                  {getAccessLabel(isEarlyAccess, isPro, user, subscriptionStatus)}
                 </p>
                 {isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Sparkles className="h-2.5 w-2.5" />Early Access</Badge>}
                 {isPro && !isEarlyAccess && <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5"><Crown className="h-2.5 w-2.5" />Pro Member</Badge>}
