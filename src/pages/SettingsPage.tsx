@@ -17,11 +17,18 @@ import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLoc
 import type { InsightHaloBackup } from "@/lib/data-export";
 
 /* ── Access-level label logic ── */
-function getAccessLabel(isEarlyAccess: boolean, isPro: boolean, user: any): string {
+function getAccessLabel(isEarlyAccess: boolean, isPro: boolean, user: any, subscriptionStatus: string): string {
+  // Priority: Pro > Early Access > Approved Invite > Pending Waitlist
   if (isPro && !isEarlyAccess) return "Pro Member";
   if (isEarlyAccess) return "Early Access Member";
-  // Check if user was approved via invite (has user_metadata set during activation)
-  if (user?.user_metadata?.invite_token || user?.user_metadata?.activated) return "Approved Invite";
+  // User completed activation (password set, account active) or was invited
+  if (
+    user?.user_metadata?.activated ||
+    user?.user_metadata?.activation_completed_at ||
+    user?.user_metadata?.invite_token ||
+    subscriptionStatus === "active" ||
+    subscriptionStatus === "trialing"
+  ) return "Approved Invite";
   return "Pending Waitlist";
 }
 

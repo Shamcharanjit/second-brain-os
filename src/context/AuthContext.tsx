@@ -84,6 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isSupabaseEnabled) return;
     setCurrentUser(null);
     await supabase.auth.signOut();
+    // Force full reload and redirect to homepage to clear all in-memory state
+    window.location.href = "/";
   }, []);
 
   return (
