@@ -76,34 +76,10 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     };
   }, []);
 
-  const startListening = useCallback(async () => {
+  const startListening = useCallback(() => {
     if (!SpeechRecognitionCtor) {
       setState("unsupported");
       setErrorMessage("Speech recognition is not supported in this browser.");
-      return;
-    }
-
-    // Check mic permission
-    try {
-      if (navigator.permissions) {
-        const perm = await navigator.permissions.query({ name: "microphone" as PermissionName });
-        if (perm.state === "denied") {
-          setState("error");
-          setErrorMessage("Microphone access is blocked. Please enable it in your browser settings.");
-          return;
-        }
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((t) => t.stop());
-    } catch (err: any) {
-      setState("error");
-      if (err.name === "NotAllowedError") {
-        setErrorMessage("Microphone permission denied. Please allow access and try again.");
-      } else if (err.name === "NotFoundError") {
-        setErrorMessage("No microphone found on this device.");
-      } else {
-        setErrorMessage("Could not access microphone.");
-      }
       return;
     }
 
@@ -183,7 +159,11 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       } else if (err === "not-allowed") {
         setState("error");
         errorStateRef.current = true;
-        setErrorMessage("Microphone permission denied.");
+        setErrorMessage("Microphone permission denied. Please allow access in your browser settings.");
+      } else if (err === "service-not-allowed") {
+        setState("error");
+        errorStateRef.current = true;
+        setErrorMessage("Microphone permission denied. Please allow access and try again.");
       } else if (err === "network") {
         setState("error");
         errorStateRef.current = true;
@@ -223,11 +203,20 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     setConfidence(0);
     setState("listening");
 
+    // IMPORTANT: Call recognition.start() synchronously within the user gesture
+    // handler. Do NOT await anything before this call — mobile browsers (iOS Safari,
+    // Android Chrome) require the start() to be in the synchronous call stack of a
+    // user tap/click event. Any preceding await breaks the gesture chain.
     try {
       recognition.start();
-    } catch {
-      setState("error");
-      setErrorMessage("Failed to start speech recognition.");
+    } catch (startErr: any) {
+      if (startErr.name === "NotAllowedError") {
+        setState("error");
+        setErrorMessage("Microphone permission denied. Please allow access in your browser settings.");
+      } else {
+        setState("error");
+        setErrorMessage("Failed to start speech recognition.");
+      }
     }
   }, [lang, minConfidence]);
 
