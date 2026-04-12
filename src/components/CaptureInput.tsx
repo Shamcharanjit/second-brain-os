@@ -297,9 +297,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       };
 
       recognition.onend = () => {
-        if (phase === "recording") {
-          setPhase("idle");
-        }
+        speechRecognitionRef.current = null;
       };
 
       try {
