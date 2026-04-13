@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useMemory } from "@/context/MemoryContext";
@@ -8,6 +9,7 @@ export default function DashboardMomentum() {
   const { captures } = useBrain();
   const { projects } = useProjects();
   const { memories } = useMemory();
+  const navigate = useNavigate();
 
   const stats = useMemo(() => {
     const weekAgo = Date.now() - 7 * 86400000;
@@ -20,10 +22,10 @@ export default function DashboardMomentum() {
   }, [captures, memories]);
 
   const items = [
-    { label: "Tasks Completed", value: stats.completedThisWeek, icon: CheckCircle2, color: "text-[hsl(var(--brain-teal))]" },
-    { label: "Captures Processed", value: stats.processedThisWeek, icon: Inbox, color: "text-[hsl(var(--brain-amber))]" },
-    { label: "Knowledge Saved", value: stats.memoriesThisWeek, icon: Brain, color: "text-primary" },
-    { label: "Ideas → Projects", value: stats.ideasConverted, icon: Lightbulb, color: "text-[hsl(var(--brain-purple))]" },
+    { label: "Tasks Completed", value: stats.completedThisWeek, icon: CheckCircle2, color: "text-[hsl(var(--brain-teal))]", to: "/today" },
+    { label: "Captures Processed", value: stats.processedThisWeek, icon: Inbox, color: "text-[hsl(var(--brain-amber))]", to: "/inbox" },
+    { label: "Knowledge Saved", value: stats.memoriesThisWeek, icon: Brain, color: "text-primary", to: "/memory" },
+    { label: "Ideas → Projects", value: stats.ideasConverted, icon: Lightbulb, color: "text-[hsl(var(--brain-purple))]", to: "/ideas" },
   ];
 
   return (
@@ -34,7 +36,11 @@ export default function DashboardMomentum() {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {items.map((item) => (
-          <div key={item.label} className="rounded-xl border bg-card p-4 flex items-center gap-3">
+          <div
+            key={item.label}
+            className="rounded-xl border bg-card p-4 flex items-center gap-3 cursor-pointer hover:shadow-sm hover:border-primary/30 transition-all"
+            onClick={() => navigate(item.to)}
+          >
             <item.icon className={`h-5 w-5 ${item.color} shrink-0`} />
             <div>
               <p className="text-lg font-bold">{item.value}</p>
