@@ -259,6 +259,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     finalTranscriptRef.current = "";
     finalConfidenceRef.current = 0;
     errorStateRef.current = false;
+    interimRef.current = "";
     setState(SpeechRecognitionCtor ? "idle" : "unsupported");
     setInterimTranscript("");
     setFinalTranscript("");
