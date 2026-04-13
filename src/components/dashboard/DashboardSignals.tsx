@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useMemory } from "@/context/MemoryContext";
@@ -10,11 +11,16 @@ interface SignalCardProps {
   icon: React.ElementType;
   color: string;
   sub?: string;
+  to: string;
 }
 
-function SignalCard({ label, value, icon: Icon, color, sub }: SignalCardProps) {
+function SignalCard({ label, value, icon: Icon, color, sub, to }: SignalCardProps) {
+  const navigate = useNavigate();
   return (
-    <div className="rounded-xl border bg-card p-4 space-y-1.5">
+    <div
+      className="rounded-xl border bg-card p-4 space-y-1.5 cursor-pointer hover:shadow-sm hover:border-primary/30 transition-all"
+      onClick={() => navigate(to)}
+    >
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
         <Icon className={`h-4 w-4 ${color}`} />
@@ -41,12 +47,12 @@ export default function DashboardSignals() {
   }, [captures, projects, memories, getProjectHealth]);
 
   const cards: SignalCardProps[] = [
-    { label: "Today", value: signals.today, icon: CalendarCheck, color: "text-[hsl(var(--brain-teal))]" },
-    { label: "Active Projects", value: signals.active, icon: FolderKanban, color: "text-[hsl(var(--brain-blue))]" },
-    { label: "Needs Attention", value: signals.troubled, icon: AlertTriangle, color: "text-[hsl(var(--brain-rose))]", sub: "Stalled or at-risk" },
-    { label: "Ideas", value: signals.ideas, icon: Lightbulb, color: "text-[hsl(var(--brain-purple))]" },
-    { label: "Pinned Memories", value: signals.pinned, icon: Brain, color: "text-primary" },
-    { label: "Inbox", value: signals.inbox, icon: Inbox, color: "text-[hsl(var(--brain-amber))]" },
+    { label: "Today", value: signals.today, icon: CalendarCheck, color: "text-[hsl(var(--brain-teal))]", to: "/today" },
+    { label: "Active Projects", value: signals.active, icon: FolderKanban, color: "text-[hsl(var(--brain-blue))]", to: "/projects" },
+    { label: "Needs Attention", value: signals.troubled, icon: AlertTriangle, color: "text-[hsl(var(--brain-rose))]", sub: "Stalled or at-risk", to: "/projects" },
+    { label: "Ideas", value: signals.ideas, icon: Lightbulb, color: "text-[hsl(var(--brain-purple))]", to: "/ideas" },
+    { label: "Pinned Memories", value: signals.pinned, icon: Brain, color: "text-primary", to: "/memory" },
+    { label: "Inbox", value: signals.inbox, icon: Inbox, color: "text-[hsl(var(--brain-amber))]", to: "/inbox" },
   ];
 
   return (

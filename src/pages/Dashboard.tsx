@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardWelcome from "@/components/dashboard/DashboardWelcome";
 import DashboardSignals from "@/components/dashboard/DashboardSignals";
@@ -15,7 +16,21 @@ import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useMemory } from "@/context/MemoryContext";
 
-function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+function SectionHeader({ icon: Icon, label, to }: { icon: React.ElementType; label: string; to?: string }) {
+  const navigate = useNavigate();
+  
+  if (to) {
+    return (
+      <button
+        onClick={() => navigate(to)}
+        className="flex items-center gap-2 pt-2 group cursor-pointer"
+      >
+        <Icon className="h-4 w-4 text-primary" />
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-colors">{label}</h2>
+      </button>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2 pt-2">
       <Icon className="h-4 w-4 text-primary" />
@@ -30,7 +45,6 @@ export default function Dashboard() {
   const { projects } = useProjects();
   const { memories } = useMemory();
 
-  // Activation funnel tracking
   useActivationFunnelTracker();
   useFirstProductActions(captures.length, projects.length, memories.length);
 
@@ -46,26 +60,26 @@ export default function Dashboard() {
     <div className="space-y-8">
       <DashboardHero />
 
-      <SectionHeader icon={Inbox} label="Signals" />
+      <SectionHeader icon={Inbox} label="Signals" to="/inbox" />
       <DashboardSignals />
 
       <CloudUpgradeNudge />
 
       <section className="space-y-3">
-        <SectionHeader icon={Sparkles} label="Quick Capture" />
+        <SectionHeader icon={Sparkles} label="Quick Capture" to="/capture-gateway" />
         <CaptureInput />
       </section>
 
-      <SectionHeader icon={Inbox} label="Alerts" />
+      <SectionHeader icon={Inbox} label="Alerts" to="/inbox" />
       <DashboardAlerts />
 
-      <SectionHeader icon={FolderKanban} label="Active Work" />
+      <SectionHeader icon={FolderKanban} label="Active Work" to="/projects" />
       <DashboardActiveWork />
 
-      <SectionHeader icon={Brain} label="Strategy" />
+      <SectionHeader icon={Brain} label="Strategy" to="/ideas" />
       <DashboardStrategy />
 
-      <SectionHeader icon={BarChart3} label="Momentum" />
+      <SectionHeader icon={BarChart3} label="Momentum" to="/today" />
       <DashboardMomentum />
     </div>
   );

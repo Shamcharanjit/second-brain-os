@@ -202,10 +202,10 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         </main>
       </div>
 
-      {/* Floating capture button */}
+      {/* Floating capture button — offset above mobile nav safe area */}
       <button
         onClick={() => setCaptureOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 md:bottom-8 md:right-8"
+        className="fixed right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] md:bottom-8 md:right-8"
         aria-label="Quick Capture"
       >
         <Plus className="h-6 w-6" />
