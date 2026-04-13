@@ -61,6 +61,8 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
   const finalTranscriptRef = useRef("");
   const finalConfidenceRef = useRef(0);
   const errorStateRef = useRef(false);
+  // Track latest interim transcript so we can commit it on manual stop
+  const interimRef = useRef("");
 
   useEffect(() => {
     onResultRef.current = onResult;
@@ -100,6 +102,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     finalTranscriptRef.current = "";
     finalConfidenceRef.current = 0;
     errorStateRef.current = false;
+    interimRef.current = "";
 
     recognition.onresult = (event: any) => {
       let interim = "";
@@ -120,6 +123,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       }
 
       if (interim) {
+        interimRef.current = interim;
         setInterimTranscript(interim);
       }
 
@@ -187,7 +191,23 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
         return;
       }
 
-      // No result and no error — decide based on whether stop was intentional
+      // Manual stop or automatic end with uncommitted interim transcript —
+      // commit whatever we have so the user can review/save it
+      const pendingText = interimRef.current.trim();
+      if (pendingText && !committedRef.current) {
+        committedRef.current = true;
+        finalTranscriptRef.current = pendingText;
+        setFinalTranscript(pendingText);
+        setInterimTranscript("");
+        setConfidence(0);
+        setState("processing");
+        onResultRef.current?.(pendingText, 0);
+        // Transition to captured after a tick so consumers see processing first
+        setTimeout(() => setState("captured"), 50);
+        return;
+      }
+
+      // No transcript at all
       if (stoppingRef.current) {
         setState("idle");
       } else {
@@ -239,6 +259,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     finalTranscriptRef.current = "";
     finalConfidenceRef.current = 0;
     errorStateRef.current = false;
+    interimRef.current = "";
     setState(SpeechRecognitionCtor ? "idle" : "unsupported");
     setInterimTranscript("");
     setFinalTranscript("");
