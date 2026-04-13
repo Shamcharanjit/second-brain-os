@@ -61,6 +61,8 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
   const finalTranscriptRef = useRef("");
   const finalConfidenceRef = useRef(0);
   const errorStateRef = useRef(false);
+  // Track latest interim transcript so we can commit it on manual stop
+  const interimRef = useRef("");
 
   useEffect(() => {
     onResultRef.current = onResult;
