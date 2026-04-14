@@ -76,7 +76,10 @@ export default function AuthPage() {
       : await signUp(email, password);
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      const msg = error.message?.toLowerCase().includes("invalid") || error.message?.toLowerCase().includes("credentials")
+        ? "Invalid email or password"
+        : error.message;
+      toast.error(msg);
     } else if (mode === "signup") {
       toast.success("Account created! Check your email to confirm.");
     } else {
