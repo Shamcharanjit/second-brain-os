@@ -85,16 +85,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     if (!isSupabaseEnabled) return { error: new Error("Cloud not configured") };
-    try {
-      const { lovable } = await import("@/integrations/lovable/index");
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
-      if (result.error) return { error: result.error instanceof Error ? result.error : new Error(String(result.error)) };
-      return { error: null };
-    } catch (e) {
-      return { error: e instanceof Error ? e : new Error(String(e)) };
-    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/app` },
+    });
+    return { error: error as Error | null };
   }, []);
 
   const signOut = useCallback(async () => {
