@@ -10,6 +10,7 @@ interface AuthContextType {
   cloudAvailable: boolean;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -82,16 +83,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error as Error | null };
   }, []);
 
+  const signInWithGoogle = useCallback(async () => {
+    if (!isSupabaseEnabled) return { error: new Error("Cloud not configured") };
+    try {
+      const { lovable } = await import("@/integrations/lovable/index");
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) return { error: result.error instanceof Error ? result.error : new Error(String(result.error)) };
+      return { error: null };
+    } catch (e) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }, []);
+
   const signOut = useCallback(async () => {
     if (!isSupabaseEnabled) return;
     setCurrentUser(null);
     await supabase.auth.signOut();
-    // Force full reload and redirect to homepage to clear all in-memory state
     window.location.href = "/";
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, cloudAvailable: isSupabaseEnabled, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, cloudAvailable: isSupabaseEnabled, signUp, signIn, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
