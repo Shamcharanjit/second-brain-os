@@ -78,14 +78,14 @@ const App = () => (
 
                       {/* App routes — wrapped in sidebar layout */}
                       <Route element={<AppShell />}>
-                        <Route path="/app" element={<Dashboard />} />
-                        <Route path="/inbox" element={<InboxPage />} />
+                        <Route path="/app" element={<PageErrorBoundary section="Dashboard"><Dashboard /></PageErrorBoundary>} />
+                        <Route path="/inbox" element={<PageErrorBoundary section="Inbox"><InboxPage /></PageErrorBoundary>} />
                         <Route path="/today" element={<TodayPage />} />
-                        <Route path="/projects" element={<ProjectsPage />} />
+                        <Route path="/projects" element={<PageErrorBoundary section="Projects"><ProjectsPage /></PageErrorBoundary>} />
                         <Route path="/ai-review" element={<AIReviewPage />} />
                         <Route path="/voice" element={<VoiceCapturePage />} />
-                        <Route path="/capture-gateway" element={<CaptureGatewayPage />} />
-                        <Route path="/review" element={<ReviewRitualsPage />} />
+                        <Route path="/capture-gateway" element={<PageErrorBoundary section="Capture Gateway"><CaptureGatewayPage /></PageErrorBoundary>} />
+                        <Route path="/review" element={<PageErrorBoundary section="Review"><ReviewRitualsPage /></PageErrorBoundary>} />
                         <Route path="/memory" element={<MemoryPage />} />
                         <Route path="/ideas" element={<IdeasVaultPage />} />
                         <Route path="/settings" element={<SettingsPage />} />
