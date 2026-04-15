@@ -36,6 +36,7 @@ import AdminPlansPage from "@/pages/AdminPlansPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import NotFound from "@/pages/NotFound";
 import AppErrorBoundary from "@/components/system/AppErrorBoundary";
+import PageErrorBoundary from "@/components/system/PageErrorBoundary";
 
 const queryClient = new QueryClient();
 
