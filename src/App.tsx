@@ -48,59 +48,61 @@ function AppShell() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <SubscriptionProvider>
-        <BrainProvider>
-          <ProjectProvider>
-            <MemoryProvider>
-              <ReviewMetaProvider>
-                <BrowserRouter>
-                  <ScrollToTop />
-                  <Routes>
-                    {/* Public pages — no app chrome */}
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/waitlist" element={<WaitlistPage />} />
-                    <Route path="/invite" element={<InvitePage />} />
-                    <Route path="/terms" element={<TermsPage />} />
-                    <Route path="/privacy" element={<PrivacyPage />} />
-                    <Route path="/auth" element={<AuthPage />} />
-                    <Route path="/reset-password" element={<ResetPasswordPage />} />
-                    <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
-                    <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
-                    <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
-                    <Route path="/admin/plans" element={<AdminPlansPage />} />
+  <AppErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <SubscriptionProvider>
+          <BrainProvider>
+            <ProjectProvider>
+              <MemoryProvider>
+                <ReviewMetaProvider>
+                  <BrowserRouter>
+                    <ScrollToTop />
+                    <Routes>
+                      {/* Public pages — no app chrome */}
+                      <Route path="/" element={<LandingPage />} />
+                      <Route path="/waitlist" element={<WaitlistPage />} />
+                      <Route path="/invite" element={<InvitePage />} />
+                      <Route path="/terms" element={<TermsPage />} />
+                      <Route path="/privacy" element={<PrivacyPage />} />
+                      <Route path="/auth" element={<AuthPage />} />
+                      <Route path="/reset-password" element={<ResetPasswordPage />} />
+                      <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
+                      <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+                      <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
+                      <Route path="/admin/plans" element={<AdminPlansPage />} />
 
-                    {/* App routes — wrapped in sidebar layout */}
-                    <Route element={<AppShell />}>
-                      <Route path="/app" element={<Dashboard />} />
-                      <Route path="/inbox" element={<InboxPage />} />
-                      <Route path="/today" element={<TodayPage />} />
-                      <Route path="/projects" element={<ProjectsPage />} />
-                      <Route path="/ai-review" element={<AIReviewPage />} />
-                      <Route path="/voice" element={<VoiceCapturePage />} />
-                      <Route path="/capture-gateway" element={<CaptureGatewayPage />} />
-                      <Route path="/review" element={<ReviewRitualsPage />} />
-                      <Route path="/memory" element={<MemoryPage />} />
-                      <Route path="/ideas" element={<IdeasVaultPage />} />
-                      <Route path="/settings" element={<SettingsPage />} />
-                      <Route path="/upgrade" element={<UpgradePage />} />
-                    </Route>
+                      {/* App routes — wrapped in sidebar layout */}
+                      <Route element={<AppShell />}>
+                        <Route path="/app" element={<Dashboard />} />
+                        <Route path="/inbox" element={<InboxPage />} />
+                        <Route path="/today" element={<TodayPage />} />
+                        <Route path="/projects" element={<ProjectsPage />} />
+                        <Route path="/ai-review" element={<AIReviewPage />} />
+                        <Route path="/voice" element={<VoiceCapturePage />} />
+                        <Route path="/capture-gateway" element={<CaptureGatewayPage />} />
+                        <Route path="/review" element={<ReviewRitualsPage />} />
+                        <Route path="/memory" element={<MemoryPage />} />
+                        <Route path="/ideas" element={<IdeasVaultPage />} />
+                        <Route path="/settings" element={<SettingsPage />} />
+                        <Route path="/upgrade" element={<UpgradePage />} />
+                      </Route>
 
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </BrowserRouter>
-              </ReviewMetaProvider>
-            </MemoryProvider>
-          </ProjectProvider>
-        </BrainProvider>
-        </SubscriptionProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </BrowserRouter>
+                </ReviewMetaProvider>
+              </MemoryProvider>
+            </ProjectProvider>
+          </BrainProvider>
+          </SubscriptionProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </AppErrorBoundary>
 );
 
 export default App;
