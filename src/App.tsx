@@ -58,6 +58,7 @@ const App = () => (
             <MemoryProvider>
               <ReviewMetaProvider>
                 <BrowserRouter>
+                  <ScrollToTop />
                   <Routes>
                     {/* Public pages — no app chrome */}
                     <Route path="/" element={<LandingPage />} />
