@@ -626,24 +626,38 @@ export default function AdminAnalyticsPage() {
       memories: { total: memTotal,   perUser: memPer,   level: getEngagementLevel(memPer) },
       voice:    { total: voiceTotal, perUser: voicePer, level: getEngagementLevel(voicePer) },
     };
-  }, [captures, projects, memories, activation.active7d]);
+  }, [captures, projects, memories, activation.active7d, engagementSignals]);
 
-  /* ── Cohort Quality Score ── */
+  /* ── Cohort Quality Score (overlaid with get_cohort_quality RPC when available) ── */
   const cohortScore = useMemo(() => {
     const totalInvited = Math.max(wlMetrics.invited, 1);
-    const activationScore = Math.min(Math.round((wlMetrics.activated / totalInvited) * 100), 100);
-    const referralScore = Math.min(Math.round((referralVelocity.totalRefs / totalInvited) * 50), 100);
-    const captureScore = Math.min(Math.round((captures.length / Math.max(activation.totalRegistered, 1)) * 20), 100);
-    const projectScore = Math.min(Math.round((projects.length / Math.max(activation.totalRegistered, 1)) * 30), 100);
-    const memoryScore = Math.min(Math.round((memories.length / Math.max(activation.totalRegistered, 1)) * 30), 100);
+    let activationScore = Math.min(Math.round((wlMetrics.activated / totalInvited) * 100), 100);
+    let referralScore = Math.min(Math.round((referralVelocity.totalRefs / totalInvited) * 50), 100);
+    let captureScore = Math.min(Math.round((captures.length / Math.max(activation.totalRegistered, 1)) * 20), 100);
+    let projectScore = Math.min(Math.round((projects.length / Math.max(activation.totalRegistered, 1)) * 30), 100);
+    let memoryScore = Math.min(Math.round((memories.length / Math.max(activation.totalRegistered, 1)) * 30), 100);
 
-    const weighted = Math.round(
+    let weighted = Math.round(
       activationScore * 0.30 + referralScore * 0.20 + captureScore * 0.20 + projectScore * 0.15 + memoryScore * 0.15
     );
-    const clamped = Math.min(weighted, 100);
-    const label = clamped >= 80 ? "Excellent" : clamped >= 50 ? "Strong" : clamped >= 25 ? "Healthy" : "Low";
+    let clamped = Math.min(weighted, 100);
+    let label = clamped >= 80 ? "Excellent" : clamped >= 50 ? "Strong" : clamped >= 25 ? "Healthy" : "Low";
+
+    if (cohortQualityRpc) {
+      activationScore = Math.round(Number(cohortQualityRpc.activation_score ?? activationScore));
+      referralScore   = Math.round(Number(cohortQualityRpc.referral_score   ?? referralScore));
+      captureScore    = Math.round(Number(cohortQualityRpc.capture_score    ?? captureScore));
+      projectScore    = Math.round(Number(cohortQualityRpc.project_score    ?? projectScore));
+      memoryScore     = Math.round(Number(cohortQualityRpc.memory_score     ?? memoryScore));
+      clamped         = Math.round(Number(cohortQualityRpc.total_score      ?? clamped));
+      const rpcLabel  = String(cohortQualityRpc.label || "").toLowerCase();
+      if (rpcLabel) {
+        label = rpcLabel === "strong" ? "Strong" : rpcLabel === "healthy" ? "Healthy" : rpcLabel === "moderate" ? "Healthy" : rpcLabel === "low" ? "Low" : label;
+      }
+    }
+
     return { score: clamped, label, activationScore, referralScore, captureScore, projectScore, memoryScore };
-  }, [wlMetrics, referralVelocity, captures, projects, memories, activation]);
+  }, [wlMetrics, referralVelocity, captures, projects, memories, activation, cohortQualityRpc]);
 
   /* ── Referral leaderboard ── */
   const referralLeaderboard = useMemo(() => {
