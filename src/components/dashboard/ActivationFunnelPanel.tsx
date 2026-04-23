@@ -64,10 +64,9 @@ export default function ActivationFunnelPanel() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [rebuiltRes, legacyRes, healthRes, journeyRes] = await Promise.all([
-        // Prefer rebuilt funnel RPC; falls back to legacy summary if not deployed
+      const [rebuiltRes, healthRes, journeyRes] = await Promise.all([
+        // Authoritative funnel RPC (production-deployed)
         supabase.rpc("get_rebuilt_funnel" as any),
-        supabase.rpc("get_activation_funnel_summary" as any),
         supabase.rpc("get_activation_health_score" as any),
         supabase
           .from("activation_funnel_events" as any)
@@ -76,9 +75,10 @@ export default function ActivationFunnelPanel() {
           .limit(500),
       ]);
 
-      // Use rebuilt payload when available, else legacy. Both share the
-      // { counts, rates } shape consumed by the Full Activation Funnel block.
-      const funnelPayload = (rebuiltRes.data as any) || (legacyRes.data as any);
+      if (rebuiltRes.error) {
+        console.error("[ActivationFunnelPanel] get_rebuilt_funnel error:", rebuiltRes.error);
+      }
+      const funnelPayload = rebuiltRes.data as any;
       if (funnelPayload) setSummary(funnelPayload);
       if (healthRes.data) setHealth(healthRes.data as any);
 
