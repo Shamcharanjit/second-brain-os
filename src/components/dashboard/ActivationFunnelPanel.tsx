@@ -65,7 +65,8 @@ export default function ActivationFunnelPanel() {
     setLoading(true);
     try {
       const [summaryRes, healthRes, journeyRes] = await Promise.all([
-        supabase.rpc("get_activation_funnel_summary" as any),
+        // Rebuilt funnel RPC (production: qanoiqzanywjrcuhsmny)
+        supabase.rpc("get_rebuilt_funnel" as any),
         supabase.rpc("get_activation_health_score" as any),
         // Build recent journeys from events
         supabase
@@ -246,14 +247,15 @@ export default function ActivationFunnelPanel() {
         <p className="text-xs font-medium text-muted-foreground">Stage-to-Stage Conversion Rates</p>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { label: "Signup → Email", key: "signup_to_waitlist_email_rate" },
+            // Keys aligned with get_rebuilt_funnel() rates payload
+            { label: "Signup → Email", key: "signup_to_email_rate" },
+            { label: "Signup → Approval", key: "signup_to_approval_rate" },
             { label: "Approval → Open", key: "approval_to_open_rate" },
             { label: "Open → Valid", key: "open_to_valid_token_rate" },
             { label: "Valid → Password", key: "valid_token_to_password_rate" },
             { label: "Password → Active", key: "password_to_activation_rate" },
-            { label: "Active → Login", key: "activation_to_first_login_rate" },
-            { label: "Active → Capture", key: "activation_to_first_capture_rate" },
-            { label: "Active → 2nd Session", key: "activation_to_second_session_rate" },
+            { label: "Active → Login", key: "activation_to_login_rate" },
+            { label: "Active → Capture", key: "activation_to_capture_rate" },
             { label: "Active → Day 2", key: "activation_to_day2_rate" },
             { label: "Active → Day 7", key: "activation_to_day7_rate" },
           ].map((r) => {

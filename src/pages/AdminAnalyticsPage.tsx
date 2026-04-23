@@ -204,6 +204,14 @@ export default function AdminAnalyticsPage() {
   const [planDistribution, setPlanDistribution] = useState<{ early_access: number; pro: number; free: number; total: number; india: number; international: number }>({ early_access: 0, pro: 0, free: 0, total: 0, india: 0, international: 0 });
   const [loading, setLoading] = useState(true);
 
+  // ── Authoritative aggregates from production analytics RPCs ──
+  // (deployed on qanoiqzanywjrcuhsmny — see supabase/manual-deploy/analytics-rebuild-rpcs.sql)
+  const [rolloutSignals, setRolloutSignals] = useState<any | null>(null);
+  const [referralSignals, setReferralSignals] = useState<any | null>(null);
+  const [engagementSignals, setEngagementSignals] = useState<any | null>(null);
+  const [retentionRadarRpc, setRetentionRadarRpc] = useState<any | null>(null);
+  const [cohortQualityRpc, setCohortQualityRpc] = useState<any | null>(null);
+
   // Rollout decision center state
   const [excludedCandidates, setExcludedCandidates] = useState<Set<string>>(new Set());
   const [rolloutNotes, setRolloutNotes] = useState("");
@@ -229,6 +237,20 @@ export default function AdminAnalyticsPage() {
         setProjects((d.projects as ProjectRow[]) || []);
         setMemories((d.memories as MemoryRow[]) || []);
       }
+
+      // ── Production analytics RPCs (parallel, fire-and-forget on per-call errors) ──
+      const [rollR, refR, engR, retR, cohR] = await Promise.all([
+        supabase.rpc("get_rollout_signals" as any),
+        supabase.rpc("get_referral_velocity" as any),
+        supabase.rpc("get_engagement_signals" as any),
+        supabase.rpc("get_retention_radar" as any),
+        supabase.rpc("get_cohort_quality" as any),
+      ]);
+      if (rollR.error) console.error("get_rollout_signals error:", rollR.error); else setRolloutSignals(rollR.data);
+      if (refR.error)  console.error("get_referral_velocity error:", refR.error);  else setReferralSignals(refR.data);
+      if (engR.error)  console.error("get_engagement_signals error:", engR.error); else setEngagementSignals(engR.data);
+      if (retR.error)  console.error("get_retention_radar error:", retR.error);    else setRetentionRadarRpc(retR.data);
+      if (cohR.error)  console.error("get_cohort_quality error:", cohR.error);     else setCohortQualityRpc(cohR.data);
 
       // Fetch rollout history
       const rh = await supabase
@@ -333,30 +355,41 @@ export default function AdminAnalyticsPage() {
     };
   }, [waitlist, wlMetrics]);
 
-  /* ── PART 2: Referral velocity ── */
+  /* ── PART 2: Referral velocity (overlaid with get_referral_velocity RPC when available) ── */
   const referralVelocity = useMemo(() => {
     const now = new Date();
     const h24 = subHours(now, 24);
     const d7 = subDays(now, 7);
 
-    const totalRefs = waitlist.reduce((sum, e) => sum + e.referral_count, 0);
-    const refs24h = waitlist.filter((e) => (e as any).referred_by && isAfter(new Date(e.created_at), h24)).length;
-    const refs7d = waitlist.filter((e) => (e as any).referred_by && isAfter(new Date(e.created_at), d7)).length;
+    let totalRefs = waitlist.reduce((sum, e) => sum + e.referral_count, 0);
+    let refs24h = waitlist.filter((e) => (e as any).referred_by && isAfter(new Date(e.created_at), h24)).length;
+    let refs7d = waitlist.filter((e) => (e as any).referred_by && isAfter(new Date(e.created_at), d7)).length;
 
     const invitedCount = waitlist.filter((e) => e.invited).length;
-    const avgPerInvited = invitedCount > 0 ? (totalRefs / invitedCount).toFixed(1) : "0";
+    let avgPerInvited = invitedCount > 0 ? (totalRefs / invitedCount).toFixed(1) : "0";
 
     const yesterday = subHours(now, 48);
     const refsDayBefore = waitlist.filter((e) => (e as any).referred_by && isAfter(new Date(e.created_at), yesterday) && !isAfter(new Date(e.created_at), h24)).length;
-    const viralAccelerating = refs24h > refsDayBefore;
+    let viralAccelerating = refs24h > refsDayBefore;
 
     const topReferrers = [...waitlist]
       .filter((e) => e.referral_count > 0)
       .sort((a, b) => b.referral_count - a.referral_count)
       .slice(0, 5);
 
+    // Authoritative override from production RPC
+    if (referralSignals) {
+      refs24h           = Number(referralSignals.referrals_24h ?? refs24h);
+      refs7d            = Number(referralSignals.referrals_7d ?? refs7d);
+      totalRefs         = Number(referralSignals.total_referrals ?? totalRefs);
+      avgPerInvited     = String(referralSignals.avg_per_invited ?? avgPerInvited);
+      viralAccelerating = String(referralSignals.viral_signal || "").toLowerCase() === "accelerating";
+    }
+
     return { refs24h, refs7d, totalRefs, avgPerInvited, viralAccelerating, topReferrers, refsDayBefore };
-  }, [waitlist]);
+  }, [waitlist, referralSignals]);
+
+  // (referralVelocityRpc removed — RPC values are now folded into referralVelocity above)
 
   /* ── activation metrics ── */
   const activation = useMemo(() => {
@@ -378,12 +411,19 @@ export default function AdminAnalyticsPage() {
       ...memories.map((m) => ({ user_id: m.user_id, updated_at: m.updated_at })),
     ];
 
-    const active24h = activeAfter(allRows, subHours(now, 24));
-    const active7d = activeAfter(allRows, subDays(now, 7));
-    const active30d = activeAfter(allRows, subDays(now, 30));
+    let active24h = activeAfter(allRows, subHours(now, 24));
+    let active7d  = activeAfter(allRows, subDays(now, 7));
+    let active30d = activeAfter(allRows, subDays(now, 30));
+
+    // Authoritative overrides from get_retention_radar RPC when available
+    if (retentionRadarRpc) {
+      active24h = Number(retentionRadarRpc.active_24h ?? active24h);
+      active7d  = Number(retentionRadarRpc.active_7d ?? active7d);
+      active30d = Number(retentionRadarRpc.active_30d ?? active30d);
+    }
 
     return { totalRegistered, usersWithCapture, usersWithProject, usersWithMemory, usersWithVoice, active24h, active7d, active30d };
-  }, [captures, projects, memories]);
+  }, [captures, projects, memories, retentionRadarRpc]);
 
   const hasActivationData = activation.totalRegistered > 0;
 
@@ -445,8 +485,37 @@ export default function AdminAnalyticsPage() {
 
     const pendingHighPriority = waitlist.filter((e) => e.status === "pending" && !e.invited && e.referral_reward_level >= 3).length;
 
+    // ── Prefer authoritative RPC values when available ──
+    if (rolloutSignals) {
+      const recRpc        = Number(rolloutSignals.recommended_batch ?? recommended);
+      const acceptRpc     = Number(rolloutSignals.acceptance_rate ?? acceptanceRate);
+      const activationRpc = Number(rolloutSignals.activation_rate ?? activationRate);
+      const retentionRpc  = Number(rolloutSignals.retention_7d ?? retentionRate);
+      const healthRpc     = (rolloutSignals.health_state as typeof healthState) || healthState;
+      const riskMap: Record<string, "Low" | "Moderate" | "High"> = { low: "Low", medium: "Moderate", high: "High" };
+      const riskRpc       = riskMap[String(rolloutSignals.risk_state || "").toLowerCase()] || riskLevel;
+      const pendingHpRpc  = Number(rolloutSignals.pending_high_priority ?? pendingHighPriority);
+
+      return {
+        recommended: recRpc,
+        explanation,
+        compositeScore,
+        activationRate: activationRpc,
+        retentionRate: retentionRpc,
+        refScore,
+        engagementScore,
+        pendingHighPriority: pendingHpRpc,
+        sentToday,
+        acceptedToday,
+        healthState: healthRpc,
+        rolloutState,
+        riskLevel: riskRpc,
+        acceptanceRate: acceptRpc,
+      };
+    }
+
     return { recommended, explanation, compositeScore, activationRate, retentionRate, refScore, engagementScore, pendingHighPriority, sentToday, acceptedToday, healthState, rolloutState, riskLevel, acceptanceRate };
-  }, [waitlist, captures, projects, memories, activation, referralVelocity]);
+  }, [waitlist, captures, projects, memories, activation, referralVelocity, rolloutSignals]);
 
   /* ── PART 1: Daily invite queue candidates ── */
   const inviteCandidates = useMemo(() => {
@@ -524,7 +593,7 @@ export default function AdminAnalyticsPage() {
     setSubmittingDecision(false);
   };
 
-  /* ── Engagement heat signals ── */
+  /* ── Engagement heat signals (overlaid with get_engagement_signals RPC when available) ── */
   const engagementHeat = useMemo(() => {
     const activeUsers = Math.max(activation.active7d, 1);
     const sevenDaysAgo = subDays(new Date(), 7);
@@ -533,30 +602,62 @@ export default function AdminAnalyticsPage() {
     const mem7d = memories.filter((m) => isAfter(new Date(m.created_at), sevenDaysAgo));
     const voice7d = captures.filter((c) => c.input_type === "voice" && isAfter(new Date(c.created_at), sevenDaysAgo));
 
-    return {
-      captures: { total: cap7d.length, perUser: cap7d.length / activeUsers, level: getEngagementLevel(cap7d.length / activeUsers) },
-      projects: { total: proj7d.length, perUser: proj7d.length / activeUsers, level: getEngagementLevel(proj7d.length / activeUsers) },
-      memories: { total: mem7d.length, perUser: mem7d.length / activeUsers, level: getEngagementLevel(mem7d.length / activeUsers) },
-      voice: { total: voice7d.length, perUser: voice7d.length / activeUsers, level: getEngagementLevel(voice7d.length / activeUsers) },
-    };
-  }, [captures, projects, memories, activation.active7d]);
+    // Local fallbacks
+    let capTotal   = cap7d.length,   capPer   = cap7d.length / activeUsers;
+    let projTotal  = proj7d.length,  projPer  = proj7d.length / activeUsers;
+    let memTotal   = mem7d.length,   memPer   = mem7d.length / activeUsers;
+    let voiceTotal = voice7d.length, voicePer = voice7d.length / activeUsers;
 
-  /* ── Cohort Quality Score ── */
+    if (engagementSignals) {
+      const t = engagementSignals.totals_7d || {};
+      capTotal   = Number(t.captures ?? capTotal);
+      projTotal  = Number(t.projects ?? projTotal);
+      memTotal   = Number(t.memories ?? memTotal);
+      voiceTotal = Number(t.voice    ?? voiceTotal);
+      capPer     = Number(engagementSignals.captures_per_user ?? capPer);
+      projPer    = Number(engagementSignals.projects_per_user ?? projPer);
+      memPer     = Number(engagementSignals.memories_per_user ?? memPer);
+      voicePer   = Number(engagementSignals.voice_per_user    ?? voicePer);
+    }
+
+    return {
+      captures: { total: capTotal,   perUser: capPer,   level: getEngagementLevel(capPer) },
+      projects: { total: projTotal,  perUser: projPer,  level: getEngagementLevel(projPer) },
+      memories: { total: memTotal,   perUser: memPer,   level: getEngagementLevel(memPer) },
+      voice:    { total: voiceTotal, perUser: voicePer, level: getEngagementLevel(voicePer) },
+    };
+  }, [captures, projects, memories, activation.active7d, engagementSignals]);
+
+  /* ── Cohort Quality Score (overlaid with get_cohort_quality RPC when available) ── */
   const cohortScore = useMemo(() => {
     const totalInvited = Math.max(wlMetrics.invited, 1);
-    const activationScore = Math.min(Math.round((wlMetrics.activated / totalInvited) * 100), 100);
-    const referralScore = Math.min(Math.round((referralVelocity.totalRefs / totalInvited) * 50), 100);
-    const captureScore = Math.min(Math.round((captures.length / Math.max(activation.totalRegistered, 1)) * 20), 100);
-    const projectScore = Math.min(Math.round((projects.length / Math.max(activation.totalRegistered, 1)) * 30), 100);
-    const memoryScore = Math.min(Math.round((memories.length / Math.max(activation.totalRegistered, 1)) * 30), 100);
+    let activationScore = Math.min(Math.round((wlMetrics.activated / totalInvited) * 100), 100);
+    let referralScore = Math.min(Math.round((referralVelocity.totalRefs / totalInvited) * 50), 100);
+    let captureScore = Math.min(Math.round((captures.length / Math.max(activation.totalRegistered, 1)) * 20), 100);
+    let projectScore = Math.min(Math.round((projects.length / Math.max(activation.totalRegistered, 1)) * 30), 100);
+    let memoryScore = Math.min(Math.round((memories.length / Math.max(activation.totalRegistered, 1)) * 30), 100);
 
-    const weighted = Math.round(
+    let weighted = Math.round(
       activationScore * 0.30 + referralScore * 0.20 + captureScore * 0.20 + projectScore * 0.15 + memoryScore * 0.15
     );
-    const clamped = Math.min(weighted, 100);
-    const label = clamped >= 80 ? "Excellent" : clamped >= 50 ? "Strong" : clamped >= 25 ? "Healthy" : "Low";
+    let clamped = Math.min(weighted, 100);
+    let label = clamped >= 80 ? "Excellent" : clamped >= 50 ? "Strong" : clamped >= 25 ? "Healthy" : "Low";
+
+    if (cohortQualityRpc) {
+      activationScore = Math.round(Number(cohortQualityRpc.activation_score ?? activationScore));
+      referralScore   = Math.round(Number(cohortQualityRpc.referral_score   ?? referralScore));
+      captureScore    = Math.round(Number(cohortQualityRpc.capture_score    ?? captureScore));
+      projectScore    = Math.round(Number(cohortQualityRpc.project_score    ?? projectScore));
+      memoryScore     = Math.round(Number(cohortQualityRpc.memory_score     ?? memoryScore));
+      clamped         = Math.round(Number(cohortQualityRpc.total_score      ?? clamped));
+      const rpcLabel  = String(cohortQualityRpc.label || "").toLowerCase();
+      if (rpcLabel) {
+        label = rpcLabel === "strong" ? "Strong" : rpcLabel === "healthy" ? "Healthy" : rpcLabel === "moderate" ? "Healthy" : rpcLabel === "low" ? "Low" : label;
+      }
+    }
+
     return { score: clamped, label, activationScore, referralScore, captureScore, projectScore, memoryScore };
-  }, [wlMetrics, referralVelocity, captures, projects, memories, activation]);
+  }, [wlMetrics, referralVelocity, captures, projects, memories, activation, cohortQualityRpc]);
 
   /* ── Referral leaderboard ── */
   const referralLeaderboard = useMemo(() => {
