@@ -380,6 +380,20 @@ export default function AdminAnalyticsPage() {
     return { refs24h, refs7d, totalRefs, avgPerInvited, viralAccelerating, topReferrers, refsDayBefore };
   }, [waitlist]);
 
+  // ── Authoritative referral velocity (from get_referral_velocity RPC) ──
+  const referralVelocityRpc = useMemo(() => {
+    if (!referralSignals) return referralVelocity;
+    const viral = String(referralSignals.viral_signal || "").toLowerCase();
+    return {
+      ...referralVelocity,
+      refs24h:           Number(referralSignals.referrals_24h ?? referralVelocity.refs24h),
+      refs7d:            Number(referralSignals.referrals_7d ?? referralVelocity.refs7d),
+      totalRefs:         Number(referralSignals.total_referrals ?? referralVelocity.totalRefs),
+      avgPerInvited:     String(referralSignals.avg_per_invited ?? referralVelocity.avgPerInvited),
+      viralAccelerating: viral === "accelerating",
+    };
+  }, [referralSignals, referralVelocity]);
+
   /* ── activation metrics ── */
   const activation = useMemo(() => {
     const allUserIds = new Set<string>();
@@ -400,9 +414,16 @@ export default function AdminAnalyticsPage() {
       ...memories.map((m) => ({ user_id: m.user_id, updated_at: m.updated_at })),
     ];
 
-    const active24h = activeAfter(allRows, subHours(now, 24));
-    const active7d = activeAfter(allRows, subDays(now, 7));
-    const active30d = activeAfter(allRows, subDays(now, 30));
+    let active24h = activeAfter(allRows, subHours(now, 24));
+    let active7d  = activeAfter(allRows, subDays(now, 7));
+    let active30d = activeAfter(allRows, subDays(now, 30));
+
+    // Authoritative overrides from get_retention_radar RPC when available
+    if (retentionRadarRpc) {
+      active24h = Number(retentionRadarRpc.active_24h ?? active24h);
+      active7d  = Number(retentionRadarRpc.active_7d ?? active7d);
+      active30d = Number(retentionRadarRpc.active_30d ?? active30d);
+    }
 
     return { totalRegistered, usersWithCapture, usersWithProject, usersWithMemory, usersWithVoice, active24h, active7d, active30d };
   }, [captures, projects, memories]);
