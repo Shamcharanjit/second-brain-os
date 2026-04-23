@@ -467,8 +467,37 @@ export default function AdminAnalyticsPage() {
 
     const pendingHighPriority = waitlist.filter((e) => e.status === "pending" && !e.invited && e.referral_reward_level >= 3).length;
 
+    // ── Prefer authoritative RPC values when available ──
+    if (rolloutSignals) {
+      const recRpc        = Number(rolloutSignals.recommended_batch ?? recommended);
+      const acceptRpc     = Number(rolloutSignals.acceptance_rate ?? acceptanceRate);
+      const activationRpc = Number(rolloutSignals.activation_rate ?? activationRate);
+      const retentionRpc  = Number(rolloutSignals.retention_7d ?? retentionRate);
+      const healthRpc     = (rolloutSignals.health_state as typeof healthState) || healthState;
+      const riskMap: Record<string, "Low" | "Moderate" | "High"> = { low: "Low", medium: "Moderate", high: "High" };
+      const riskRpc       = riskMap[String(rolloutSignals.risk_state || "").toLowerCase()] || riskLevel;
+      const pendingHpRpc  = Number(rolloutSignals.pending_high_priority ?? pendingHighPriority);
+
+      return {
+        recommended: recRpc,
+        explanation,
+        compositeScore,
+        activationRate: activationRpc,
+        retentionRate: retentionRpc,
+        refScore,
+        engagementScore,
+        pendingHighPriority: pendingHpRpc,
+        sentToday,
+        acceptedToday,
+        healthState: healthRpc,
+        rolloutState,
+        riskLevel: riskRpc,
+        acceptanceRate: acceptRpc,
+      };
+    }
+
     return { recommended, explanation, compositeScore, activationRate, retentionRate, refScore, engagementScore, pendingHighPriority, sentToday, acceptedToday, healthState, rolloutState, riskLevel, acceptanceRate };
-  }, [waitlist, captures, projects, memories, activation, referralVelocity]);
+  }, [waitlist, captures, projects, memories, activation, referralVelocity, rolloutSignals]);
 
   /* ── PART 1: Daily invite queue candidates ── */
   const inviteCandidates = useMemo(() => {
