@@ -423,7 +423,7 @@ export default function AdminAnalyticsPage() {
     }
 
     return { totalRegistered, usersWithCapture, usersWithProject, usersWithMemory, usersWithVoice, active24h, active7d, active30d };
-  }, [captures, projects, memories]);
+  }, [captures, projects, memories, retentionRadarRpc]);
 
   const hasActivationData = activation.totalRegistered > 0;
 
