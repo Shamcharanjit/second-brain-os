@@ -355,44 +355,41 @@ export default function AdminAnalyticsPage() {
     };
   }, [waitlist, wlMetrics]);
 
-  /* ── PART 2: Referral velocity ── */
+  /* ── PART 2: Referral velocity (overlaid with get_referral_velocity RPC when available) ── */
   const referralVelocity = useMemo(() => {
     const now = new Date();
     const h24 = subHours(now, 24);
     const d7 = subDays(now, 7);
 
-    const totalRefs = waitlist.reduce((sum, e) => sum + e.referral_count, 0);
-    const refs24h = waitlist.filter((e) => (e as any).referred_by && isAfter(new Date(e.created_at), h24)).length;
-    const refs7d = waitlist.filter((e) => (e as any).referred_by && isAfter(new Date(e.created_at), d7)).length;
+    let totalRefs = waitlist.reduce((sum, e) => sum + e.referral_count, 0);
+    let refs24h = waitlist.filter((e) => (e as any).referred_by && isAfter(new Date(e.created_at), h24)).length;
+    let refs7d = waitlist.filter((e) => (e as any).referred_by && isAfter(new Date(e.created_at), d7)).length;
 
     const invitedCount = waitlist.filter((e) => e.invited).length;
-    const avgPerInvited = invitedCount > 0 ? (totalRefs / invitedCount).toFixed(1) : "0";
+    let avgPerInvited = invitedCount > 0 ? (totalRefs / invitedCount).toFixed(1) : "0";
 
     const yesterday = subHours(now, 48);
     const refsDayBefore = waitlist.filter((e) => (e as any).referred_by && isAfter(new Date(e.created_at), yesterday) && !isAfter(new Date(e.created_at), h24)).length;
-    const viralAccelerating = refs24h > refsDayBefore;
+    let viralAccelerating = refs24h > refsDayBefore;
 
     const topReferrers = [...waitlist]
       .filter((e) => e.referral_count > 0)
       .sort((a, b) => b.referral_count - a.referral_count)
       .slice(0, 5);
 
-    return { refs24h, refs7d, totalRefs, avgPerInvited, viralAccelerating, topReferrers, refsDayBefore };
-  }, [waitlist]);
+    // Authoritative override from production RPC
+    if (referralSignals) {
+      refs24h           = Number(referralSignals.referrals_24h ?? refs24h);
+      refs7d            = Number(referralSignals.referrals_7d ?? refs7d);
+      totalRefs         = Number(referralSignals.total_referrals ?? totalRefs);
+      avgPerInvited     = String(referralSignals.avg_per_invited ?? avgPerInvited);
+      viralAccelerating = String(referralSignals.viral_signal || "").toLowerCase() === "accelerating";
+    }
 
-  // ── Authoritative referral velocity (from get_referral_velocity RPC) ──
-  const referralVelocityRpc = useMemo(() => {
-    if (!referralSignals) return referralVelocity;
-    const viral = String(referralSignals.viral_signal || "").toLowerCase();
-    return {
-      ...referralVelocity,
-      refs24h:           Number(referralSignals.referrals_24h ?? referralVelocity.refs24h),
-      refs7d:            Number(referralSignals.referrals_7d ?? referralVelocity.refs7d),
-      totalRefs:         Number(referralSignals.total_referrals ?? referralVelocity.totalRefs),
-      avgPerInvited:     String(referralSignals.avg_per_invited ?? referralVelocity.avgPerInvited),
-      viralAccelerating: viral === "accelerating",
-    };
-  }, [referralSignals, referralVelocity]);
+    return { refs24h, refs7d, totalRefs, avgPerInvited, viralAccelerating, topReferrers, refsDayBefore };
+  }, [waitlist, referralSignals]);
+
+  // (referralVelocityRpc removed — RPC values are now folded into referralVelocity above)
 
   /* ── activation metrics ── */
   const activation = useMemo(() => {
