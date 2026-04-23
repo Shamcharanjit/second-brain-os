@@ -57,94 +57,73 @@ DECLARE
   v_first_capture    bigint := 0;
   v_day2             bigint := 0;
   v_day7             bigint := 0;
-  v_rates            jsonb;
+  v_a bigint := 0;
+  v_b bigint := 0;
+  v_rates jsonb;
 BEGIN
   IF NOT public._is_founder_admin() THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
   END IF;
 
-  -- Stage 1: signups (truth = waitlist_signups; UNION with events for safety)
-  SELECT GREATEST(
-    (SELECT COUNT(*) FROM public.waitlist_signups),
-    (SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email))
-       FROM public.activation_funnel_events WHERE event_type = 'waitlist_signed_up')
-  ) INTO v_signed_up;
+  SELECT COUNT(*) INTO v_a FROM public.waitlist_signups;
+  SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email)) INTO v_b
+    FROM public.activation_funnel_events WHERE event_type = 'waitlist_signed_up';
+  v_signed_up := GREATEST(v_a, v_b);
 
-  -- Stage 2: waitlist confirmation emails (events only — no source column)
-  SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email))
-    INTO v_email_sent
+  SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email)) INTO v_email_sent
     FROM public.activation_funnel_events WHERE event_type = 'waitlist_email_sent';
 
-  -- Stage 3: approval emails — derive from waitlist_signups.invite_sent_at
-  SELECT GREATEST(
-    (SELECT COUNT(*) FROM public.waitlist_signups WHERE invite_sent_at IS NOT NULL),
-    (SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email))
-       FROM public.activation_funnel_events WHERE event_type = 'approval_email_sent')
-  ) INTO v_approval_sent;
+  SELECT COUNT(*) INTO v_a FROM public.waitlist_signups WHERE invite_sent_at IS NOT NULL;
+  SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email)) INTO v_b
+    FROM public.activation_funnel_events WHERE event_type = 'approval_email_sent';
+  v_approval_sent := GREATEST(v_a, v_b);
 
-  -- Stage 4: invite link opened — derive from waitlist_signups.invite_opened_at
-  SELECT GREATEST(
-    (SELECT COUNT(*) FROM public.waitlist_signups WHERE invite_opened_at IS NOT NULL),
-    (SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email))
-       FROM public.activation_funnel_events WHERE event_type = 'invite_link_opened')
-  ) INTO v_link_opened;
+  SELECT COUNT(*) INTO v_a FROM public.waitlist_signups WHERE invite_opened_at IS NOT NULL;
+  SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email)) INTO v_b
+    FROM public.activation_funnel_events WHERE event_type = 'invite_link_opened';
+  v_link_opened := GREATEST(v_a, v_b);
 
-  -- Stage 5: token validated (events only)
-  SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email))
-    INTO v_token_validated
+  SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email)) INTO v_token_validated
     FROM public.activation_funnel_events WHERE event_type = 'invite_token_validated';
 
-  -- Stage 6: password set — derive from invite_accepted_at as proxy
-  SELECT GREATEST(
-    (SELECT COUNT(*) FROM public.waitlist_signups WHERE invite_accepted_at IS NOT NULL),
-    (SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email))
-       FROM public.activation_funnel_events WHERE event_type = 'password_set')
-  ) INTO v_password_set;
+  SELECT COUNT(*) INTO v_a FROM public.waitlist_signups WHERE invite_accepted_at IS NOT NULL;
+  SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email)) INTO v_b
+    FROM public.activation_funnel_events WHERE event_type = 'password_set';
+  v_password_set := GREATEST(v_a, v_b);
 
-  -- Stage 7: activation complete — truth = waitlist_signups.activation_completed_at
-  SELECT GREATEST(
-    (SELECT COUNT(*) FROM public.waitlist_signups WHERE activation_completed_at IS NOT NULL),
-    (SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email))
-       FROM public.activation_funnel_events WHERE event_type = 'activation_completed')
-  ) INTO v_activated;
+  SELECT COUNT(*) INTO v_a FROM public.waitlist_signups WHERE activation_completed_at IS NOT NULL;
+  SELECT COUNT(DISTINCT COALESCE(user_id::text, waitlist_signup_email)) INTO v_b
+    FROM public.activation_funnel_events WHERE event_type = 'activation_completed';
+  v_activated := GREATEST(v_a, v_b);
 
-  -- Stage 8: first login — derive from auth.users.last_sign_in_at presence
-  SELECT GREATEST(
-    (SELECT COUNT(*) FROM auth.users WHERE last_sign_in_at IS NOT NULL),
-    (SELECT COUNT(DISTINCT user_id) FROM public.activation_funnel_events
-       WHERE event_type = 'first_login' AND user_id IS NOT NULL)
-  ) INTO v_first_login;
+  SELECT COUNT(*) INTO v_a FROM auth.users WHERE last_sign_in_at IS NOT NULL;
+  SELECT COUNT(DISTINCT user_id) INTO v_b
+    FROM public.activation_funnel_events WHERE event_type = 'first_login' AND user_id IS NOT NULL;
+  v_first_login := GREATEST(v_a, v_b);
 
-  -- Stage 9: first capture — truth = distinct user_id in user_captures
-  SELECT GREATEST(
-    (SELECT COUNT(DISTINCT user_id) FROM public.user_captures),
-    (SELECT COUNT(DISTINCT user_id) FROM public.activation_funnel_events
-       WHERE event_type = 'first_capture_created' AND user_id IS NOT NULL)
-  ) INTO v_first_capture;
+  SELECT COUNT(DISTINCT user_id) INTO v_a FROM public.user_captures;
+  SELECT COUNT(DISTINCT user_id) INTO v_b
+    FROM public.activation_funnel_events WHERE event_type = 'first_capture_created' AND user_id IS NOT NULL;
+  v_first_capture := GREATEST(v_a, v_b);
 
-  -- Stage 10/11: day2 / day7 retention — derive from capture activity windows
-  SELECT GREATEST(
-    (SELECT COUNT(DISTINCT uc.user_id)
-       FROM public.user_captures uc
-       JOIN auth.users au ON au.id = uc.user_id
-       WHERE uc.created_at >= au.created_at + interval '1 day'
-         AND uc.created_at <  au.created_at + interval '3 days'),
-    (SELECT COUNT(DISTINCT user_id) FROM public.activation_funnel_events
-       WHERE event_type = 'day2_retained' AND user_id IS NOT NULL)
-  ) INTO v_day2;
+  SELECT COUNT(DISTINCT uc.user_id) INTO v_a
+    FROM public.user_captures uc
+    JOIN auth.users au ON au.id = uc.user_id
+    WHERE uc.created_at >= au.created_at + interval '1 day'
+      AND uc.created_at <  au.created_at + interval '3 days';
+  SELECT COUNT(DISTINCT user_id) INTO v_b
+    FROM public.activation_funnel_events WHERE event_type = 'day2_retained' AND user_id IS NOT NULL;
+  v_day2 := GREATEST(v_a, v_b);
 
-  SELECT GREATEST(
-    (SELECT COUNT(DISTINCT uc.user_id)
-       FROM public.user_captures uc
-       JOIN auth.users au ON au.id = uc.user_id
-       WHERE uc.created_at >= au.created_at + interval '6 days'
-         AND uc.created_at <  au.created_at + interval '8 days'),
-    (SELECT COUNT(DISTINCT user_id) FROM public.activation_funnel_events
-       WHERE event_type = 'day7_retained' AND user_id IS NOT NULL)
-  ) INTO v_day7;
+  SELECT COUNT(DISTINCT uc.user_id) INTO v_a
+    FROM public.user_captures uc
+    JOIN auth.users au ON au.id = uc.user_id
+    WHERE uc.created_at >= au.created_at + interval '6 days'
+      AND uc.created_at <  au.created_at + interval '8 days';
+  SELECT COUNT(DISTINCT user_id) INTO v_b
+    FROM public.activation_funnel_events WHERE event_type = 'day7_retained' AND user_id IS NOT NULL;
+  v_day7 := GREATEST(v_a, v_b);
 
-  -- Monotonic clamp: every downstream stage is bounded by every upstream stage.
-  -- This prevents impossible patterns (e.g. first_login > activations).
   v_email_sent      := LEAST(v_email_sent,      v_signed_up);
   v_approval_sent   := LEAST(v_approval_sent,   v_signed_up);
   v_link_opened     := LEAST(v_link_opened,     v_approval_sent);
@@ -157,16 +136,16 @@ BEGIN
   v_day7            := LEAST(v_day7,            v_day2);
 
   v_rates := jsonb_build_object(
-    'signup_to_email_rate',         CASE WHEN v_signed_up      > 0 THEN ROUND((v_email_sent     ::numeric / v_signed_up     ) * 100, 1) ELSE 0 END,
-    'signup_to_approval_rate',      CASE WHEN v_signed_up      > 0 THEN ROUND((v_approval_sent  ::numeric / v_signed_up     ) * 100, 1) ELSE 0 END,
-    'approval_to_open_rate',        CASE WHEN v_approval_sent  > 0 THEN ROUND((v_link_opened    ::numeric / v_approval_sent ) * 100, 1) ELSE 0 END,
-    'open_to_valid_token_rate',     CASE WHEN v_link_opened    > 0 THEN ROUND((v_token_validated::numeric / v_link_opened   ) * 100, 1) ELSE 0 END,
-    'valid_token_to_password_rate', CASE WHEN v_token_validated> 0 THEN ROUND((v_password_set   ::numeric / v_token_validated)* 100, 1) ELSE 0 END,
-    'password_to_activation_rate',  CASE WHEN v_password_set   > 0 THEN ROUND((v_activated      ::numeric / v_password_set  ) * 100, 1) ELSE 0 END,
-    'activation_to_login_rate',     CASE WHEN v_activated      > 0 THEN ROUND((v_first_login    ::numeric / v_activated     ) * 100, 1) ELSE 0 END,
-    'activation_to_capture_rate',   CASE WHEN v_activated      > 0 THEN ROUND((v_first_capture  ::numeric / v_activated     ) * 100, 1) ELSE 0 END,
-    'activation_to_day2_rate',      CASE WHEN v_activated      > 0 THEN ROUND((v_day2           ::numeric / v_activated     ) * 100, 1) ELSE 0 END,
-    'activation_to_day7_rate',      CASE WHEN v_activated      > 0 THEN ROUND((v_day7           ::numeric / v_activated     ) * 100, 1) ELSE 0 END
+    'signup_to_email_rate',         CASE WHEN v_signed_up       > 0 THEN ROUND((v_email_sent     ::numeric / v_signed_up      ) * 100, 1) ELSE 0 END,
+    'signup_to_approval_rate',      CASE WHEN v_signed_up       > 0 THEN ROUND((v_approval_sent  ::numeric / v_signed_up      ) * 100, 1) ELSE 0 END,
+    'approval_to_open_rate',        CASE WHEN v_approval_sent   > 0 THEN ROUND((v_link_opened    ::numeric / v_approval_sent  ) * 100, 1) ELSE 0 END,
+    'open_to_valid_token_rate',     CASE WHEN v_link_opened     > 0 THEN ROUND((v_token_validated::numeric / v_link_opened    ) * 100, 1) ELSE 0 END,
+    'valid_token_to_password_rate', CASE WHEN v_token_validated > 0 THEN ROUND((v_password_set   ::numeric / v_token_validated) * 100, 1) ELSE 0 END,
+    'password_to_activation_rate',  CASE WHEN v_password_set    > 0 THEN ROUND((v_activated      ::numeric / v_password_set   ) * 100, 1) ELSE 0 END,
+    'activation_to_login_rate',     CASE WHEN v_activated       > 0 THEN ROUND((v_first_login    ::numeric / v_activated      ) * 100, 1) ELSE 0 END,
+    'activation_to_capture_rate',   CASE WHEN v_activated       > 0 THEN ROUND((v_first_capture  ::numeric / v_activated      ) * 100, 1) ELSE 0 END,
+    'activation_to_day2_rate',      CASE WHEN v_activated       > 0 THEN ROUND((v_day2           ::numeric / v_activated      ) * 100, 1) ELSE 0 END,
+    'activation_to_day7_rate',      CASE WHEN v_activated       > 0 THEN ROUND((v_day7           ::numeric / v_activated      ) * 100, 1) ELSE 0 END
   );
 
   RETURN jsonb_build_object(
