@@ -204,6 +204,14 @@ export default function AdminAnalyticsPage() {
   const [planDistribution, setPlanDistribution] = useState<{ early_access: number; pro: number; free: number; total: number; india: number; international: number }>({ early_access: 0, pro: 0, free: 0, total: 0, india: 0, international: 0 });
   const [loading, setLoading] = useState(true);
 
+  // ── Authoritative aggregates from production analytics RPCs ──
+  // (deployed on qanoiqzanywjrcuhsmny — see supabase/manual-deploy/analytics-rebuild-rpcs.sql)
+  const [rolloutSignals, setRolloutSignals] = useState<any | null>(null);
+  const [referralSignals, setReferralSignals] = useState<any | null>(null);
+  const [engagementSignals, setEngagementSignals] = useState<any | null>(null);
+  const [retentionRadarRpc, setRetentionRadarRpc] = useState<any | null>(null);
+  const [cohortQualityRpc, setCohortQualityRpc] = useState<any | null>(null);
+
   // Rollout decision center state
   const [excludedCandidates, setExcludedCandidates] = useState<Set<string>>(new Set());
   const [rolloutNotes, setRolloutNotes] = useState("");
@@ -229,6 +237,20 @@ export default function AdminAnalyticsPage() {
         setProjects((d.projects as ProjectRow[]) || []);
         setMemories((d.memories as MemoryRow[]) || []);
       }
+
+      // ── Production analytics RPCs (parallel, fire-and-forget on per-call errors) ──
+      const [rollR, refR, engR, retR, cohR] = await Promise.all([
+        supabase.rpc("get_rollout_signals" as any),
+        supabase.rpc("get_referral_velocity" as any),
+        supabase.rpc("get_engagement_signals" as any),
+        supabase.rpc("get_retention_radar" as any),
+        supabase.rpc("get_cohort_quality" as any),
+      ]);
+      if (rollR.error) console.error("get_rollout_signals error:", rollR.error); else setRolloutSignals(rollR.data);
+      if (refR.error)  console.error("get_referral_velocity error:", refR.error);  else setReferralSignals(refR.data);
+      if (engR.error)  console.error("get_engagement_signals error:", engR.error); else setEngagementSignals(engR.data);
+      if (retR.error)  console.error("get_retention_radar error:", retR.error);    else setRetentionRadarRpc(retR.data);
+      if (cohR.error)  console.error("get_cohort_quality error:", cohR.error);     else setCohortQualityRpc(cohR.data);
 
       // Fetch rollout history
       const rh = await supabase
