@@ -593,7 +593,7 @@ export default function AdminAnalyticsPage() {
     setSubmittingDecision(false);
   };
 
-  /* ── Engagement heat signals ── */
+  /* ── Engagement heat signals (overlaid with get_engagement_signals RPC when available) ── */
   const engagementHeat = useMemo(() => {
     const activeUsers = Math.max(activation.active7d, 1);
     const sevenDaysAgo = subDays(new Date(), 7);
@@ -602,11 +602,29 @@ export default function AdminAnalyticsPage() {
     const mem7d = memories.filter((m) => isAfter(new Date(m.created_at), sevenDaysAgo));
     const voice7d = captures.filter((c) => c.input_type === "voice" && isAfter(new Date(c.created_at), sevenDaysAgo));
 
+    // Local fallbacks
+    let capTotal   = cap7d.length,   capPer   = cap7d.length / activeUsers;
+    let projTotal  = proj7d.length,  projPer  = proj7d.length / activeUsers;
+    let memTotal   = mem7d.length,   memPer   = mem7d.length / activeUsers;
+    let voiceTotal = voice7d.length, voicePer = voice7d.length / activeUsers;
+
+    if (engagementSignals) {
+      const t = engagementSignals.totals_7d || {};
+      capTotal   = Number(t.captures ?? capTotal);
+      projTotal  = Number(t.projects ?? projTotal);
+      memTotal   = Number(t.memories ?? memTotal);
+      voiceTotal = Number(t.voice    ?? voiceTotal);
+      capPer     = Number(engagementSignals.captures_per_user ?? capPer);
+      projPer    = Number(engagementSignals.projects_per_user ?? projPer);
+      memPer     = Number(engagementSignals.memories_per_user ?? memPer);
+      voicePer   = Number(engagementSignals.voice_per_user    ?? voicePer);
+    }
+
     return {
-      captures: { total: cap7d.length, perUser: cap7d.length / activeUsers, level: getEngagementLevel(cap7d.length / activeUsers) },
-      projects: { total: proj7d.length, perUser: proj7d.length / activeUsers, level: getEngagementLevel(proj7d.length / activeUsers) },
-      memories: { total: mem7d.length, perUser: mem7d.length / activeUsers, level: getEngagementLevel(mem7d.length / activeUsers) },
-      voice: { total: voice7d.length, perUser: voice7d.length / activeUsers, level: getEngagementLevel(voice7d.length / activeUsers) },
+      captures: { total: capTotal,   perUser: capPer,   level: getEngagementLevel(capPer) },
+      projects: { total: projTotal,  perUser: projPer,  level: getEngagementLevel(projPer) },
+      memories: { total: memTotal,   perUser: memPer,   level: getEngagementLevel(memPer) },
+      voice:    { total: voiceTotal, perUser: voicePer, level: getEngagementLevel(voicePer) },
     };
   }, [captures, projects, memories, activation.active7d]);
 
