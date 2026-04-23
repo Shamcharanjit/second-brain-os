@@ -14,17 +14,20 @@
 -- ════════════════════════════════════════════════════════════════════════════
 
 -- ─────────────────────────── 0. Founder guard helper ───────────────────────
+-- Pure SQL implementation (no PL/pgSQL variables) so it cannot be
+-- mis-parsed as referencing a "relation" named v_email.
 CREATE OR REPLACE FUNCTION public._is_founder_admin()
 RETURNS boolean
-LANGUAGE plpgsql
+LANGUAGE sql
 STABLE SECURITY DEFINER
 SET search_path = public
 AS $$
-DECLARE v_email text;
-BEGIN
-  SELECT email INTO v_email FROM auth.users WHERE id = auth.uid();
-  RETURN LOWER(COALESCE(v_email, '')) IN ('shamcharan@icloud.com');
-END;
+  SELECT EXISTS (
+    SELECT 1
+    FROM auth.users u
+    WHERE u.id = auth.uid()
+      AND LOWER(u.email) = 'shamcharan@icloud.com'
+  );
 $$;
 
 REVOKE ALL ON FUNCTION public._is_founder_admin() FROM PUBLIC;
