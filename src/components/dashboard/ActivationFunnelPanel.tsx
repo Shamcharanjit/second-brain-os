@@ -64,27 +64,39 @@ export default function ActivationFunnelPanel() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [rebuiltRes, healthRes, journeyRes] = await Promise.all([
-        // Authoritative funnel RPC (production-deployed)
-        supabase.rpc("get_rebuilt_funnel" as any),
-        supabase.rpc("get_activation_health_score" as any),
-        supabase
-          .from("activation_funnel_events" as any)
-          .select("waitlist_signup_email, event_type, created_at, user_id")
-          .order("created_at", { ascending: false })
-          .limit(500),
-      ]);
-
-      if (rebuiltRes.error) {
-        console.error("[ActivationFunnelPanel] get_rebuilt_funnel error:", rebuiltRes.error);
+      const { data: funnelData, error: funnelError } = await supabase.rpc("get_rebuilt_funnel" as any);
+      
+      if (funnelError) {
+        console.error("[ActivationFunnelPanel] get_rebuilt_funnel error:", funnelError);
       }
-      const funnelPayload = rebuiltRes.data as any;
-      if (funnelPayload) setSummary(funnelPayload);
-      if (healthRes.data) setHealth(healthRes.data as any);
+      
+      if (funnelData) {
+        console.log("[ActivationFunnelPanel] Funnel data:", funnelData);
+        setSummary(funnelData as FunnelSummary);
+      }
 
-      // Build journey rows from raw events
-      if (journeyRes.data) {
-        const events = journeyRes.data as any[];
+      const { data: healthData, error: healthError } = await supabase.rpc("get_activation_health_score" as any);
+      
+      if (healthError) {
+        console.error("[ActivationFunnelPanel] get_activation_health_score error:", healthError);
+      }
+      
+      if (healthData) {
+        setHealth(healthData as HealthScore);
+      }
+
+      const { data: eventsData, error: eventsError } = await supabase
+        .from("activation_funnel_events" as any)
+        .select("waitlist_signup_email, event_type, created_at, user_id")
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (eventsError) {
+        console.error("[ActivationFunnelPanel] activation_funnel_events error:", eventsError);
+      }
+
+      if (eventsData) {
+        const events = eventsData as any[];
         const byEmail = new Map<string, JourneyRow>();
 
         for (const e of events) {
@@ -211,8 +223,9 @@ export default function ActivationFunnelPanel() {
         <p className="text-xs font-medium text-muted-foreground">Full Activation Funnel</p>
         <div className="space-y-1">
           {FUNNEL_STAGES.map((stage, i) => {
-            const count = counts[stage.key] || 0;
-            const pct = i === 0 ? 100 : (maxCount > 0 ? Math.round((count / (counts[FUNNEL_STAGES[0].key] || 1)) * 100) : 0);
+            const count = counts[stage.key] ?? 0;
+            const baseCount = counts[FUNNEL_STAGES[0].key] || 1;
+            const pct = i === 0 ? 100 : Math.round((count / baseCount) * 100);
             const StageIcon = stage.icon;
             return (
               <div key={stage.key}>
@@ -250,7 +263,6 @@ export default function ActivationFunnelPanel() {
         <p className="text-xs font-medium text-muted-foreground">Stage-to-Stage Conversion Rates</p>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            // Keys aligned with get_rebuilt_funnel() rates payload
             { label: "Signup → Email", key: "signup_to_email_rate" },
             { label: "Signup → Approval", key: "signup_to_approval_rate" },
             { label: "Approval → Open", key: "approval_to_open_rate" },
@@ -262,7 +274,7 @@ export default function ActivationFunnelPanel() {
             { label: "Active → Day 2", key: "activation_to_day2_rate" },
             { label: "Active → Day 7", key: "activation_to_day7_rate" },
           ].map((r) => {
-            const val = rates[r.key] || 0;
+            const val = rates[r.key] ?? 0;
             const color = val >= 80 ? "text-primary" : val >= 50 ? "text-blue-500" : val >= 25 ? "text-yellow-500" : "text-destructive";
             return (
               <div key={r.key} className="rounded-lg border border-border bg-background p-3 space-y-1">
