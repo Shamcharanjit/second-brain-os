@@ -40,17 +40,22 @@ export default function AnnouncementBanner() {
     if (!cloudAvailable || !user) return;
 
     const fetch = async () => {
-      const { data } = await supabase
-        .from("announcements" as any)
-        .select("id, title, message, cta_label, cta_link")
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .limit(1);
+      try {
+        const { data, error } = await supabase
+          .from("announcements" as any)
+          .select("id, title, message, cta_label, cta_link")
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
+          .limit(1);
 
-      const latest = (data as any as Announcement[])?.[0];
-      if (latest && !getDismissed().includes(latest.id)) {
-        setAnnouncement(latest);
-        setVisible(true);
+        if (error) return; // table missing or RLS blocked → silently ignore
+        const latest = (data as any as Announcement[])?.[0];
+        if (latest && !getDismissed().includes(latest.id)) {
+          setAnnouncement(latest);
+          setVisible(true);
+        }
+      } catch {
+        // network/parse errors → silent fallback
       }
     };
 
