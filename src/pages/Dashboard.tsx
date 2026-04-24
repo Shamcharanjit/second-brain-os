@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardWelcome from "@/components/dashboard/DashboardWelcome";
@@ -7,6 +8,7 @@ import DashboardStrategy from "@/components/dashboard/DashboardStrategy";
 import DashboardMomentum from "@/components/dashboard/DashboardMomentum";
 import DashboardAlerts from "@/components/dashboard/DashboardAlerts";
 import CloudUpgradeNudge from "@/components/dashboard/CloudUpgradeNudge";
+import FirstCaptureFlow from "@/components/dashboard/FirstCaptureFlow";
 import CaptureInput from "@/components/CaptureInput";
 import { Sparkles, Inbox, FolderKanban, Brain, BarChart3 } from "lucide-react";
 import { useFirstRun } from "@/hooks/useFirstRun";
