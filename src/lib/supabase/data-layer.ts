@@ -72,6 +72,53 @@ export async function syncCaptures(userId: string, captures: Capture[]): Promise
   }
 }
 
+async function writeCaptures(userId: string, captures: Capture[]): Promise<boolean> {
+  const ids = captures.map((capture) => capture.id).filter(Boolean);
+
+  const { data: existingRows, error: existingError } = await supabase
+    .from("user_captures")
+    .select("id")
+    .eq("user_id", userId)
+    .in("id", ids);
+
+  if (existingError) {
+    console.error("writeCaptures existing lookup error:", existingError);
+    return false;
+  }
+
+  const existingIds = new Set((existingRows ?? []).map((row: { id: string }) => row.id));
+  const newRows = captures
+    .filter((capture) => !existingIds.has(capture.id))
+    .map((capture) => captureToDbRow(userId, capture));
+  const rowsToUpdate = captures
+    .filter((capture) => existingIds.has(capture.id))
+    .map((capture) => captureToDbRow(userId, capture));
+
+  if (newRows.length > 0) {
+    const { error: insertError } = await supabase.from("user_captures").insert(newRows as any);
+    if (insertError) {
+      console.error("writeCaptures insert error:", insertError);
+      return false;
+    }
+  }
+
+  for (const row of rowsToUpdate) {
+    const { id, ...updates } = row;
+    const { error: updateError } = await supabase
+      .from("user_captures")
+      .update(updates as any)
+      .eq("id", id)
+      .eq("user_id", userId);
+
+    if (updateError) {
+      console.error("writeCaptures update error:", updateError);
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function dbCaptureToCapture(row: any): Capture {
   return {
     id: row.id,
