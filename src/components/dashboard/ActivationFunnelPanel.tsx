@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase/client";
 import {
   ArrowDown, Loader2, TrendingUp, Activity,
   Users, Send, Target, UserCheck, Rocket, Zap,
-  BookOpen, RefreshCw, ShieldCheck, AlertTriangle, CheckCircle2,
+  RefreshCw, ShieldCheck, AlertTriangle, CheckCircle2,
   Gauge, Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,23 +37,6 @@ const FUNNEL_COUNT_KEYS = [
   "day2_retained",
   "day7_retained",
 ] as const;
-
-const normalizeFunnelSummary = (input: unknown): FunnelSummary => {
-  const source = (input && typeof input === "object" ? input : {}) as Partial<FunnelSummary>;
-  const rawCounts = source.counts && typeof source.counts === "object" ? source.counts : {};
-  const rawRates = source.rates && typeof source.rates === "object" ? source.rates : {};
-
-  const counts = Object.fromEntries(
-    FUNNEL_COUNT_KEYS.map((key) => [key, Number(rawCounts[key] ?? 0)]),
-  ) as Record<string, number>;
-
-  const rates = Object.entries(rawRates).reduce<Record<string, number>>((acc, [key, value]) => {
-    acc[key] = Number(value ?? 0);
-    return acc;
-  }, {});
-
-  return { counts, rates };
-};
 
 const FUNNEL_STAGES = [
   { key: "waitlist_signed_up", label: "Waitlist Signup", icon: Users },
