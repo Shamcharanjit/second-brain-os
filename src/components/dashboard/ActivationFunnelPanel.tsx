@@ -232,11 +232,6 @@ export default function ActivationFunnelPanel() {
       {/* ── Funnel Visualization ── */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
         <p className="text-xs font-medium text-muted-foreground">Full Activation Funnel</p>
-        <div className="rounded-lg border border-border bg-background px-3 py-2 text-[11px] text-muted-foreground">
-          <span className="font-medium text-foreground">Analytics RPC Source:</span> get_rebuilt_funnel
-          <span className="mx-2 text-border">•</span>
-          Counts: waitlist_signed_up={getMetric(counts, "waitlist_signed_up")}
-        </div>
         <div className="space-y-1">
           {FUNNEL_STAGES.map((stage, i) => {
             const count = getMetric(counts, stage.key);
