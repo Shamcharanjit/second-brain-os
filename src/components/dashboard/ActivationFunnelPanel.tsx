@@ -23,6 +23,37 @@ type HealthScore = {
   stage_rates: Record<string, number>;
 };
 
+const FUNNEL_COUNT_KEYS = [
+  "waitlist_signed_up",
+  "waitlist_email_sent",
+  "approval_email_sent",
+  "invite_link_opened",
+  "invite_token_validated",
+  "password_set",
+  "activation_completed",
+  "first_login",
+  "first_capture_created",
+  "day2_retained",
+  "day7_retained",
+] as const;
+
+const normalizeFunnelSummary = (input: unknown): FunnelSummary => {
+  const source = (input && typeof input === "object" ? input : {}) as Partial<FunnelSummary>;
+  const rawCounts = source.counts && typeof source.counts === "object" ? source.counts : {};
+  const rawRates = source.rates && typeof source.rates === "object" ? source.rates : {};
+
+  const counts = Object.fromEntries(
+    FUNNEL_COUNT_KEYS.map((key) => [key, Number(rawCounts[key] ?? 0)]),
+  ) as Record<string, number>;
+
+  const rates = Object.entries(rawRates).reduce<Record<string, number>>((acc, [key, value]) => {
+    acc[key] = Number(value ?? 0);
+    return acc;
+  }, {});
+
+  return { counts, rates };
+};
+
 const FUNNEL_STAGES = [
   { key: "waitlist_signed_up", label: "Waitlist Signup", icon: Users },
   { key: "waitlist_email_sent", label: "Waitlist Email", icon: Send },
@@ -52,7 +83,7 @@ export default function ActivationFunnelPanel() {
       
       if (funnelData) {
         console.log("[ActivationFunnelPanel] Funnel data:", funnelData);
-        setSummary(funnelData as FunnelSummary);
+        setSummary(normalizeFunnelSummary(funnelData));
       }
 
       const { data: healthData, error: healthError } = await supabase.rpc("get_activation_health_score" as any);
@@ -80,7 +111,7 @@ export default function ActivationFunnelPanel() {
     );
   }
 
-  const counts = summary?.counts || {};
+  const counts = summary?.counts ?? normalizeFunnelSummary(null).counts;
   const rates = summary?.rates || {};
   const maxCount = Math.max(...FUNNEL_STAGES.map(s => counts[s.key] || 0), 1);
 
