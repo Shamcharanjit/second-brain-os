@@ -17,7 +17,6 @@ import { format, subDays, subHours, isAfter, differenceInDays } from "date-fns";
 import ConversionIntelligencePanel from "@/components/dashboard/ConversionIntelligencePanel";
 import ConversionCampaignPanel from "@/components/dashboard/ConversionCampaignPanel";
 import PromptExperimentationPanel from "@/components/dashboard/PromptExperimentationPanel";
-import UpgradeTimingPanel from "@/components/dashboard/UpgradeTimingPanel";
 import PaywallIntelligencePanel from "@/components/dashboard/PaywallIntelligencePanel";
 import ActivationFunnelPanel from "@/components/dashboard/ActivationFunnelPanel";
 import ReferralVelocityPanel from "@/components/dashboard/ReferralVelocityPanel";
@@ -1270,11 +1269,6 @@ export default function AdminAnalyticsPage() {
             {/* ═══ PROMPT A/B EXPERIMENTATION ═══ */}
             <section className="space-y-3">
               <PromptExperimentationPanel />
-            </section>
-
-            {/* ═══ UPGRADE TIMING ENGINE ═══ */}
-            <section className="space-y-3">
-              <UpgradeTimingPanel />
             </section>
 
             {/* ═══ PAYWALL INTELLIGENCE ═══ */}
