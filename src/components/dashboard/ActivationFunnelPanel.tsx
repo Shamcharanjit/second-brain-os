@@ -3,24 +3,25 @@ import { supabase } from "@/lib/supabase/client";
 import {
   ArrowDown, Loader2, TrendingUp, Activity,
   Users, Send, Target, UserCheck, Rocket, Zap,
-  BookOpen, RefreshCw, ShieldCheck, AlertTriangle, CheckCircle2,
+  RefreshCw, ShieldCheck, AlertTriangle, CheckCircle2,
   Gauge, Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
+type RpcMetricValue = number | string | null | undefined;
+
 type FunnelSummary = {
-  counts: Record<string, number>;
-  rates: Record<string, number>;
+  counts?: Record<string, RpcMetricValue>;
+  rates?: Record<string, RpcMetricValue>;
 };
 
-type HealthScore = {
-  activation_health_score: number;
-  health_label: string;
-  biggest_dropoff_stage: string;
-  strongest_stage: string;
-  recommended_action: string;
-  stage_rates: Record<string, number>;
+type DerivedHealth = {
+  activationHealthScore: number;
+  healthLabel: "strong" | "stable" | "weak" | "critical";
+  biggestDropoffStage: string;
+  strongestStage: string;
+  recommendedAction: string;
 };
 
 const FUNNEL_COUNT_KEYS = [
@@ -37,23 +38,6 @@ const FUNNEL_COUNT_KEYS = [
   "day7_retained",
 ] as const;
 
-const normalizeFunnelSummary = (input: unknown): FunnelSummary => {
-  const source = (input && typeof input === "object" ? input : {}) as Partial<FunnelSummary>;
-  const rawCounts = source.counts && typeof source.counts === "object" ? source.counts : {};
-  const rawRates = source.rates && typeof source.rates === "object" ? source.rates : {};
-
-  const counts = Object.fromEntries(
-    FUNNEL_COUNT_KEYS.map((key) => [key, Number(rawCounts[key] ?? 0)]),
-  ) as Record<string, number>;
-
-  const rates = Object.entries(rawRates).reduce<Record<string, number>>((acc, [key, value]) => {
-    acc[key] = Number(value ?? 0);
-    return acc;
-  }, {});
-
-  return { counts, rates };
-};
-
 const FUNNEL_STAGES = [
   { key: "waitlist_signed_up", label: "Waitlist Signup", icon: Users },
   { key: "waitlist_email_sent", label: "Waitlist Email", icon: Send },
@@ -67,15 +51,83 @@ const FUNNEL_STAGES = [
   { key: "day2_retained", label: "Day 2 Return", icon: Clock },
   { key: "day7_retained", label: "Day 7 Return", icon: TrendingUp },
 ];
+
+const getMetric = (record: Record<string, RpcMetricValue> | undefined, key: string) => Number(record?.[key] ?? 0);
+
+const HEALTH_RATE_KEYS = [
+  "signup_to_email_rate",
+  "signup_to_approval_rate",
+  "approval_to_open_rate",
+  "open_to_valid_token_rate",
+  "valid_token_to_password_rate",
+  "password_to_activation_rate",
+  "activation_to_login_rate",
+  "activation_to_capture_rate",
+  "activation_to_day2_rate",
+  "activation_to_day7_rate",
+] as const;
+
+const deriveHealth = (summary: FunnelSummary | null): DerivedHealth | null => {
+  if (!summary) return null;
+
+  const counts = summary.counts;
+  const rates = summary.rates;
+  const healthRates = HEALTH_RATE_KEYS.map((key) => getMetric(rates, key));
+  const averageRate = healthRates.length
+    ? healthRates.reduce((total, value) => total + value, 0) / healthRates.length
+    : 0;
+
+  const activationToDay7 = getMetric(rates, "activation_to_day7_rate");
+  const activationToCapture = getMetric(rates, "activation_to_capture_rate");
+  const activationToLogin = getMetric(rates, "activation_to_login_rate");
+  const activationHealthScore = Math.round((averageRate * 0.6) + (activationToCapture * 0.25) + (activationToDay7 * 0.15));
+
+  let healthLabel: DerivedHealth["healthLabel"] = "critical";
+  if (activationHealthScore >= 80) healthLabel = "strong";
+  else if (activationHealthScore >= 55) healthLabel = "stable";
+  else if (activationHealthScore >= 25) healthLabel = "weak";
+
+  let biggestDropoffStage = FUNNEL_STAGES[0].label;
+  let biggestDropoffValue = -1;
+
+  for (let index = 1; index < FUNNEL_STAGES.length; index += 1) {
+    const previous = getMetric(counts, FUNNEL_STAGES[index - 1].key);
+    const current = getMetric(counts, FUNNEL_STAGES[index].key);
+    const dropoff = Math.max(previous - current, 0);
+
+    if (dropoff > biggestDropoffValue) {
+      biggestDropoffValue = dropoff;
+      biggestDropoffStage = FUNNEL_STAGES[index].label;
+    }
+  }
+
+  const strongestStage = activationToLogin >= activationToCapture
+    ? "First Login"
+    : "First Capture";
+
+  const recommendedAction = activationToCapture < 50
+    ? "Improve first capture conversion after login"
+    : activationToDay7 < 25
+      ? "Improve early retention after activation"
+      : "Monitor invite-open conversion for the next cohort";
+
+  return {
+    activationHealthScore,
+    healthLabel,
+    biggestDropoffStage,
+    strongestStage,
+    recommendedAction,
+  };
+};
+
 export default function ActivationFunnelPanel() {
   const [summary, setSummary] = useState<FunnelSummary | null>(null);
-  const [health, setHealth] = useState<HealthScore | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: funnelData, error: funnelError } = await supabase.rpc("get_rebuilt_funnel" as any);
+      const { data: funnelData, error: funnelError } = await supabase.rpc("get_rebuilt_funnel");
       
       if (funnelError) {
         console.error("[ActivationFunnelPanel] get_rebuilt_funnel error:", funnelError);
@@ -83,17 +135,7 @@ export default function ActivationFunnelPanel() {
       
       if (funnelData) {
         console.log("[ActivationFunnelPanel] Funnel data:", funnelData);
-        setSummary(normalizeFunnelSummary(funnelData));
-      }
-
-      const { data: healthData, error: healthError } = await supabase.rpc("get_activation_health_score" as any);
-      
-      if (healthError) {
-        console.error("[ActivationFunnelPanel] get_activation_health_score error:", healthError);
-      }
-      
-      if (healthData) {
-        setHealth(healthData as HealthScore);
+        setSummary((funnelData ?? null) as FunnelSummary | null);
       }
     } catch (err) {
       console.error("[ActivationFunnelPanel] fetch error:", err);
@@ -111,17 +153,17 @@ export default function ActivationFunnelPanel() {
     );
   }
 
-  const counts = summary?.counts ?? normalizeFunnelSummary(null).counts;
-  const rates = summary?.rates || {};
-  const maxCount = Math.max(...FUNNEL_STAGES.map(s => counts[s.key] || 0), 1);
+  const counts = summary?.counts;
+  const rates = summary?.rates;
+  const health = deriveHealth(summary);
 
-  const healthColor = health?.health_label === "strong" ? "text-primary" :
-    health?.health_label === "stable" ? "text-blue-500" :
-    health?.health_label === "weak" ? "text-yellow-500" : "text-destructive";
+  const healthColor = health?.healthLabel === "strong" ? "text-primary" :
+    health?.healthLabel === "stable" ? "text-blue-500" :
+    health?.healthLabel === "weak" ? "text-yellow-500" : "text-destructive";
 
-  const healthBg = health?.health_label === "strong" ? "bg-primary/5 border-primary/30" :
-    health?.health_label === "stable" ? "bg-blue-500/5 border-blue-500/30" :
-    health?.health_label === "weak" ? "bg-yellow-500/5 border-yellow-500/30" :
+  const healthBg = health?.healthLabel === "strong" ? "bg-primary/5 border-primary/30" :
+    health?.healthLabel === "stable" ? "bg-blue-500/5 border-blue-500/30" :
+    health?.healthLabel === "weak" ? "bg-yellow-500/5 border-yellow-500/30" :
     "bg-destructive/5 border-destructive/30";
 
   return (
@@ -144,21 +186,21 @@ export default function ActivationFunnelPanel() {
           </div>
           <div className="flex items-baseline gap-2">
             <p className={cn("text-4xl font-bold tracking-tight", healthColor)}>
-              {Math.round(health.activation_health_score)}
+              {Math.round(health.activationHealthScore)}
             </p>
             <span className="text-sm text-muted-foreground">/ 100</span>
             <span className={cn("text-xs font-semibold uppercase ml-2", healthColor)}>
-              {health.health_label}
+              {health.healthLabel}
             </span>
           </div>
           <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
             <div
               className={cn("h-full rounded-full transition-all",
-                health.health_label === "strong" ? "bg-primary" :
-                health.health_label === "stable" ? "bg-blue-500" :
-                health.health_label === "weak" ? "bg-yellow-500" : "bg-destructive"
+                health.healthLabel === "strong" ? "bg-primary" :
+                health.healthLabel === "stable" ? "bg-blue-500" :
+                health.healthLabel === "weak" ? "bg-yellow-500" : "bg-destructive"
               )}
-              style={{ width: `${health.activation_health_score}%` }}
+              style={{ width: `${health.activationHealthScore}%` }}
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
@@ -166,21 +208,21 @@ export default function ActivationFunnelPanel() {
               <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
               <div>
                 <p className="text-[10px] text-muted-foreground">Biggest Dropoff</p>
-                <p className="text-xs font-medium text-foreground">{health.biggest_dropoff_stage.replace(/_/g, " ")}</p>
+                <p className="text-xs font-medium text-foreground">{health.biggestDropoffStage}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
               <div>
                 <p className="text-[10px] text-muted-foreground">Strongest Stage</p>
-                <p className="text-xs font-medium text-foreground">{health.strongest_stage.replace(/_/g, " ")}</p>
+                <p className="text-xs font-medium text-foreground">{health.strongestStage}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Rocket className="h-3.5 w-3.5 text-primary shrink-0" />
               <div>
                 <p className="text-[10px] text-muted-foreground">Recommended Action</p>
-                <p className="text-xs font-medium text-foreground">{health.recommended_action}</p>
+                <p className="text-xs font-medium text-foreground">{health.recommendedAction}</p>
               </div>
             </div>
           </div>
@@ -190,10 +232,15 @@ export default function ActivationFunnelPanel() {
       {/* ── Funnel Visualization ── */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
         <p className="text-xs font-medium text-muted-foreground">Full Activation Funnel</p>
+        <div className="rounded-lg border border-border bg-background px-3 py-2 text-[11px] text-muted-foreground">
+          <span className="font-medium text-foreground">Analytics RPC Source:</span> get_rebuilt_funnel
+          <span className="mx-2 text-border">•</span>
+          Counts: waitlist_signed_up={getMetric(counts, "waitlist_signed_up")}
+        </div>
         <div className="space-y-1">
           {FUNNEL_STAGES.map((stage, i) => {
-            const count = counts[stage.key] ?? 0;
-            const baseCount = counts[FUNNEL_STAGES[0].key] || 1;
+            const count = getMetric(counts, stage.key);
+            const baseCount = getMetric(counts, FUNNEL_STAGES[0].key) || 1;
             const pct = i === 0 ? 100 : Math.round((count / baseCount) * 100);
             const StageIcon = stage.icon;
             return (
@@ -243,7 +290,7 @@ export default function ActivationFunnelPanel() {
             { label: "Active → Day 2", key: "activation_to_day2_rate" },
             { label: "Active → Day 7", key: "activation_to_day7_rate" },
           ].map((r) => {
-            const val = rates[r.key] ?? 0;
+            const val = getMetric(rates, r.key);
             const color = val >= 80 ? "text-primary" : val >= 50 ? "text-blue-500" : val >= 25 ? "text-yellow-500" : "text-destructive";
             return (
               <div key={r.key} className="rounded-lg border border-border bg-background p-3 space-y-1">
