@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase/client";
 import {
-  ArrowRight, ArrowDown, Loader2, TrendingUp, Activity,
-  Users, Send, Target, UserCheck, Rocket, Zap, FolderKanban,
+  ArrowDown, Loader2, TrendingUp, Activity,
+  Users, Send, Target, UserCheck, Rocket, Zap,
   BookOpen, RefreshCw, ShieldCheck, AlertTriangle, CheckCircle2,
   Gauge, Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
 
 type FunnelSummary = {
   counts: Record<string, number>;
@@ -24,17 +23,6 @@ type HealthScore = {
   stage_rates: Record<string, number>;
 };
 
-type JourneyRow = {
-  waitlist_signup_email: string;
-  invited_at: string | null;
-  activated_at: string | null;
-  first_login_at: string | null;
-  first_capture_at: string | null;
-  second_session_at: string | null;
-  day2_retained: boolean;
-  day7_retained: boolean;
-};
-
 const FUNNEL_STAGES = [
   { key: "waitlist_signed_up", label: "Waitlist Signup", icon: Users },
   { key: "waitlist_email_sent", label: "Waitlist Email", icon: Send },
@@ -48,17 +36,9 @@ const FUNNEL_STAGES = [
   { key: "day2_retained", label: "Day 2 Return", icon: Clock },
   { key: "day7_retained", label: "Day 7 Return", icon: TrendingUp },
 ];
-
-function maskEmail(email: string): string {
-  const [local, domain] = email.split("@");
-  if (!domain) return email;
-  return local.slice(0, 2) + "***@" + domain;
-}
-
 export default function ActivationFunnelPanel() {
   const [summary, setSummary] = useState<FunnelSummary | null>(null);
   const [health, setHealth] = useState<HealthScore | null>(null);
-  const [journeys, setJourneys] = useState<JourneyRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
@@ -83,48 +63,6 @@ export default function ActivationFunnelPanel() {
       
       if (healthData) {
         setHealth(healthData as HealthScore);
-      }
-
-      const { data: eventsData, error: eventsError } = await supabase
-        .from("activation_funnel_events" as any)
-        .select("waitlist_signup_email, event_type, created_at, user_id")
-        .order("created_at", { ascending: false })
-        .limit(500);
-
-      if (eventsError) {
-        console.error("[ActivationFunnelPanel] activation_funnel_events error:", eventsError);
-      }
-
-      if (eventsData) {
-        const events = eventsData as any[];
-        const byEmail = new Map<string, JourneyRow>();
-
-        for (const e of events) {
-          const email = e.waitlist_signup_email || e.user_id || "unknown";
-          if (!byEmail.has(email)) {
-            byEmail.set(email, {
-              waitlist_signup_email: e.waitlist_signup_email || `user:${e.user_id?.slice(0, 8)}`,
-              invited_at: null,
-              activated_at: null,
-              first_login_at: null,
-              first_capture_at: null,
-              second_session_at: null,
-              day2_retained: false,
-              day7_retained: false,
-            });
-          }
-          const j = byEmail.get(email)!;
-          switch (e.event_type) {
-            case "approval_email_sent": j.invited_at = j.invited_at || e.created_at; break;
-            case "activation_completed": j.activated_at = j.activated_at || e.created_at; break;
-            case "first_login": j.first_login_at = j.first_login_at || e.created_at; break;
-            case "first_capture_created": j.first_capture_at = j.first_capture_at || e.created_at; break;
-            case "second_session_returned": j.second_session_at = j.second_session_at || e.created_at; break;
-            case "day2_retained": j.day2_retained = true; break;
-            case "day7_retained": j.day7_retained = true; break;
-          }
-        }
-        setJourneys(Array.from(byEmail.values()).slice(0, 20));
       }
     } catch (err) {
       console.error("[ActivationFunnelPanel] fetch error:", err);
@@ -286,57 +224,6 @@ export default function ActivationFunnelPanel() {
         </div>
       </div>
 
-      {/* ── Recent Activation Journeys ── */}
-      {journeys.length > 0 && (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="px-4 py-3 border-b bg-muted/30 flex items-center gap-2">
-            <Activity className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-medium">Recent Activation Journeys</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/20">
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">User</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">Invited</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">Activated</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">1st Login</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">1st Capture</th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-muted-foreground">Day 2</th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-muted-foreground">Day 7</th>
-                </tr>
-              </thead>
-              <tbody>
-                {journeys.map((j, i) => (
-                  <tr key={i} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-2 text-xs font-medium">
-                      {j.waitlist_signup_email.startsWith("user:") ? j.waitlist_signup_email : maskEmail(j.waitlist_signup_email)}
-                    </td>
-                    <td className="px-4 py-2 text-[10px] text-muted-foreground">
-                      {j.invited_at ? format(new Date(j.invited_at), "MMM d") : "—"}
-                    </td>
-                    <td className="px-4 py-2 text-[10px] text-muted-foreground">
-                      {j.activated_at ? format(new Date(j.activated_at), "MMM d") : "—"}
-                    </td>
-                    <td className="px-4 py-2 text-[10px] text-muted-foreground">
-                      {j.first_login_at ? format(new Date(j.first_login_at), "MMM d") : "—"}
-                    </td>
-                    <td className="px-4 py-2 text-[10px] text-muted-foreground">
-                      {j.first_capture_at ? format(new Date(j.first_capture_at), "MMM d") : "—"}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {j.day2_retained ? <CheckCircle2 className="h-3 w-3 text-primary mx-auto" /> : <span className="text-[10px] text-muted-foreground/40">—</span>}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {j.day7_retained ? <CheckCircle2 className="h-3 w-3 text-primary mx-auto" /> : <span className="text-[10px] text-muted-foreground/40">—</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
