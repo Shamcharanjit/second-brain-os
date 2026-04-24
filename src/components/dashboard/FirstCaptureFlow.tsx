@@ -237,7 +237,7 @@ export default function FirstCaptureFlow({ onComplete }: FirstCaptureFlowProps) 
 
       {(isUnsupported || !isSecure) && (
         <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-          <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
+          <AlertTriangle className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
           <span>
             {isUnsupported
               ? "Voice capture isn't supported in this browser. Try Chrome, Edge, or Safari (iOS 14.5+)."
