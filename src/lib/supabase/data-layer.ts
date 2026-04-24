@@ -41,9 +41,8 @@ export async function upsertCaptures(userId: string, captures: Capture[]): Promi
     return;
   }
 
-  const rows = captures.map((c) => captureToDbRow(writeUserId, c));
-  const { error } = await supabase.from("user_captures").upsert(rows as any, { onConflict: "id" });
-  if (error) console.error("upsertCaptures error:", error);
+  const writeOk = await writeCaptures(writeUserId, captures);
+  if (!writeOk) console.error("upsertCaptures error: failed to write captures");
 }
 
 /** Full replace: upsert current + delete cloud records not in local set */
@@ -54,11 +53,10 @@ export async function syncCaptures(userId: string, captures: Capture[]): Promise
     return;
   }
 
-  // Upsert current
+  // Insert new rows + update existing rows
   if (captures.length > 0) {
-    const rows = captures.map((c) => captureToDbRow(writeUserId, c));
-    const { error } = await supabase.from("user_captures").upsert(rows as any, { onConflict: "id" });
-    if (error) { console.error("syncCaptures upsert error:", error); return; }
+    const writeOk = await writeCaptures(writeUserId, captures);
+    if (!writeOk) { console.error("syncCaptures upsert error: failed to write captures"); return; }
   }
   // Delete orphaned cloud records
   const localIds = captures.map((c) => c.id);
