@@ -89,7 +89,12 @@ async function writeCaptures(userId: string, captures: Capture[]): Promise<boole
   const existingIds = new Set((existingRows ?? []).map((row: { id: string }) => row.id));
   const newRows = captures
     .filter((capture) => !existingIds.has(capture.id))
-    .map((capture) => captureToDbRow(userId, capture));
+    .map((capture) => {
+      // Omit `id` so Postgres `gen_random_uuid()` default fires and avoids
+      // duplicate-key collisions when local IDs were already synced previously.
+      const { id: _omit, ...row } = captureToDbRow(userId, capture);
+      return row;
+    });
   const rowsToUpdate = captures
     .filter((capture) => existingIds.has(capture.id))
     .map((capture) => captureToDbRow(userId, capture));
