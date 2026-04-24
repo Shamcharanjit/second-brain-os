@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardWelcome from "@/components/dashboard/DashboardWelcome";
@@ -7,6 +8,7 @@ import DashboardStrategy from "@/components/dashboard/DashboardStrategy";
 import DashboardMomentum from "@/components/dashboard/DashboardMomentum";
 import DashboardAlerts from "@/components/dashboard/DashboardAlerts";
 import CloudUpgradeNudge from "@/components/dashboard/CloudUpgradeNudge";
+import FirstCaptureFlow from "@/components/dashboard/FirstCaptureFlow";
 import CaptureInput from "@/components/CaptureInput";
 import { Sparkles, Inbox, FolderKanban, Brain, BarChart3 } from "lucide-react";
 import { useFirstRun } from "@/hooks/useFirstRun";
@@ -44,11 +46,19 @@ export default function Dashboard() {
   const { captures } = useBrain();
   const { projects } = useProjects();
   const { memories } = useMemory();
+  const [firstCaptureDismissed, setFirstCaptureDismissed] = useState(false);
 
   useActivationFunnelTracker();
   useFirstProductActions(captures.length, projects.length, memories.length);
 
   if (isFirstRun) {
+    if (!firstCaptureDismissed) {
+      return (
+        <div className="space-y-8 py-6">
+          <FirstCaptureFlow onComplete={() => setFirstCaptureDismissed(true)} />
+        </div>
+      );
+    }
     return (
       <div className="space-y-8">
         <DashboardWelcome />
