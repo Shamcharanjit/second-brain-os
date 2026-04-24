@@ -942,6 +942,7 @@ export type Database = {
       }
       get_paywall_variant_performance: { Args: never; Returns: Json }
       get_prompt_performance_summary: { Args: never; Returns: Json }
+      get_rebuilt_funnel: { Args: never; Returns: Json }
       get_upgrade_prompt_decision: {
         Args: { p_user_id: string }
         Returns: Json
