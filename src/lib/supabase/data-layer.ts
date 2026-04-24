@@ -41,9 +41,8 @@ export async function upsertCaptures(userId: string, captures: Capture[]): Promi
     return;
   }
 
-  const rows = captures.map((c) => captureToDbRow(writeUserId, c));
-  const { error } = await supabase.from("user_captures").upsert(rows as any, { onConflict: "id" });
-  if (error) console.error("upsertCaptures error:", error);
+  const writeOk = await writeCaptures(writeUserId, captures);
+  if (!writeOk) console.error("upsertCaptures error: failed to write captures");
 }
 
 /** Full replace: upsert current + delete cloud records not in local set */
@@ -54,11 +53,10 @@ export async function syncCaptures(userId: string, captures: Capture[]): Promise
     return;
   }
 
-  // Upsert current
+  // Insert new rows + update existing rows
   if (captures.length > 0) {
-    const rows = captures.map((c) => captureToDbRow(writeUserId, c));
-    const { error } = await supabase.from("user_captures").upsert(rows as any, { onConflict: "id" });
-    if (error) { console.error("syncCaptures upsert error:", error); return; }
+    const writeOk = await writeCaptures(writeUserId, captures);
+    if (!writeOk) { console.error("syncCaptures upsert error: failed to write captures"); return; }
   }
   // Delete orphaned cloud records
   const localIds = captures.map((c) => c.id);
@@ -72,6 +70,53 @@ export async function syncCaptures(userId: string, captures: Capture[]): Promise
     const { error: delErr } = await supabase.from("user_captures").delete().in("id", orphanIds);
     if (delErr) console.error("syncCaptures delete error:", delErr);
   }
+}
+
+async function writeCaptures(userId: string, captures: Capture[]): Promise<boolean> {
+  const ids = captures.map((capture) => capture.id).filter(Boolean);
+
+  const { data: existingRows, error: existingError } = await supabase
+    .from("user_captures")
+    .select("id")
+    .eq("user_id", userId)
+    .in("id", ids);
+
+  if (existingError) {
+    console.error("writeCaptures existing lookup error:", existingError);
+    return false;
+  }
+
+  const existingIds = new Set((existingRows ?? []).map((row: { id: string }) => row.id));
+  const newRows = captures
+    .filter((capture) => !existingIds.has(capture.id))
+    .map((capture) => captureToDbRow(userId, capture));
+  const rowsToUpdate = captures
+    .filter((capture) => existingIds.has(capture.id))
+    .map((capture) => captureToDbRow(userId, capture));
+
+  if (newRows.length > 0) {
+    const { error: insertError } = await supabase.from("user_captures").insert(newRows as any);
+    if (insertError) {
+      console.error("writeCaptures insert error:", insertError);
+      return false;
+    }
+  }
+
+  for (const row of rowsToUpdate) {
+    const { id, ...updates } = row;
+    const { error: updateError } = await supabase
+      .from("user_captures")
+      .update(updates as any)
+      .eq("id", id)
+      .eq("user_id", userId);
+
+    if (updateError) {
+      console.error("writeCaptures update error:", updateError);
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function dbCaptureToCapture(row: any): Capture {
