@@ -56,14 +56,6 @@ function AppProvidersShell() {
   );
 }
 
-function AppShell() {
-  return (
-    <AppLayout>
-      <Outlet />
-    </AppLayout>
-  );
-}
-
 const App = () => (
   <AppErrorBoundary>
     <QueryClientProvider client={queryClient}>
