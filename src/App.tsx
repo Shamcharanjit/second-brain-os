@@ -40,6 +40,22 @@ import PageErrorBoundary from "@/components/system/PageErrorBoundary";
 
 const queryClient = new QueryClient();
 
+function AppProvidersShell() {
+  return (
+    <BrainProvider>
+      <ProjectProvider>
+        <MemoryProvider>
+          <ReviewMetaProvider>
+            <AppLayout>
+              <Outlet />
+            </AppLayout>
+          </ReviewMetaProvider>
+        </MemoryProvider>
+      </ProjectProvider>
+    </BrainProvider>
+  );
+}
+
 function AppShell() {
   return (
     <AppLayout>
@@ -56,49 +72,41 @@ const App = () => (
         <Sonner />
         <AuthProvider>
           <SubscriptionProvider>
-          <BrainProvider>
-            <ProjectProvider>
-              <MemoryProvider>
-                <ReviewMetaProvider>
-                  <BrowserRouter>
-                    <ScrollToTop />
-                    <Routes>
-                      {/* Public pages — no app chrome */}
-                      <Route path="/" element={<LandingPage />} />
-                      <Route path="/waitlist" element={<WaitlistPage />} />
-                      <Route path="/invite" element={<InvitePage />} />
-                      <Route path="/terms" element={<TermsPage />} />
-                      <Route path="/privacy" element={<PrivacyPage />} />
-                      <Route path="/auth" element={<AuthPage />} />
-                      <Route path="/reset-password" element={<ResetPasswordPage />} />
-                      <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
-                      <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
-                      <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
-                      <Route path="/admin/plans" element={<AdminPlansPage />} />
+            <BrowserRouter>
+              <ScrollToTop />
+              <Routes>
+                {/* Public pages — no app chrome */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/waitlist" element={<WaitlistPage />} />
+                <Route path="/invite" element={<InvitePage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
+                <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+                <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
+                <Route path="/admin/plans" element={<AdminPlansPage />} />
 
-                      {/* App routes — wrapped in sidebar layout */}
-                      <Route element={<AppShell />}>
-                        <Route path="/app" element={<PageErrorBoundary section="Dashboard"><Dashboard /></PageErrorBoundary>} />
-                        <Route path="/inbox" element={<PageErrorBoundary section="Inbox"><InboxPage /></PageErrorBoundary>} />
-                        <Route path="/today" element={<TodayPage />} />
-                        <Route path="/projects" element={<PageErrorBoundary section="Projects"><ProjectsPage /></PageErrorBoundary>} />
-                        <Route path="/ai-review" element={<AIReviewPage />} />
-                        <Route path="/voice" element={<VoiceCapturePage />} />
-                        <Route path="/capture-gateway" element={<PageErrorBoundary section="Capture Gateway"><CaptureGatewayPage /></PageErrorBoundary>} />
-                        <Route path="/review" element={<PageErrorBoundary section="Review"><ReviewRitualsPage /></PageErrorBoundary>} />
-                        <Route path="/memory" element={<MemoryPage />} />
-                        <Route path="/ideas" element={<IdeasVaultPage />} />
-                        <Route path="/settings" element={<SettingsPage />} />
-                        <Route path="/upgrade" element={<UpgradePage />} />
-                      </Route>
+                {/* App routes — wrapped in sidebar layout */}
+                <Route element={<AppProvidersShell />}>
+                  <Route path="/app" element={<PageErrorBoundary section="Dashboard"><Dashboard /></PageErrorBoundary>} />
+                  <Route path="/inbox" element={<PageErrorBoundary section="Inbox"><InboxPage /></PageErrorBoundary>} />
+                  <Route path="/today" element={<TodayPage />} />
+                  <Route path="/projects" element={<PageErrorBoundary section="Projects"><ProjectsPage /></PageErrorBoundary>} />
+                  <Route path="/ai-review" element={<AIReviewPage />} />
+                  <Route path="/voice" element={<VoiceCapturePage />} />
+                  <Route path="/capture-gateway" element={<PageErrorBoundary section="Capture Gateway"><CaptureGatewayPage /></PageErrorBoundary>} />
+                  <Route path="/review" element={<PageErrorBoundary section="Review"><ReviewRitualsPage /></PageErrorBoundary>} />
+                  <Route path="/memory" element={<MemoryPage />} />
+                  <Route path="/ideas" element={<IdeasVaultPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/upgrade" element={<UpgradePage />} />
+                </Route>
 
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </BrowserRouter>
-                </ReviewMetaProvider>
-              </MemoryProvider>
-            </ProjectProvider>
-          </BrainProvider>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
           </SubscriptionProvider>
         </AuthProvider>
       </TooltipProvider>
