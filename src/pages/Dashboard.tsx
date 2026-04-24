@@ -46,11 +46,19 @@ export default function Dashboard() {
   const { captures } = useBrain();
   const { projects } = useProjects();
   const { memories } = useMemory();
+  const [firstCaptureDismissed, setFirstCaptureDismissed] = useState(false);
 
   useActivationFunnelTracker();
   useFirstProductActions(captures.length, projects.length, memories.length);
 
   if (isFirstRun) {
+    if (!firstCaptureDismissed) {
+      return (
+        <div className="space-y-8 py-6">
+          <FirstCaptureFlow onComplete={() => setFirstCaptureDismissed(true)} />
+        </div>
+      );
+    }
     return (
       <div className="space-y-8">
         <DashboardWelcome />
