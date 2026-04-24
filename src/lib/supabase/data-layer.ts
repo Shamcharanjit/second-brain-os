@@ -272,10 +272,39 @@ export async function fetchReviewMeta(userId: string): Promise<ReviewMeta | null
 }
 
 export async function upsertReviewMeta(userId: string, meta: ReviewMeta): Promise<void> {
-  const { error } = await supabase.from("user_review_meta").upsert({
+  if (!userId) return;
+  // Skip when nothing meaningful to persist (avoids spurious 400s on first hydrate)
+  if (!meta.last_daily_review_at && !meta.last_weekly_review_at) return;
+
+  const payload = {
     user_id: userId,
     last_daily_review_at: meta.last_daily_review_at,
     last_weekly_review_at: meta.last_weekly_review_at,
-  } as any, { onConflict: "user_id" });
-  if (error) console.error("upsertReviewMeta error:", error);
+    updated_at: new Date().toISOString(),
+  };
+
+  // Manual upsert (select → update/insert) avoids ON CONFLICT edge cases
+  // that surface as 400s when the unique index is not visible to PostgREST cache.
+  try {
+    const { data: existing } = await supabase
+      .from("user_review_meta")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (existing?.id) {
+      const { error } = await supabase
+        .from("user_review_meta")
+        .update(payload as any)
+        .eq("user_id", userId);
+      if (error) console.warn("upsertReviewMeta update skipped:", error.message);
+    } else {
+      const { error } = await supabase.from("user_review_meta").insert(payload as any);
+      if (error && error.code !== "23505") {
+        console.warn("upsertReviewMeta insert skipped:", error.message);
+      }
+    }
+  } catch (e) {
+    console.warn("upsertReviewMeta exception:", e);
+  }
 }
