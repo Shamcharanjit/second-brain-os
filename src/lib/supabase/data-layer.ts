@@ -3,6 +3,23 @@ import { Capture } from "@/types/brain";
 import { Project } from "@/types/project";
 import { MemoryEntry } from "@/types/memory";
 
+async function resolveAuthenticatedUserId(fallbackUserId: string): Promise<string | null> {
+  if (!isSupabaseEnabled) return fallbackUserId || null;
+
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      console.warn("resolveAuthenticatedUserId error:", error.message);
+      return fallbackUserId || null;
+    }
+
+    return data.user?.id ?? fallbackUserId ?? null;
+  } catch (error) {
+    console.warn("resolveAuthenticatedUserId exception:", error);
+    return fallbackUserId || null;
+  }
+}
+
 // ─── Captures ───
 
 export async function fetchCaptures(userId: string): Promise<Capture[]> {
@@ -18,16 +35,28 @@ export async function fetchCaptures(userId: string): Promise<Capture[]> {
 
 export async function upsertCaptures(userId: string, captures: Capture[]): Promise<void> {
   if (captures.length === 0) return;
-  const rows = captures.map((c) => captureToDbRow(userId, c));
+  const writeUserId = await resolveAuthenticatedUserId(userId);
+  if (!writeUserId) {
+    console.warn("upsertCaptures skipped: missing authenticated user id");
+    return;
+  }
+
+  const rows = captures.map((c) => captureToDbRow(writeUserId, c));
   const { error } = await supabase.from("user_captures").upsert(rows as any, { onConflict: "id" });
   if (error) console.error("upsertCaptures error:", error);
 }
 
 /** Full replace: upsert current + delete cloud records not in local set */
 export async function syncCaptures(userId: string, captures: Capture[]): Promise<void> {
+  const writeUserId = await resolveAuthenticatedUserId(userId);
+  if (!writeUserId) {
+    console.warn("syncCaptures skipped: missing authenticated user id");
+    return;
+  }
+
   // Upsert current
   if (captures.length > 0) {
-    const rows = captures.map((c) => captureToDbRow(userId, c));
+    const rows = captures.map((c) => captureToDbRow(writeUserId, c));
     const { error } = await supabase.from("user_captures").upsert(rows as any, { onConflict: "id" });
     if (error) { console.error("syncCaptures upsert error:", error); return; }
   }
@@ -36,7 +65,7 @@ export async function syncCaptures(userId: string, captures: Capture[]): Promise
   const { data: cloudRows, error: fetchErr } = await supabase
     .from("user_captures")
     .select("id")
-    .eq("user_id", userId);
+    .eq("user_id", writeUserId);
   if (fetchErr) { console.error("syncCaptures fetch error:", fetchErr); return; }
   const orphanIds = (cloudRows ?? []).map((r: any) => r.id).filter((id: string) => !localIds.includes(id));
   if (orphanIds.length > 0) {
