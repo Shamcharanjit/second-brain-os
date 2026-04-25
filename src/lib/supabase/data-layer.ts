@@ -103,7 +103,9 @@ async function writeCaptures(userId: string, captures: Capture[]): Promise<boole
       if (capture.cloud_id) return capture;
       const cloudId = insertedBySignature.get(captureSignature(capture.raw_input, capture.input_type, capture.created_at));
       if (!cloudId) return capture;
-      return { ...capture, id: cloudId, cloud_id: cloudId };
+      capture.id = cloudId;
+      capture.cloud_id = cloudId;
+      return capture;
     });
 
     try {
