@@ -23,6 +23,7 @@ import ReferralVelocityPanel from "@/components/dashboard/ReferralVelocityPanel"
 import UserGeographyPanel from "@/components/dashboard/UserGeographyPanel";
 import SeoSignalsPanel from "@/components/dashboard/SeoSignalsPanel";
 import SeoCoveragePanel from "@/components/dashboard/SeoCoveragePanel";
+import SeoPerformancePanel from "@/components/dashboard/SeoPerformancePanel";
 
 /* ── types ── */
 
@@ -957,6 +958,9 @@ export default function AdminAnalyticsPage() {
 
           {/* ═══ SEO COVERAGE (FOUNDER-ONLY METADATA INTELLIGENCE) ═══ */}
           <SeoCoveragePanel />
+
+          {/* ═══ SEO PERFORMANCE (FOUNDER-ONLY ATTRIBUTION INTELLIGENCE) ═══ */}
+          <SeoPerformancePanel />
 
           {/* ═══ ENGAGEMENT HEAT SIGNALS ═══ */}
           <section className="space-y-3">

@@ -943,6 +943,57 @@ export type Database = {
         }
         Relationships: []
       }
+      visitor_attribution: {
+        Row: {
+          activated_at: string | null
+          anonymous_id: string
+          converted_at: string | null
+          country: string | null
+          created_at: string
+          email: string | null
+          id: string
+          landing_page: string | null
+          referrer_url: string | null
+          source: string
+          user_id: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          activated_at?: string | null
+          anonymous_id: string
+          converted_at?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          landing_page?: string | null
+          referrer_url?: string | null
+          source?: string
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          activated_at?: string | null
+          anonymous_id?: string
+          converted_at?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          landing_page?: string | null
+          referrer_url?: string | null
+          source?: string
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
       waitlist_signups: {
         Row: {
           activation_completed_at: string | null
@@ -1041,6 +1092,7 @@ export type Database = {
       get_prompt_performance_summary: { Args: never; Returns: Json }
       get_rebuilt_funnel: { Args: never; Returns: Json }
       get_seo_metadata_coverage: { Args: never; Returns: Json }
+      get_seo_performance_signals: { Args: never; Returns: Json }
       get_seo_signals: { Args: never; Returns: Json }
       get_upgrade_prompt_decision: {
         Args: { p_user_id: string }

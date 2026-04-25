@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { supabase, isSupabaseEnabled } from "@/lib/supabase/client";
 import { setCurrentUser, migrateUnscopedData } from "@/lib/persistence";
 import { captureGeoMetadata } from "@/lib/geo";
+import { linkAttributionToUser, markAttributionActivated } from "@/lib/attribution";
 import type { User, Session } from "@supabase/supabase-js";
 
 interface AuthContextType {
@@ -51,9 +52,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(sess?.user ?? null);
       setLoading(false);
 
-      // Fire-and-forget: capture country metadata for newly signed-in users
+      // Fire-and-forget: capture country metadata + link visitor attribution
       if (newUserId) {
+        const userEmail = sess?.user?.email ?? null;
         setTimeout(() => { captureGeoMetadata().catch(() => {}); }, 0);
+        setTimeout(() => { linkAttributionToUser(newUserId, userEmail).catch(() => {}); }, 0);
+        setTimeout(() => { markAttributionActivated(newUserId).catch(() => {}); }, 0);
       }
     });
 
@@ -68,7 +72,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       initializedRef.current = true;
       if (userId) {
+        const userEmail = sess?.user?.email ?? null;
         setTimeout(() => { captureGeoMetadata().catch(() => {}); }, 0);
+        setTimeout(() => { linkAttributionToUser(userId, userEmail).catch(() => {}); }, 0);
+        setTimeout(() => { markAttributionActivated(userId).catch(() => {}); }, 0);
       }
     });
 
