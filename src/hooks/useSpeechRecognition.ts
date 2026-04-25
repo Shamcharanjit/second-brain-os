@@ -368,7 +368,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     setFinalTranscript("");
     setErrorMessage(SpeechRecognitionCtor ? null : "Speech recognition is not supported in this browser.");
     setConfidence(0);
-  }, [clearStopFallback, stopMediaStream, releaseRecognition]);
+  }, [clearStopFallback, clearSafetyStop, stopMediaStream, releaseRecognition]);
 
   return {
     state,
