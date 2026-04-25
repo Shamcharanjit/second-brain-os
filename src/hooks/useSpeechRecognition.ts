@@ -53,6 +53,8 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
   const [confidence, setConfidence] = useState(0);
 
   const recognitionRef = useRef<any>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const stopFallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onResultRef = useRef(onResult);
   const stoppingRef = useRef(false);
 
