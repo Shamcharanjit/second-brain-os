@@ -96,6 +96,7 @@ const App = () => (
                   <Route path="/ideas" element={<IdeasVaultPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/help" element={<PageErrorBoundary section="Help"><HelpPage /></PageErrorBoundary>} />
+                  <Route path="/whats-new" element={<PageErrorBoundary section="What's New"><WhatsNewPage /></PageErrorBoundary>} />
                   <Route path="/upgrade" element={<UpgradePage />} />
                 </Route>
 
