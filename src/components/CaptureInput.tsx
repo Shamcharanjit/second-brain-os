@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Capture } from "@/types/brain";
 import AIResultCard from "@/components/AIResultCard";
 import AITriageCard from "@/components/AITriageCard";
+import FollowUpReminderCard from "@/components/FollowUpReminderCard";
 import CreateProjectDialog from "@/components/projects/CreateProjectDialog";
 import { runAITriage, isAITriageAvailable, triageToAIData, type AITriageResult } from "@/lib/ai-triage";
 import { useUploadAttachments, type UploadResult } from "@/hooks/useUploadAttachments";
