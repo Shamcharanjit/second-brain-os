@@ -79,7 +79,7 @@ export default function DashboardHero() {
   return (
     <section className="rounded-2xl border bg-card p-6 space-y-4">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{greeting}</h1>
         <div className="space-y-0.5">
           {briefing.map((line, i) => (
             <p key={i} className="text-sm text-muted-foreground">{line}</p>
