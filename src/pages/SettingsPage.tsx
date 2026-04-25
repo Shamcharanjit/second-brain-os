@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase/client";
 import { createPortalSession } from "@/lib/stripe/billing";
 import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLocalData } from "@/lib/data-export";
 import type { InsightHaloBackup } from "@/lib/data-export";
+import { ReferralCenter } from "@/components/settings/ReferralCenter";
 
 /* ── Access-level label logic ── */
 interface WaitlistMeta {
@@ -284,6 +285,9 @@ export default function SettingsPage() {
           </div>
         )}
       </section>
+
+      {/* Referral Center */}
+      <ReferralCenter />
 
       {/* Plan & AI Usage */}
       <section className="rounded-xl border bg-card p-5 space-y-4">
