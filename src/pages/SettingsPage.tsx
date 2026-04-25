@@ -286,6 +286,9 @@ export default function SettingsPage() {
         )}
       </section>
 
+      {/* Referral Center */}
+      <ReferralCenter />
+
       {/* Plan & AI Usage */}
       <section className="rounded-xl border bg-card p-5 space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
