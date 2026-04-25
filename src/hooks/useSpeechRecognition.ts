@@ -203,6 +203,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
           setErrorMessage("Could not understand speech clearly. Please try again.");
           stopMediaStream();
           releaseRecognition(recognition);
+          scheduleSafetyStop();
           committedRef.current = true;
           return;
         }
@@ -217,15 +218,16 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
         setState("processing");
         onResultRef.current?.(committedText, bestConfidence);
         stopMediaStream();
-        try {
-          recognition.stop();
-        } catch {}
+        try { recognition.stop(); } catch {}
+        try { recognition.abort(); } catch {}
+        scheduleSafetyStop();
       }
     };
 
     recognition.onerror = (event: any) => {
       clearStopFallback();
       stopMediaStream();
+      scheduleSafetyStop();
       const err = event.error;
       if (err === "no-speech") {
         setState("error");
