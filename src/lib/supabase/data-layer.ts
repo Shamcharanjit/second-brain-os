@@ -73,46 +73,61 @@ export async function syncCaptures(userId: string, captures: Capture[]): Promise
 }
 
 async function writeCaptures(userId: string, captures: Capture[]): Promise<boolean> {
-  const ids = captures.map((capture) => capture.id).filter(Boolean);
+  const serverBackedCaptures = captures.filter((capture) => !!capture.cloud_id);
+  const newCaptures = captures.filter((capture) => !capture.cloud_id);
 
-  const { data: existingRows, error: existingError } = await supabase
-    .from("user_captures")
-    .select("id")
-    .eq("user_id", userId)
-    .in("id", ids);
+  const rowsToInsert = newCaptures.map((capture) => captureInsertRow(userId, capture));
+  const rowsToUpdate = serverBackedCaptures.map((capture) => captureUpdateRow(userId, capture));
 
-  if (existingError) {
-    console.error("writeCaptures existing lookup error:", existingError);
-    return false;
-  }
+  if (rowsToInsert.length > 0) {
+    const { data: insertedRows, error: insertError } = await supabase
+      .from("user_captures")
+      .insert(rowsToInsert as any)
+      .select("*");
 
-  const existingIds = new Set((existingRows ?? []).map((row: { id: string }) => row.id));
-  const newRows = captures
-    .filter((capture) => !existingIds.has(capture.id))
-    .map((capture) => {
-      // Omit `id` so Postgres `gen_random_uuid()` default fires and avoids
-      // duplicate-key collisions when local IDs were already synced previously.
-      const { id: _omit, ...row } = captureToDbRow(userId, capture);
-      return row;
-    });
-  const rowsToUpdate = captures
-    .filter((capture) => existingIds.has(capture.id))
-    .map((capture) => captureToDbRow(userId, capture));
-
-  if (newRows.length > 0) {
-    const { error: insertError } = await supabase.from("user_captures").insert(newRows as any);
     if (insertError) {
       console.error("writeCaptures insert error:", insertError);
       return false;
     }
+
+    // Persist the server ids locally by matching on the unique local creation payload.
+    const insertedBySignature = new Map(
+      (insertedRows ?? []).map((row: any) => [captureSignature(row.raw_input, row.input_type, row.created_at), row.id])
+    );
+
+    const remappedCaptures = captures.map((capture) => {
+      if (capture.cloud_id) return capture;
+      const cloudId = insertedBySignature.get(captureSignature(capture.raw_input, capture.input_type, capture.created_at));
+      if (!cloudId) return capture;
+      return { ...capture, id: cloudId, cloud_id: cloudId };
+    });
+
+    try {
+      localStorage.setItem("insighthalo_pending_capture_id_rewrite", JSON.stringify({ at: Date.now() }));
+    } catch {}
+
+    const storageKeys = Object.keys(localStorage).filter((key) => key.startsWith("insighthalo_brain"));
+    for (const storageKey of storageKeys) {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) continue;
+        const envelope = JSON.parse(raw);
+        if (!Array.isArray(envelope?.data)) continue;
+        envelope.data = envelope.data.map((item: Capture) => {
+          const match = remappedCaptures.find((capture) => capture.raw_input === item.raw_input && capture.input_type === item.input_type && capture.created_at === item.created_at);
+          return match ?? item;
+        });
+        localStorage.setItem(storageKey, JSON.stringify(envelope));
+      } catch {}
+    }
   }
 
   for (const row of rowsToUpdate) {
-    const { id, ...updates } = row;
+    const { cloud_id, ...updates } = row;
     const { error: updateError } = await supabase
       .from("user_captures")
       .update(updates as any)
-      .eq("id", id)
+      .eq("id", cloud_id)
       .eq("user_id", userId);
 
     if (updateError) {
@@ -127,6 +142,7 @@ async function writeCaptures(userId: string, captures: Capture[]): Promise<boole
 function dbCaptureToCapture(row: any): Capture {
   return {
     id: row.id,
+    cloud_id: row.id,
     raw_input: row.raw_input,
     input_type: row.input_type,
     created_at: row.created_at,
@@ -146,9 +162,8 @@ function dbCaptureToCapture(row: any): Capture {
   };
 }
 
-function captureToDbRow(userId: string, c: Capture) {
+function captureInsertRow(userId: string, c: Capture) {
   return {
-    id: c.id,
     user_id: userId,
     raw_input: c.raw_input,
     input_type: c.input_type,
@@ -167,6 +182,33 @@ function captureToDbRow(userId: string, c: Capture) {
     source_project_id: c.source_project_id,
     source_action_id: c.source_action_id,
   };
+}
+
+function captureUpdateRow(userId: string, c: Capture) {
+  return {
+    cloud_id: c.cloud_id,
+    user_id: userId,
+    raw_input: c.raw_input,
+    input_type: c.input_type,
+    created_at: c.created_at,
+    processed: c.processed,
+    status: c.status,
+    review_status: c.review_status,
+    ai_data: c.ai_data,
+    reviewed_at: c.reviewed_at,
+    manually_adjusted: c.manually_adjusted,
+    is_completed: c.is_completed,
+    completed_at: c.completed_at,
+    is_pinned_today: c.is_pinned_today,
+    idea_status: c.idea_status,
+    converted_to_project_at: c.converted_to_project_at,
+    source_project_id: c.source_project_id,
+    source_action_id: c.source_action_id,
+  };
+}
+
+function captureSignature(rawInput: string, inputType: string, createdAt: string) {
+  return `${rawInput}__${inputType}__${createdAt}`;
 }
 
 // ─── Projects ───
