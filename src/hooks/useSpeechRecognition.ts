@@ -35,7 +35,6 @@ interface UseSpeechRecognitionReturn {
   reset: () => void;
 }
 
-// Detect once
 const SpeechRecognitionCtor =
   typeof window !== "undefined"
     ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -57,43 +56,60 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
   const stopFallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onResultRef = useRef(onResult);
   const stoppingRef = useRef(false);
-
-  // Track committed state and final transcript via refs to avoid stale closures
   const committedRef = useRef(false);
   const finalTranscriptRef = useRef("");
   const finalConfidenceRef = useRef(0);
   const errorStateRef = useRef(false);
-  // Track latest interim transcript so we can commit it on manual stop
   const interimRef = useRef("");
 
   useEffect(() => {
     onResultRef.current = onResult;
   }, [onResult]);
 
-  // Cleanup on unmount — abort recognition, clear timers, and stop any held mic stream
+  const clearStopFallback = useCallback(() => {
+    if (stopFallbackTimeoutRef.current) {
+      clearTimeout(stopFallbackTimeoutRef.current);
+      stopFallbackTimeoutRef.current = null;
+    }
+  }, []);
+
+  const stopMediaStream = useCallback(() => {
+    const stream = mediaStreamRef.current;
+    if (!stream) return;
+    try {
+      stream.getTracks().forEach((track) => track.stop());
+    } catch {}
+    mediaStreamRef.current = null;
+  }, []);
+
+  const releaseRecognition = useCallback((instance?: any) => {
+    const rec = instance ?? recognitionRef.current;
+    if (!rec) return;
+    try {
+      rec.onresult = null;
+      rec.onerror = null;
+      rec.onend = null;
+      rec.onaudiostart = null;
+      rec.onaudioend = null;
+      rec.onspeechstart = null;
+      rec.onspeechend = null;
+      rec.onstart = null;
+    } catch {}
+    try {
+      rec.abort();
+    } catch {}
+    if (recognitionRef.current === rec) {
+      recognitionRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     return () => {
-      if (stopFallbackTimeoutRef.current) {
-        clearTimeout(stopFallbackTimeoutRef.current);
-        stopFallbackTimeoutRef.current = null;
-      }
-      const stream = mediaStreamRef.current;
-      if (stream) {
-        try { stream.getTracks().forEach((track) => track.stop()); } catch {}
-        mediaStreamRef.current = null;
-      }
-      const rec = recognitionRef.current;
-      if (rec) {
-        try {
-          rec.onresult = null;
-          rec.onerror = null;
-          rec.onend = null;
-        } catch {}
-        try { rec.abort(); } catch {}
-        recognitionRef.current = null;
-      }
+      clearStopFallback();
+      stopMediaStream();
+      releaseRecognition();
     };
-  }, []);
+  }, [clearStopFallback, stopMediaStream, releaseRecognition]);
 
   const startListening = useCallback(() => {
     if (!SpeechRecognitionCtor) {
@@ -102,10 +118,9 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       return;
     }
 
-    // Tear down any existing instance
-    if (recognitionRef.current) {
-      try { recognitionRef.current.abort(); } catch {}
-    }
+    clearStopFallback();
+    stopMediaStream();
+    releaseRecognition();
 
     const recognition = new SpeechRecognitionCtor();
     recognition.continuous = false;
@@ -113,7 +128,6 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     recognition.maxAlternatives = 1;
     recognition.lang = lang || navigator.language || "en-US";
 
-    // Reset refs
     committedRef.current = false;
     stoppingRef.current = false;
     finalTranscriptRef.current = "";
@@ -145,36 +159,36 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       }
 
       if (final && !committedRef.current) {
-        // Check confidence threshold
         if (bestConfidence > 0 && bestConfidence < minConfidence) {
           setInterimTranscript("");
           setState("error");
           errorStateRef.current = true;
           setErrorMessage("Could not understand speech clearly. Please try again.");
+          stopMediaStream();
+          releaseRecognition(recognition);
           committedRef.current = true;
           return;
         }
 
-        // Store final transcript in ref for onend to use
-        finalTranscriptRef.current = final.trim();
+        const committedText = final.trim();
+        finalTranscriptRef.current = committedText;
         finalConfidenceRef.current = bestConfidence;
-
-        // Commit
         committedRef.current = true;
-        setFinalTranscript(final.trim());
+        setFinalTranscript(committedText);
         setConfidence(bestConfidence);
         setInterimTranscript("");
         setState("processing");
-        onResultRef.current?.(final.trim(), bestConfidence);
-        const activeStream = mediaStreamRef.current;
-        if (activeStream) {
-          try { activeStream.getTracks().forEach((track) => track.stop()); } catch {}
-          mediaStreamRef.current = null;
-        }
-        try { recognition.stop(); } catch {}
+        onResultRef.current?.(committedText, bestConfidence);
+        stopMediaStream();
+        try {
+          recognition.stop();
+        } catch {}
+      }
     };
 
     recognition.onerror = (event: any) => {
+      clearStopFallback();
+      stopMediaStream();
       const err = event.error;
       if (err === "no-speech") {
         setState("error");
@@ -199,46 +213,23 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
         errorStateRef.current = true;
         setErrorMessage(`Speech recognition error: ${err}`);
       }
-    };
-
-    // Force-release the microphone. SpeechRecognition.stop()/abort() does
-    // not always release the underlying MediaStream in Chrome/Android, leaving
-    // the browser mic indicator on. Detach handlers, abort, and null the ref
-    // so the recognition object (and its internal MediaStream) is GC'd.
-    const releaseMic = () => {
-      const rec = recognitionRef.current;
-      if (!rec) return;
-      try {
-        rec.onresult = null;
-        rec.onerror = null;
-        rec.onend = null;
-        rec.onaudiostart = null;
-        rec.onaudioend = null;
-        rec.onspeechstart = null;
-        rec.onspeechend = null;
-        rec.onstart = null;
-      } catch {}
-      try { rec.abort(); } catch {}
-      recognitionRef.current = null;
+      releaseRecognition(recognition);
     };
 
     recognition.onend = () => {
-      // Always release the mic on end — covers manual stop, auto-end, errors.
-      releaseMic();
+      clearStopFallback();
+      stopMediaStream();
+      releaseRecognition(recognition);
 
-      // If we already committed a result via onresult, transition to captured
       if (committedRef.current && !errorStateRef.current) {
         setState("captured");
         return;
       }
 
-      // If we hit an error state, leave it as-is
       if (errorStateRef.current) {
         return;
       }
 
-      // Manual stop or automatic end with uncommitted interim transcript —
-      // commit whatever we have so the user can review/save it
       const pendingText = interimRef.current.trim();
       if (pendingText && !committedRef.current) {
         committedRef.current = true;
@@ -248,12 +239,10 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
         setConfidence(0);
         setState("processing");
         onResultRef.current?.(pendingText, 0);
-        // Transition to captured after a tick so consumers see processing first
         setTimeout(() => setState("captured"), 50);
         return;
       }
 
-      // No transcript at all
       if (stoppingRef.current) {
         setState("idle");
       } else {
@@ -269,13 +258,11 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     setConfidence(0);
     setState("listening");
 
-    // IMPORTANT: Call recognition.start() synchronously within the user gesture
-    // handler. Do NOT await anything before this call — mobile browsers (iOS Safari,
-    // Android Chrome) require the start() to be in the synchronous call stack of a
-    // user tap/click event. Any preceding await breaks the gesture chain.
     try {
       recognition.start();
     } catch (startErr: any) {
+      stopMediaStream();
+      releaseRecognition(recognition);
       if (startErr.name === "NotAllowedError") {
         setState("error");
         setErrorMessage("Microphone permission denied. Please allow access in your browser settings.");
@@ -283,35 +270,57 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
         setState("error");
         setErrorMessage("Failed to start speech recognition.");
       }
+      return;
     }
-  }, [lang, minConfidence]);
+
+    if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then((stream) => {
+          const activeRecognition = recognitionRef.current === recognition;
+          const shouldKeep = activeRecognition && !stoppingRef.current && !errorStateRef.current;
+          if (!shouldKeep) {
+            try {
+              stream.getTracks().forEach((track) => track.stop());
+            } catch {}
+            return;
+          }
+          stopMediaStream();
+          mediaStreamRef.current = stream;
+        })
+        .catch(() => {
+          // SpeechRecognition surfaces the user-facing permission errors.
+        });
+    }
+  }, [lang, minConfidence, clearStopFallback, stopMediaStream, releaseRecognition]);
 
   const stopListening = useCallback(() => {
     stoppingRef.current = true;
+    clearStopFallback();
+    stopMediaStream();
+
     const rec = recognitionRef.current;
     if (!rec) return;
-    try { rec.stop(); } catch {}
-    // Safety net: if onend doesn't fire within 800ms (some browsers hang on
-    // stop() and keep the mic indicator on), force-abort to release the mic.
-    setTimeout(() => {
-      const stillRec = recognitionRef.current;
-      if (stillRec) {
-        try {
-          stillRec.onresult = null;
-          stillRec.onerror = null;
-          stillRec.onend = null;
-        } catch {}
-        try { stillRec.abort(); } catch {}
-        recognitionRef.current = null;
-      }
+
+    try {
+      rec.stop();
+    } catch {
+      releaseRecognition(rec);
+      setState("idle");
+      return;
+    }
+
+    stopFallbackTimeoutRef.current = setTimeout(() => {
+      stopMediaStream();
+      releaseRecognition();
+      setState((prev) => (prev === "listening" || prev === "processing" ? "idle" : prev));
+      stopFallbackTimeoutRef.current = null;
     }, 800);
-  }, []);
+  }, [clearStopFallback, stopMediaStream, releaseRecognition]);
 
   const reset = useCallback(() => {
-    if (recognitionRef.current) {
-      try { recognitionRef.current.abort(); } catch {}
-      recognitionRef.current = null;
-    }
+    clearStopFallback();
+    stopMediaStream();
+    releaseRecognition();
     stoppingRef.current = false;
     committedRef.current = false;
     finalTranscriptRef.current = "";
@@ -323,7 +332,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     setFinalTranscript("");
     setErrorMessage(SpeechRecognitionCtor ? null : "Speech recognition is not supported in this browser.");
     setConfidence(0);
-  }, []);
+  }, [clearStopFallback, stopMediaStream, releaseRecognition]);
 
   return {
     state,
