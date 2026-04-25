@@ -465,6 +465,14 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
             <span className="text-xs text-[hsl(var(--brain-teal))] font-medium">Thought captured and organized</span>
           </div>
           <AIResultCard capture={lastResult} />
+          {showReminderCard && (
+            <FollowUpReminderCard
+              captureId={lastResult.id}
+              captureText={lastResult.raw_input}
+              captureTitle={lastResult.ai_data?.title ?? null}
+              onDone={() => setShowReminderCard(false)}
+            />
+          )}
         </div>
       )}
 
