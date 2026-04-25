@@ -259,7 +259,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       clearStopFallback();
       stopMediaStream();
       releaseRecognition(recognition);
-
+      scheduleSafetyStop();
       if (committedRef.current && !errorStateRef.current) {
         setState("captured");
         return;
