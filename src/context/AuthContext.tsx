@@ -72,7 +72,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       initializedRef.current = true;
       if (userId) {
+        const userEmail = sess?.user?.email ?? null;
         setTimeout(() => { captureGeoMetadata().catch(() => {}); }, 0);
+        setTimeout(() => { linkAttributionToUser(userId, userEmail).catch(() => {}); }, 0);
+        setTimeout(() => { markAttributionActivated(userId).catch(() => {}); }, 0);
       }
     });
 
