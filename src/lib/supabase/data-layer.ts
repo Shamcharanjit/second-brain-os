@@ -150,7 +150,7 @@ function dbCaptureToCapture(row: any): Capture {
     id: row.id,
     cloud_id: row.id,
     raw_input: row.raw_input,
-    input_type: row.input_type,
+    input_type: row.input_type === "voice" ? "voice" : "text",
     created_at: row.created_at,
     processed: row.processed,
     status: row.status,
