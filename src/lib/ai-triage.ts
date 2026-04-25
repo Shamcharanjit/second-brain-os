@@ -40,6 +40,14 @@ async function callAITriage(rawInput: string, enrichedContext?: string): Promise
   });
 
   if (!resp.ok) {
+    // 404 = function not deployed on this Supabase project
+    // 503 = function deployed but AI not configured (missing LOVABLE_API_KEY)
+    // Treat both as "unavailable" — silent fallback, no console noise.
+    if (resp.status === 404 || resp.status === 503) {
+      const err = new Error("ai_unavailable");
+      (err as Error & { silent?: boolean }).silent = true;
+      throw err;
+    }
     const body = await resp.json().catch(() => ({ error: "Request failed" }));
     throw new Error(body.error || `HTTP ${resp.status}`);
   }
