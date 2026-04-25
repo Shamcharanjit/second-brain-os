@@ -52,8 +52,12 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
   const [confidence, setConfidence] = useState(0);
 
   const recognitionRef = useRef<any>(null);
+  // Track EVERY active MediaStream so we can release them all on cleanup.
+  // Safari/macOS keeps the orange mic indicator on if any track is still live.
+  const activeStreamsRef = useRef<Set<MediaStream>>(new Set());
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const stopFallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const safetyStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onResultRef = useRef(onResult);
   const stoppingRef = useRef(false);
   const committedRef = useRef(false);
@@ -73,14 +77,46 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     }
   }, []);
 
-  const stopMediaStream = useCallback(() => {
-    const stream = mediaStreamRef.current;
+  const clearSafetyStop = useCallback(() => {
+    if (safetyStopTimeoutRef.current) {
+      clearTimeout(safetyStopTimeoutRef.current);
+      safetyStopTimeoutRef.current = null;
+    }
+  }, []);
+
+  const hardStopStream = useCallback((stream: MediaStream | null | undefined) => {
     if (!stream) return;
     try {
-      stream.getTracks().forEach((track) => track.stop());
+      stream.getTracks().forEach((track) => {
+        try { track.stop(); } catch {}
+        try { track.enabled = false; } catch {}
+      });
     } catch {}
+    activeStreamsRef.current.delete(stream);
+  }, []);
+
+  const stopMediaStream = useCallback(() => {
+    // Stop ALL tracked streams, not just the latest one.
+    activeStreamsRef.current.forEach((stream) => {
+      try {
+        stream.getTracks().forEach((track) => {
+          try { track.stop(); } catch {}
+          try { track.enabled = false; } catch {}
+        });
+      } catch {}
+    });
+    activeStreamsRef.current.clear();
     mediaStreamRef.current = null;
   }, []);
+
+  const scheduleSafetyStop = useCallback(() => {
+    clearSafetyStop();
+    // Safari sometimes leaves the indicator on briefly; re-stop after 250ms.
+    safetyStopTimeoutRef.current = setTimeout(() => {
+      stopMediaStream();
+      safetyStopTimeoutRef.current = null;
+    }, 250);
+  }, [clearSafetyStop, stopMediaStream]);
 
   const releaseRecognition = useCallback((instance?: any) => {
     const rec = instance ?? recognitionRef.current;
@@ -95,9 +131,9 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       rec.onspeechend = null;
       rec.onstart = null;
     } catch {}
-    try {
-      rec.abort();
-    } catch {}
+    // Call BOTH stop() and abort() — Safari needs both to fully release the mic.
+    try { rec.stop(); } catch {}
+    try { rec.abort(); } catch {}
     if (recognitionRef.current === rec) {
       recognitionRef.current = null;
     }
@@ -106,10 +142,11 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
   useEffect(() => {
     return () => {
       clearStopFallback();
+      clearSafetyStop();
       stopMediaStream();
       releaseRecognition();
     };
-  }, [clearStopFallback, stopMediaStream, releaseRecognition]);
+  }, [clearStopFallback, clearSafetyStop, stopMediaStream, releaseRecognition]);
 
   const startListening = useCallback(() => {
     if (!SpeechRecognitionCtor) {
@@ -166,6 +203,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
           setErrorMessage("Could not understand speech clearly. Please try again.");
           stopMediaStream();
           releaseRecognition(recognition);
+          scheduleSafetyStop();
           committedRef.current = true;
           return;
         }
@@ -180,15 +218,16 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
         setState("processing");
         onResultRef.current?.(committedText, bestConfidence);
         stopMediaStream();
-        try {
-          recognition.stop();
-        } catch {}
+        try { recognition.stop(); } catch {}
+        try { recognition.abort(); } catch {}
+        scheduleSafetyStop();
       }
     };
 
     recognition.onerror = (event: any) => {
       clearStopFallback();
       stopMediaStream();
+      scheduleSafetyStop();
       const err = event.error;
       if (err === "no-speech") {
         setState("error");
@@ -220,7 +259,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       clearStopFallback();
       stopMediaStream();
       releaseRecognition(recognition);
-
+      scheduleSafetyStop();
       if (committedRef.current && !errorStateRef.current) {
         setState("captured");
         return;
@@ -279,35 +318,31 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
           const activeRecognition = recognitionRef.current === recognition;
           const shouldKeep = activeRecognition && !stoppingRef.current && !errorStateRef.current;
           if (!shouldKeep) {
-            try {
-              stream.getTracks().forEach((track) => track.stop());
-            } catch {}
+            hardStopStream(stream);
             return;
           }
+          // Stop any previous stream BEFORE storing the new one.
           stopMediaStream();
+          activeStreamsRef.current.add(stream);
           mediaStreamRef.current = stream;
         })
         .catch(() => {
           // SpeechRecognition surfaces the user-facing permission errors.
         });
     }
-  }, [lang, minConfidence, clearStopFallback, stopMediaStream, releaseRecognition]);
+  }, [lang, minConfidence, clearStopFallback, stopMediaStream, releaseRecognition, scheduleSafetyStop, hardStopStream]);
 
   const stopListening = useCallback(() => {
     stoppingRef.current = true;
     clearStopFallback();
     stopMediaStream();
+    scheduleSafetyStop();
 
     const rec = recognitionRef.current;
     if (!rec) return;
 
-    try {
-      rec.stop();
-    } catch {
-      releaseRecognition(rec);
-      setState("idle");
-      return;
-    }
+    try { rec.stop(); } catch {}
+    try { rec.abort(); } catch {}
 
     stopFallbackTimeoutRef.current = setTimeout(() => {
       stopMediaStream();
@@ -315,10 +350,11 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       setState((prev) => (prev === "listening" || prev === "processing" ? "idle" : prev));
       stopFallbackTimeoutRef.current = null;
     }, 800);
-  }, [clearStopFallback, stopMediaStream, releaseRecognition]);
+  }, [clearStopFallback, stopMediaStream, releaseRecognition, scheduleSafetyStop]);
 
   const reset = useCallback(() => {
     clearStopFallback();
+    clearSafetyStop();
     stopMediaStream();
     releaseRecognition();
     stoppingRef.current = false;
@@ -332,7 +368,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     setFinalTranscript("");
     setErrorMessage(SpeechRecognitionCtor ? null : "Speech recognition is not supported in this browser.");
     setConfidence(0);
-  }, [clearStopFallback, stopMediaStream, releaseRecognition]);
+  }, [clearStopFallback, clearSafetyStop, stopMediaStream, releaseRecognition]);
 
   return {
     state,
