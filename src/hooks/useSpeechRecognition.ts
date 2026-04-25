@@ -179,7 +179,31 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       }
     };
 
+    // Force-release the microphone. SpeechRecognition.stop()/abort() does
+    // not always release the underlying MediaStream in Chrome/Android, leaving
+    // the browser mic indicator on. Detach handlers, abort, and null the ref
+    // so the recognition object (and its internal MediaStream) is GC'd.
+    const releaseMic = () => {
+      const rec = recognitionRef.current;
+      if (!rec) return;
+      try {
+        rec.onresult = null;
+        rec.onerror = null;
+        rec.onend = null;
+        rec.onaudiostart = null;
+        rec.onaudioend = null;
+        rec.onspeechstart = null;
+        rec.onspeechend = null;
+        rec.onstart = null;
+      } catch {}
+      try { rec.abort(); } catch {}
+      recognitionRef.current = null;
+    };
+
     recognition.onend = () => {
+      // Always release the mic on end — covers manual stop, auto-end, errors.
+      releaseMic();
+
       // If we already committed a result via onresult, transition to captured
       if (committedRef.current && !errorStateRef.current) {
         setState("captured");
