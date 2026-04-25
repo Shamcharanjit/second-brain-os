@@ -21,6 +21,7 @@ import PaywallIntelligencePanel from "@/components/dashboard/PaywallIntelligence
 import ActivationFunnelPanel from "@/components/dashboard/ActivationFunnelPanel";
 import ReferralVelocityPanel from "@/components/dashboard/ReferralVelocityPanel";
 import UserGeographyPanel from "@/components/dashboard/UserGeographyPanel";
+import SeoSignalsPanel from "@/components/dashboard/SeoSignalsPanel";
 
 /* ── types ── */
 
@@ -949,6 +950,9 @@ export default function AdminAnalyticsPage() {
 
           {/* ═══ USER GEOGRAPHY ═══ */}
           <UserGeographyPanel />
+
+          {/* ═══ SEO SIGNALS ═══ */}
+          <SeoSignalsPanel />
 
           {/* ═══ ENGAGEMENT HEAT SIGNALS ═══ */}
           <section className="space-y-3">
