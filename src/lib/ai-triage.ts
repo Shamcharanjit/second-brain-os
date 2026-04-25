@@ -110,6 +110,7 @@ export async function runAITriage(
   const hasEnrichment = !!enrichedContext && enrichedContext !== rawInput;
 
   // Try real AI first
+  let aiUnavailable = false;
   if (isAITriageAvailable()) {
     try {
       const triage = await callAITriage(rawInput, hasEnrichment ? enrichedContext : undefined);
@@ -119,12 +120,27 @@ export async function runAITriage(
       }
       return { triage, aiData, source: "ai", usedEnrichedContext: hasEnrichment };
     } catch (err) {
-      console.warn("AI triage failed, falling back to local:", err);
+      const silent = (err as Error & { silent?: boolean })?.silent;
+      if (silent) {
+        aiUnavailable = true;
+        // No console.warn — function not deployed yet is an expected state.
+      } else {
+        console.warn("AI triage failed, falling back to local:", err);
+      }
     }
   }
 
-  // Fallback to mock
-  const { aiData } = mockAIProcess(rawInput);
+  // Fallback: classify everything to inbox/general so capture never breaks.
+  const { aiData: mockData } = mockAIProcess(rawInput);
+  const aiData: AIProcessedData = aiUnavailable
+    ? {
+        ...mockData,
+        category: "note",
+        destination_suggestion: "inbox",
+        confidence: "needs_review",
+        review_reason: "AI organization will run when available.",
+      }
+    : mockData;
   const triage: AITriageResult = {
     type: aiData.category,
     title: aiData.title,
