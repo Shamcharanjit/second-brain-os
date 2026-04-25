@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Capture } from "@/types/brain";
 import AIResultCard from "@/components/AIResultCard";
 import AITriageCard from "@/components/AITriageCard";
+import FollowUpReminderCard from "@/components/FollowUpReminderCard";
 import CreateProjectDialog from "@/components/projects/CreateProjectDialog";
 import { runAITriage, isAITriageAvailable, triageToAIData, type AITriageResult } from "@/lib/ai-triage";
 import { useUploadAttachments, type UploadResult } from "@/hooks/useUploadAttachments";
@@ -37,6 +38,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   const [captureInputType, setCaptureInputType] = useState<"text" | "voice">("text");
   const [phase, setPhase] = useState<CapturePhase>("idle");
   const [lastResult, setLastResult] = useState<Capture | null>(null);
+  const [showReminderCard, setShowReminderCard] = useState(false);
   const [triageResult, setTriageResult] = useState<{ triage: AITriageResult; source: "ai" | "local" | "unavailable" } | null>(null);
   const [capturedText, setCapturedText] = useState("");
   const { addCapture, addCaptureWithAI } = useBrain();
@@ -48,6 +50,17 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
+
+  /** Decide whether to offer a Day-2 follow-up reminder for this capture. */
+  function shouldOfferReminder(capture: Capture): boolean {
+    const ai = capture.ai_data;
+    if (!ai) return false;
+    const reminderCategories = new Set(["task", "reminder", "follow_up", "idea", "goal"]);
+    if (reminderCategories.has(ai.category)) return true;
+    if ((ai.priority_score ?? 0) >= 60) return true;
+    if (ai.urgency === "high") return true;
+    return false;
+  }
 
   // Rotate placeholders
   useEffect(() => {
@@ -127,12 +140,16 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       description: `Sorted to ${destLabel} as ${capture.ai_data?.category?.replace("_", " ")}${fileNote}`,
     });
 
+    const offerReminder = shouldOfferReminder(capture);
+    setShowReminderCard(offerReminder);
+
     timerRef.current = setTimeout(() => {
       timerRef.current = undefined;
       setPhase("idle");
+      setShowReminderCard(false);
       onComplete?.();
       textareaRef.current?.focus();
-    }, 3000);
+    }, offerReminder ? 12000 : 3000);
   }, [text, phase, pendingFiles, addCapture, captureInputType, onComplete, buildCaptureText, uploadFiles, reportUploadResults]);
 
   // AI triage flow
@@ -197,13 +214,17 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       description: `Organized as ${triageResult.triage.type.replace("_", " ")} → ${destLabel}`,
     });
 
+    const offerReminder = shouldOfferReminder(capture);
+    setShowReminderCard(offerReminder);
+
     timerRef.current = setTimeout(() => {
       timerRef.current = undefined;
       setPhase("idle");
       setTriageResult(null);
+      setShowReminderCard(false);
       onComplete?.();
       textareaRef.current?.focus();
-    }, 3000);
+    }, offerReminder ? 12000 : 3000);
   }, [triageResult, capturedText, pendingFiles, addCaptureWithAI, captureInputType, onComplete, uploadFiles, reportUploadResults]);
 
   // Create project from triage
@@ -444,6 +465,14 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
             <span className="text-xs text-[hsl(var(--brain-teal))] font-medium">Thought captured and organized</span>
           </div>
           <AIResultCard capture={lastResult} />
+          {showReminderCard && (
+            <FollowUpReminderCard
+              captureId={lastResult.id}
+              captureText={lastResult.raw_input}
+              captureTitle={lastResult.ai_data?.title ?? null}
+              onDone={() => setShowReminderCard(false)}
+            />
+          )}
         </div>
       )}
 
