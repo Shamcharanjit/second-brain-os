@@ -153,5 +153,5 @@ export async function runAITriage(
     suggestedNextAction: aiData.next_action,
     confidence: aiData.confidence === "high" ? 0.9 : aiData.confidence === "medium" ? 0.65 : 0.3,
   };
-  return { triage, aiData, source: "local", usedEnrichedContext: false };
+  return { triage, aiData, source: aiUnavailable ? "unavailable" : "local", usedEnrichedContext: false };
 }
