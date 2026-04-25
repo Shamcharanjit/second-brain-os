@@ -87,24 +87,9 @@ export function useConversionCampaignPrompt(): CampaignPromptState {
         }
       }
 
-      // Priority 2: Rule-triggered prompt
-      try {
-        const { data: ruleDecision } = await supabase.rpc("get_upgrade_prompt_decision" as any, { p_user_id: user.id });
-        if (ruleDecision && (ruleDecision as any).should_show_prompt) {
-          const rd = ruleDecision as any;
-          setState({
-            shouldShow: true,
-            strength: rd.prompt_strength as PromptStrength,
-            campaignId: null,
-            campaignName: rd.rule_triggered || "Auto Rule",
-            promptType: rd.prompt_type as PromptType,
-            triggerSource: "rule",
-          });
-          return;
-        }
-      } catch {
-        // RPC may not exist yet, fall through
-      }
+      // Priority 2 removed for now: get_upgrade_prompt_decision may not be
+      // deployed in some environments. Fall back directly to readiness logic
+      // without making the RPC call or surfacing 404 noise.
 
       // Priority 3: Readiness badge fallback
       const { data: sub } = await supabase
