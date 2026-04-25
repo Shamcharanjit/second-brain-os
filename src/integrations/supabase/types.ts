@@ -972,6 +972,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ensure_waitlist_referral_row: {
+        Args: { p_email: string; p_name?: string }
+        Returns: string
+      }
       get_activation_cohorts: { Args: never; Returns: Json }
       get_activation_funnel_summary: { Args: never; Returns: Json }
       get_activation_health_score: { Args: never; Returns: Json }
