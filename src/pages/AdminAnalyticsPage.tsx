@@ -977,9 +977,13 @@ export default function AdminAnalyticsPage() {
                       <span className="text-xs font-medium text-muted-foreground">{item.label}</span>
                       <item.icon className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    <p className="text-2xl font-bold text-foreground tabular-nums">{item.perUser.toFixed(1)}</p>
+                    <p className="text-2xl font-bold text-foreground tabular-nums">
+                      {(item as { isTotal?: boolean }).isTotal ? item.total : item.perUser.toFixed(1)}
+                    </p>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">{item.total} total (7d)</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {(item as { isTotal?: boolean }).isTotal ? "total voice captures (7d)" : `${item.total} total (7d)`}
+                      </span>
                       <EngagementBadge level={item.level} />
                     </div>
                   </div>
