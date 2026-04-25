@@ -290,6 +290,17 @@ export default function SettingsPage() {
       {/* Referral Center */}
       <ReferralCenter />
 
+      {/* Product Updates */}
+      <section className="rounded-xl border bg-card p-5 space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" /> Product Updates
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Recent improvements to your second brain.
+        </p>
+        <WhatsNewTimeline limit={5} />
+      </section>
+
       {/* Plan & AI Usage */}
       <section className="rounded-xl border bg-card p-5 space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
