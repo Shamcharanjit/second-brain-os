@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { isFounderAdmin } from "@/lib/admin";
 import { fetchFeatureUpdates, fetchSeenIds, markAnnouncementSeen, formatUpdateDate, type FeatureUpdate } from "@/lib/whats-new";
 
 type Props = {
@@ -14,11 +15,12 @@ export default function WhatsNewTimeline({ markAllSeenOnMount = false, limit }: 
   const { user, cloudAvailable } = useAuth();
   const [updates, setUpdates] = useState<FeatureUpdate[]>([]);
   const [loading, setLoading] = useState(true);
+  const isAdmin = isFounderAdmin(user?.email);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const list = await fetchFeatureUpdates();
+      const list = await fetchFeatureUpdates({ isAdmin });
       if (cancelled) return;
       setUpdates(list);
       setLoading(false);
@@ -30,7 +32,7 @@ export default function WhatsNewTimeline({ markAllSeenOnMount = false, limit }: 
       }
     })();
     return () => { cancelled = true; };
-  }, [user, cloudAvailable, markAllSeenOnMount]);
+  }, [user, cloudAvailable, markAllSeenOnMount, isAdmin]);
 
   if (loading) {
     return (
