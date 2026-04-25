@@ -27,6 +27,7 @@ export default function SeoCoveragePanel() {
   const [coverage, setCoverage] = useState<CoveragePayload | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const isFounder = isFounderAdmin(user?.email);
 
@@ -37,15 +38,25 @@ export default function SeoCoveragePanel() {
     }
     (async () => {
       try {
-        const [{ data: cov }, { data: miss }] = await Promise.all([
+        const [covRes, missRes] = await Promise.all([
           supabase.rpc("get_seo_metadata_coverage" as never),
           supabase.rpc("get_missing_metadata_pages" as never),
         ]);
-        setCoverage((cov ?? null) as CoveragePayload | null);
-        const m = (miss ?? null) as MissingPayload | null;
+        if (covRes.error) {
+          console.error("[SeoCoveragePanel] coverage RPC error:", covRes.error);
+          setErrorMsg(covRes.error.message);
+        }
+        if (missRes.error) {
+          console.error("[SeoCoveragePanel] missing RPC error:", missRes.error);
+        }
+        const cov = (covRes.data ?? null) as CoveragePayload | null;
+        setCoverage(cov);
+        if (cov?.error) setErrorMsg(cov.error);
+        const m = (missRes.data ?? null) as MissingPayload | null;
         setMissing(Array.isArray(m?.missing_pages) ? m!.missing_pages : []);
-      } catch (err) {
+      } catch (err: any) {
         console.error("[SeoCoveragePanel]", err);
+        setErrorMsg(err?.message ?? String(err));
       } finally {
         setLoading(false);
       }
@@ -63,10 +74,13 @@ export default function SeoCoveragePanel() {
     );
   }
 
-  if (!coverage || coverage.error) {
+  if (!coverage || coverage.error || errorMsg) {
     return (
-      <div className="rounded-xl border border-border bg-card p-6 text-center">
+      <div className="rounded-xl border border-border bg-card p-6 text-center space-y-1">
         <p className="text-sm text-muted-foreground">SEO coverage unavailable.</p>
+        {(errorMsg || coverage?.error) && (
+          <p className="text-xs text-destructive font-mono">{errorMsg ?? coverage?.error}</p>
+        )}
       </div>
     );
   }
