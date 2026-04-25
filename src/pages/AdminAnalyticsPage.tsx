@@ -23,6 +23,7 @@ import ReferralVelocityPanel from "@/components/dashboard/ReferralVelocityPanel"
 import UserGeographyPanel from "@/components/dashboard/UserGeographyPanel";
 import SeoSignalsPanel from "@/components/dashboard/SeoSignalsPanel";
 import SeoCoveragePanel from "@/components/dashboard/SeoCoveragePanel";
+import SeoPerformancePanel from "@/components/dashboard/SeoPerformancePanel";
 
 /* ── types ── */
 
