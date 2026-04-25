@@ -45,7 +45,7 @@ export async function upsertCaptures(userId: string, captures: Capture[]): Promi
   if (!writeOk) console.error("upsertCaptures error: failed to write captures");
 }
 
-/** Full replace: upsert current + delete cloud records not in local set */
+/** Full replace: sync current + delete cloud records not in local confirmed set */
 export async function syncCaptures(userId: string, captures: Capture[]): Promise<void> {
   const writeUserId = await resolveAuthenticatedUserId(userId);
   if (!writeUserId) {
@@ -53,19 +53,23 @@ export async function syncCaptures(userId: string, captures: Capture[]): Promise
     return;
   }
 
-  // Insert new rows + update existing rows
   if (captures.length > 0) {
     const writeOk = await writeCaptures(writeUserId, captures);
     if (!writeOk) { console.error("syncCaptures upsert error: failed to write captures"); return; }
   }
-  // Delete orphaned cloud records
-  const localIds = captures.map((c) => c.id);
+
+  // Delete only against confirmed cloud ids. Local temp ids should never be treated
+  // as server records, otherwise freshly inserted rows get deleted immediately.
+  const confirmedCloudIds = captures
+    .map((c) => c.cloud_id ?? (c.id.startsWith("local-") ? null : c.id))
+    .filter((id): id is string => Boolean(id));
+
   const { data: cloudRows, error: fetchErr } = await supabase
     .from("user_captures")
     .select("id")
     .eq("user_id", writeUserId);
   if (fetchErr) { console.error("syncCaptures fetch error:", fetchErr); return; }
-  const orphanIds = (cloudRows ?? []).map((r: any) => r.id).filter((id: string) => !localIds.includes(id));
+  const orphanIds = (cloudRows ?? []).map((r: any) => r.id).filter((id: string) => !confirmedCloudIds.includes(id));
   if (orphanIds.length > 0) {
     const { error: delErr } = await supabase.from("user_captures").delete().in("id", orphanIds);
     if (delErr) console.error("syncCaptures delete error:", delErr);
