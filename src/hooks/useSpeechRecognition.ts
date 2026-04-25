@@ -354,6 +354,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
 
   const reset = useCallback(() => {
     clearStopFallback();
+    clearSafetyStop();
     stopMediaStream();
     releaseRecognition();
     stoppingRef.current = false;
