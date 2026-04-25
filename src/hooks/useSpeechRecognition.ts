@@ -68,11 +68,17 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     onResultRef.current = onResult;
   }, [onResult]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount — abort + detach handlers to release mic immediately
   useEffect(() => {
     return () => {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.abort(); } catch {}
+      const rec = recognitionRef.current;
+      if (rec) {
+        try {
+          rec.onresult = null;
+          rec.onerror = null;
+          rec.onend = null;
+        } catch {}
+        try { rec.abort(); } catch {}
         recognitionRef.current = null;
       }
     };
