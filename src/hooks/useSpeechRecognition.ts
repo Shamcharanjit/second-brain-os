@@ -166,7 +166,12 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
         setInterimTranscript("");
         setState("processing");
         onResultRef.current?.(final.trim(), bestConfidence);
-      }
+        const activeStream = mediaStreamRef.current;
+        if (activeStream) {
+          try { activeStream.getTracks().forEach((track) => track.stop()); } catch {}
+          mediaStreamRef.current = null;
+        }
+        try { recognition.stop(); } catch {}
     };
 
     recognition.onerror = (event: any) => {
