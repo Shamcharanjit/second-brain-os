@@ -959,6 +959,9 @@ export default function AdminAnalyticsPage() {
           {/* ═══ SEO COVERAGE (FOUNDER-ONLY METADATA INTELLIGENCE) ═══ */}
           <SeoCoveragePanel />
 
+          {/* ═══ SEO PERFORMANCE (FOUNDER-ONLY ATTRIBUTION INTELLIGENCE) ═══ */}
+          <SeoPerformancePanel />
+
           {/* ═══ ENGAGEMENT HEAT SIGNALS ═══ */}
           <section className="space-y-3">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
