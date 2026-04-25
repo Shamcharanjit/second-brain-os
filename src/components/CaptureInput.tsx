@@ -13,6 +13,7 @@ import AITriageCard from "@/components/AITriageCard";
 import CreateProjectDialog from "@/components/projects/CreateProjectDialog";
 import { runAITriage, isAITriageAvailable, triageToAIData, type AITriageResult } from "@/lib/ai-triage";
 import { useUploadAttachments, type UploadResult } from "@/hooks/useUploadAttachments";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 
 const PLACEHOLDERS = [
