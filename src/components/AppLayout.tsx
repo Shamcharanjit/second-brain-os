@@ -62,6 +62,7 @@ const NAV_SECONDARY = [
 ];
 
 const NAV_ACCOUNT = [
+  { to: "/whats-new", label: "What's New", icon: Sparkles },
   { to: "/help", label: "How to Use", icon: HelpCircle },
   { to: "/settings", label: "Settings", icon: Settings },
   { to: "/upgrade", label: "Upgrade", icon: Crown },

@@ -35,6 +35,7 @@ import InvitePage from "@/pages/InvitePage";
 import AdminPlansPage from "@/pages/AdminPlansPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import HelpPage from "@/pages/HelpPage";
+import WhatsNewPage from "@/pages/WhatsNewPage";
 import NotFound from "@/pages/NotFound";
 import AppErrorBoundary from "@/components/system/AppErrorBoundary";
 import PageErrorBoundary from "@/components/system/PageErrorBoundary";
@@ -95,6 +96,7 @@ const App = () => (
                   <Route path="/ideas" element={<IdeasVaultPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/help" element={<PageErrorBoundary section="Help"><HelpPage /></PageErrorBoundary>} />
+                  <Route path="/whats-new" element={<PageErrorBoundary section="What's New"><WhatsNewPage /></PageErrorBoundary>} />
                   <Route path="/upgrade" element={<UpgradePage />} />
                 </Route>
 

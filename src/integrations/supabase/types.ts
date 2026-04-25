@@ -53,7 +53,11 @@ export type Database = {
           message: string
           status: string
           title: string
+          type: string
           updated_at: string
+          version_tag: string | null
+          visible_from: string | null
+          visible_to: string | null
         }
         Insert: {
           created_at?: string
@@ -63,7 +67,11 @@ export type Database = {
           message: string
           status?: string
           title: string
+          type?: string
           updated_at?: string
+          version_tag?: string | null
+          visible_from?: string | null
+          visible_to?: string | null
         }
         Update: {
           created_at?: string
@@ -73,7 +81,11 @@ export type Database = {
           message?: string
           status?: string
           title?: string
+          type?: string
           updated_at?: string
+          version_tag?: string | null
+          visible_from?: string | null
+          visible_to?: string | null
         }
         Relationships: []
       }
@@ -790,6 +802,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_seen_announcements: {
+        Row: {
+          announcement_id: string
+          id: string
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          id?: string
+          seen_at?: string
+          user_id: string
+        }
+        Update: {
+          announcement_id?: string
+          id?: string
+          seen_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_seen_announcements_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_subscriptions: {
         Row: {

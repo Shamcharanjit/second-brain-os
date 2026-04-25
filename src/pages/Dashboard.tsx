@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardWelcome from "@/components/dashboard/DashboardWelcome";
+import WhatsNewBanner from "@/components/dashboard/WhatsNewBanner";
 import DashboardSignals from "@/components/dashboard/DashboardSignals";
 import DashboardActiveWork from "@/components/dashboard/DashboardActiveWork";
 import DashboardStrategy from "@/components/dashboard/DashboardStrategy";
@@ -68,6 +69,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      <WhatsNewBanner />
       <DashboardHero />
 
       <SectionHeader icon={Inbox} label="Signals" to="/inbox" />
