@@ -201,7 +201,7 @@ function captureUpdateRow(userId: string, c: Capture) {
     cloud_id: c.cloud_id,
     user_id: userId,
     raw_input: c.raw_input,
-    input_type: c.input_type,
+    input_type: normalizeInputType(c.input_type),
     created_at: c.created_at,
     processed: c.processed,
     status: c.status,
