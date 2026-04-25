@@ -272,11 +272,23 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
 
   const stopListening = useCallback(() => {
     stoppingRef.current = true;
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch {}
-    }
+    const rec = recognitionRef.current;
+    if (!rec) return;
+    try { rec.stop(); } catch {}
+    // Safety net: if onend doesn't fire within 800ms (some browsers hang on
+    // stop() and keep the mic indicator on), force-abort to release the mic.
+    setTimeout(() => {
+      const stillRec = recognitionRef.current;
+      if (stillRec) {
+        try {
+          stillRec.onresult = null;
+          stillRec.onerror = null;
+          stillRec.onend = null;
+        } catch {}
+        try { stillRec.abort(); } catch {}
+        recognitionRef.current = null;
+      }
+    }, 800);
   }, []);
 
   const reset = useCallback(() => {
