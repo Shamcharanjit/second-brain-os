@@ -58,6 +58,12 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   }, [phase]);
 
   useEffect(() => {
+    if (phase !== "recording" && text.trim().length === 0) {
+      setCaptureInputType("text");
+    }
+  }, [phase, text]);
+
+  useEffect(() => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
 
@@ -256,6 +262,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
 
       setPhase("recording");
       setText("");
+      setCaptureInputType("voice");
       setLastResult(null);
       setTriageResult(null);
       voiceCommittedRef.current = false;
@@ -280,9 +287,11 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
         if (final && !voiceCommittedRef.current) {
           voiceCommittedRef.current = true;
           setText(final.trim());
+          setCaptureInputType("voice");
           // Don't set phase to idle yet — onend will finalize
         } else if (interim) {
           setText(interim);
+          setCaptureInputType("voice");
         }
       };
 
@@ -293,12 +302,16 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
           toast.error(`Voice error: ${event.error}`);
         }
         setPhase("idle");
+        if (!voiceCommittedRef.current) setCaptureInputType("text");
       };
 
       recognition.onend = () => {
         speechRecognitionRef.current = null;
         // Transition back to idle so user can review and submit
         setPhase("idle");
+        if (voiceCommittedRef.current || text.trim()) {
+          setCaptureInputType("voice");
+        }
       };
 
       try {
@@ -306,6 +319,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       } catch {
         toast.error("Could not start voice recognition.");
         setPhase("idle");
+        setCaptureInputType("text");
       }
     }
   };
