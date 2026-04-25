@@ -56,8 +56,11 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
   // Safari/macOS keeps the orange mic indicator on if any track is still live.
   const activeStreamsRef = useRef<Set<MediaStream>>(new Set());
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  // Session token — incremented on every start/stop/release. getUserMedia
+  // callbacks compare against this to know whether their session is still live.
+  const sessionTokenRef = useRef(0);
   const stopFallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const safetyStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const safetyStopTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const onResultRef = useRef(onResult);
   const stoppingRef = useRef(false);
   const committedRef = useRef(false);
@@ -65,6 +68,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
   const finalConfidenceRef = useRef(0);
   const errorStateRef = useRef(false);
   const interimRef = useRef("");
+  const manualCancelRef = useRef(false);
 
   useEffect(() => {
     onResultRef.current = onResult;
@@ -77,11 +81,9 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     }
   }, []);
 
-  const clearSafetyStop = useCallback(() => {
-    if (safetyStopTimeoutRef.current) {
-      clearTimeout(safetyStopTimeoutRef.current);
-      safetyStopTimeoutRef.current = null;
-    }
+  const clearSafetyStops = useCallback(() => {
+    safetyStopTimeoutsRef.current.forEach((t) => clearTimeout(t));
+    safetyStopTimeoutsRef.current = [];
   }, []);
 
   const hardStopStream = useCallback((stream: MediaStream | null | undefined) => {
@@ -109,14 +111,19 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     mediaStreamRef.current = null;
   }, []);
 
-  const scheduleSafetyStop = useCallback(() => {
-    clearSafetyStop();
-    // Safari sometimes leaves the indicator on briefly; re-stop after 250ms.
-    safetyStopTimeoutRef.current = setTimeout(() => {
-      stopMediaStream();
-      safetyStopTimeoutRef.current = null;
-    }, 250);
-  }, [clearSafetyStop, stopMediaStream]);
+  const scheduleSafetyStops = useCallback(() => {
+    // Run cleanup multiple times — Safari can take up to a few hundred ms
+    // before its mic indicator releases, and a late-arriving getUserMedia
+    // callback can re-add a stream after the first cleanup.
+    [50, 150, 300, 600, 1200].forEach((delay) => {
+      const t = setTimeout(() => {
+        stopMediaStream();
+        const idx = safetyStopTimeoutsRef.current.indexOf(t);
+        if (idx >= 0) safetyStopTimeoutsRef.current.splice(idx, 1);
+      }, delay);
+      safetyStopTimeoutsRef.current.push(t);
+    });
+  }, [stopMediaStream]);
 
   const releaseRecognition = useCallback((instance?: any) => {
     const rec = instance ?? recognitionRef.current;
@@ -141,12 +148,13 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
 
   useEffect(() => {
     return () => {
+      sessionTokenRef.current += 1;
       clearStopFallback();
-      clearSafetyStop();
+      clearSafetyStops();
       stopMediaStream();
       releaseRecognition();
     };
-  }, [clearStopFallback, clearSafetyStop, stopMediaStream, releaseRecognition]);
+  }, [clearStopFallback, clearSafetyStops, stopMediaStream, releaseRecognition]);
 
   const startListening = useCallback(() => {
     if (!SpeechRecognitionCtor) {
@@ -155,7 +163,12 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       return;
     }
 
+    // New session — invalidate any in-flight getUserMedia callbacks from a prior run.
+    sessionTokenRef.current += 1;
+    const sessionToken = sessionTokenRef.current;
+
     clearStopFallback();
+    clearSafetyStops();
     stopMediaStream();
     releaseRecognition();
 
@@ -167,6 +180,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
 
     committedRef.current = false;
     stoppingRef.current = false;
+    manualCancelRef.current = false;
     finalTranscriptRef.current = "";
     finalConfidenceRef.current = 0;
     errorStateRef.current = false;
@@ -201,9 +215,11 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
           setState("error");
           errorStateRef.current = true;
           setErrorMessage("Could not understand speech clearly. Please try again.");
+          // Invalidate session before cleanup so any in-flight getUserMedia is dropped.
+          sessionTokenRef.current += 1;
           stopMediaStream();
           releaseRecognition(recognition);
-          scheduleSafetyStop();
+          scheduleSafetyStops();
           committedRef.current = true;
           return;
         }
@@ -217,24 +233,32 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
         setInterimTranscript("");
         setState("processing");
         onResultRef.current?.(committedText, bestConfidence);
+        // Invalidate session so any pending getUserMedia stream is auto-released.
+        sessionTokenRef.current += 1;
         stopMediaStream();
         try { recognition.stop(); } catch {}
         try { recognition.abort(); } catch {}
-        scheduleSafetyStop();
+        scheduleSafetyStops();
       }
     };
 
     recognition.onerror = (event: any) => {
       clearStopFallback();
+      sessionTokenRef.current += 1;
       stopMediaStream();
-      scheduleSafetyStop();
+      scheduleSafetyStops();
       const err = event.error;
+      // Manual cancel or abort — never surface as a user-visible error,
+      // and never report "audio-capture" (which fires when we stop tracks under recognizer).
+      if (manualCancelRef.current || err === "aborted" || err === "canceled" || err === "audio-capture") {
+        if (!committedRef.current) setState("idle");
+        releaseRecognition(recognition);
+        return;
+      }
       if (err === "no-speech") {
         setState("error");
         errorStateRef.current = true;
         setErrorMessage("No speech detected. Please try again.");
-      } else if (err === "aborted" || err === "canceled") {
-        if (!committedRef.current) setState("idle");
       } else if (err === "not-allowed") {
         setState("error");
         errorStateRef.current = true;
@@ -257,9 +281,11 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
 
     recognition.onend = () => {
       clearStopFallback();
+      // Invalidate session BEFORE stopping so any straggling getUserMedia drops its stream.
+      sessionTokenRef.current += 1;
       stopMediaStream();
       releaseRecognition(recognition);
-      scheduleSafetyStop();
+      scheduleSafetyStops();
       if (committedRef.current && !errorStateRef.current) {
         setState("captured");
         return;
@@ -282,7 +308,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
         return;
       }
 
-      if (stoppingRef.current) {
+      if (stoppingRef.current || manualCancelRef.current) {
         setState("idle");
       } else {
         setState("error");
@@ -300,6 +326,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     try {
       recognition.start();
     } catch (startErr: any) {
+      sessionTokenRef.current += 1;
       stopMediaStream();
       releaseRecognition(recognition);
       if (startErr.name === "NotAllowedError") {
@@ -315,14 +342,19 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then((stream) => {
-          const activeRecognition = recognitionRef.current === recognition;
-          const shouldKeep = activeRecognition && !stoppingRef.current && !errorStateRef.current;
-          if (!shouldKeep) {
+          // If the session token changed, this stream belongs to an abandoned
+          // session — release it immediately so the mic indicator turns off.
+          const sessionStillLive =
+            sessionTokenRef.current === sessionToken &&
+            recognitionRef.current === recognition &&
+            !stoppingRef.current &&
+            !errorStateRef.current &&
+            !committedRef.current &&
+            !manualCancelRef.current;
+          if (!sessionStillLive) {
             hardStopStream(stream);
             return;
           }
-          // Stop any previous stream BEFORE storing the new one.
-          stopMediaStream();
           activeStreamsRef.current.add(stream);
           mediaStreamRef.current = stream;
         })
@@ -330,16 +362,22 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
           // SpeechRecognition surfaces the user-facing permission errors.
         });
     }
-  }, [lang, minConfidence, clearStopFallback, stopMediaStream, releaseRecognition, scheduleSafetyStop, hardStopStream]);
+  }, [lang, minConfidence, clearStopFallback, clearSafetyStops, stopMediaStream, releaseRecognition, scheduleSafetyStops, hardStopStream]);
 
   const stopListening = useCallback(() => {
     stoppingRef.current = true;
+    manualCancelRef.current = true;
+    // Invalidate session immediately — any in-flight getUserMedia will release its stream.
+    sessionTokenRef.current += 1;
     clearStopFallback();
     stopMediaStream();
-    scheduleSafetyStop();
+    scheduleSafetyStops();
 
     const rec = recognitionRef.current;
-    if (!rec) return;
+    if (!rec) {
+      setState((prev) => (prev === "listening" || prev === "processing" ? "idle" : prev));
+      return;
+    }
 
     try { rec.stop(); } catch {}
     try { rec.abort(); } catch {}
@@ -350,15 +388,17 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       setState((prev) => (prev === "listening" || prev === "processing" ? "idle" : prev));
       stopFallbackTimeoutRef.current = null;
     }, 800);
-  }, [clearStopFallback, stopMediaStream, releaseRecognition, scheduleSafetyStop]);
+  }, [clearStopFallback, stopMediaStream, releaseRecognition, scheduleSafetyStops]);
 
   const reset = useCallback(() => {
+    sessionTokenRef.current += 1;
     clearStopFallback();
-    clearSafetyStop();
+    clearSafetyStops();
     stopMediaStream();
     releaseRecognition();
     stoppingRef.current = false;
     committedRef.current = false;
+    manualCancelRef.current = false;
     finalTranscriptRef.current = "";
     finalConfidenceRef.current = 0;
     errorStateRef.current = false;
@@ -368,7 +408,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     setFinalTranscript("");
     setErrorMessage(SpeechRecognitionCtor ? null : "Speech recognition is not supported in this browser.");
     setConfidence(0);
-  }, [clearStopFallback, clearSafetyStop, stopMediaStream, releaseRecognition]);
+  }, [clearStopFallback, clearSafetyStops, stopMediaStream, releaseRecognition]);
 
   return {
     state,
