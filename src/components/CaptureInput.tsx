@@ -13,6 +13,7 @@ import AITriageCard from "@/components/AITriageCard";
 import CreateProjectDialog from "@/components/projects/CreateProjectDialog";
 import { runAITriage, isAITriageAvailable, triageToAIData, type AITriageResult } from "@/lib/ai-triage";
 import { useUploadAttachments, type UploadResult } from "@/hooks/useUploadAttachments";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 
 const PLACEHOLDERS = [
@@ -57,11 +58,9 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     return () => clearInterval(interval);
   }, [phase]);
 
-  useEffect(() => {
-    if (phase !== "recording" && text.trim().length === 0) {
-      setCaptureInputType("text");
-    }
-  }, [phase, text]);
+  // NOTE: do not auto-reset captureInputType here — voice paths must keep
+  // input_type = "voice" until the capture is actually submitted (handleSubmit
+  // / handleApplyTriage / handleDismissTriage explicitly reset it after use).
 
   useEffect(() => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
@@ -241,88 +240,65 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     }, 3000);
   }, [capturedText, pendingFiles, addCapture, captureInputType, onComplete, uploadFiles, reportUploadResults]);
 
-  // --- Real voice capture via Web Speech API ---
-  const speechRecognitionRef = useRef<any>(null);
-  const voiceCommittedRef = useRef(false);
-
-  const handleVoice = () => {
-    if (phase === "recording") {
-      // Stop recording — do NOT reset phase here; let onresult/onend handle it
-      if (speechRecognitionRef.current) {
-        try { speechRecognitionRef.current.stop(); } catch {}
+  // --- Voice capture via centralized hook (full mic cleanup on Safari/macOS) ---
+  const speech = useSpeechRecognition({
+    onResult: (transcript) => {
+      // Final transcript committed by hook — pin input_type to "voice"
+      if (transcript) {
+        setText(transcript);
+        setCaptureInputType("voice");
       }
-    } else if (phase === "idle") {
-      const SpeechRecognitionCtor =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    },
+  });
 
-      if (!SpeechRecognitionCtor) {
-        toast.error("Speech recognition not supported in this browser.");
-        return;
-      }
-
+  // Mirror hook state into local phase so UI shows "Listening…"
+  useEffect(() => {
+    if (speech.state === "listening") {
       setPhase("recording");
-      setText("");
-      setCaptureInputType("voice");
-      setLastResult(null);
-      setTriageResult(null);
-      voiceCommittedRef.current = false;
-
-      const recognition = new SpeechRecognitionCtor();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = navigator.language || "en-US";
-      speechRecognitionRef.current = recognition;
-
-      recognition.onresult = (event: any) => {
-        let interim = "";
-        let final = "";
-        for (let i = 0; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (result.isFinal) {
-            final += result[0].transcript;
-          } else {
-            interim += result[0].transcript;
-          }
-        }
-        if (final && !voiceCommittedRef.current) {
-          voiceCommittedRef.current = true;
-          setText(final.trim());
-          setCaptureInputType("voice");
-          // Don't set phase to idle yet — onend will finalize
-        } else if (interim) {
-          setText(interim);
-          setCaptureInputType("voice");
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-        if (event.error === "no-speech") {
-          toast.info("No speech detected. Please try again.");
-        } else if (event.error !== "aborted") {
-          toast.error(`Voice error: ${event.error}`);
-        }
-        setPhase("idle");
-        if (!voiceCommittedRef.current) setCaptureInputType("text");
-      };
-
-      recognition.onend = () => {
-        speechRecognitionRef.current = null;
-        // Transition back to idle so user can review and submit
-        setPhase("idle");
-        if (voiceCommittedRef.current || text.trim()) {
-          setCaptureInputType("voice");
-        }
-      };
-
-      try {
-        recognition.start();
-      } catch {
-        toast.error("Could not start voice recognition.");
-        setPhase("idle");
-        setCaptureInputType("text");
-      }
+    } else if (phase === "recording" && (speech.state === "idle" || speech.state === "captured" || speech.state === "error")) {
+      setPhase("idle");
     }
-  };
+  }, [speech.state, phase]);
+
+  // Show interim transcript live in textarea, but never overwrite once final committed
+  useEffect(() => {
+    if (speech.state === "listening" && speech.interimTranscript) {
+      setText(speech.interimTranscript);
+      setCaptureInputType("voice");
+    }
+  }, [speech.interimTranscript, speech.state]);
+
+  // Surface voice errors as toasts (skip the noisy "no speech" path)
+  useEffect(() => {
+    if (speech.state === "error" && speech.errorMessage) {
+      if (/no speech/i.test(speech.errorMessage)) {
+        toast.info(speech.errorMessage);
+      } else if (!/aborted/i.test(speech.errorMessage)) {
+        toast.error(speech.errorMessage);
+      }
+      speech.reset();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speech.state, speech.errorMessage]);
+
+  const handleVoice = useCallback(() => {
+    if (phase === "recording") {
+      // Manual stop — hook will finalize transcript & fully release the mic
+      speech.stopListening();
+      return;
+    }
+    if (phase !== "idle") return;
+    if (speech.state === "unsupported") {
+      toast.error("Speech recognition not supported in this browser.");
+      return;
+    }
+    setText("");
+    setLastResult(null);
+    setTriageResult(null);
+    setCaptureInputType("voice");
+    speech.reset();
+    speech.startListening();
+  }, [phase, speech]);
 
   const isModal = variant === "modal";
   const isBusy = ["recording", "transcribing", "processing", "triaging", "done"].includes(phase);
