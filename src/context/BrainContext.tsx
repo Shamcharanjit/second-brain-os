@@ -116,7 +116,9 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
   const addCaptureFromAction = useCallback((data: { text: string; projectId?: string; projectName?: string; actionId?: string }): Capture => {
     const { aiData } = mockAIProcess(data.text);
     const newCapture: Capture = {
-      id: crypto.randomUUID(), raw_input: data.text, input_type: "text",
+      id: `local-${crypto.randomUUID()}`,
+      cloud_id: null,
+      raw_input: data.text, input_type: "text",
       created_at: new Date().toISOString(), processed: true,
       status: "sent_to_today",
       review_status: "reviewed",
