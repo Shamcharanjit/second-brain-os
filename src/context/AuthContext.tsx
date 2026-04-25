@@ -52,9 +52,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(sess?.user ?? null);
       setLoading(false);
 
-      // Fire-and-forget: capture country metadata for newly signed-in users
+      // Fire-and-forget: capture country metadata + link visitor attribution
       if (newUserId) {
+        const userEmail = sess?.user?.email ?? null;
         setTimeout(() => { captureGeoMetadata().catch(() => {}); }, 0);
+        setTimeout(() => { linkAttributionToUser(newUserId, userEmail).catch(() => {}); }, 0);
+        setTimeout(() => { markAttributionActivated(newUserId).catch(() => {}); }, 0);
       }
     });
 
