@@ -49,6 +49,8 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
   const mediaRecordersRef = useRef<Set<MediaRecorder>>(new Set());
   const sessionTokenRef = useRef(0);
   const stopFallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const silenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const maxRecordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const safetyStopTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const onResultRef = useRef(onResult);
   const stoppingRef = useRef(false);
@@ -74,6 +76,21 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     activeStreamsRef.current.delete(stream);
   }, []);
 
+  const clearVoiceTimers = useCallback(() => {
+    if (stopFallbackTimeoutRef.current) {
+      clearTimeout(stopFallbackTimeoutRef.current);
+      stopFallbackTimeoutRef.current = null;
+    }
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
+    if (maxRecordingTimeoutRef.current) {
+      clearTimeout(maxRecordingTimeoutRef.current);
+      maxRecordingTimeoutRef.current = null;
+    }
+  }, []);
+
   /**
    * SINGLE source of truth for terminating a voice session.
    * Called from EVERY exit path: manual stop, final transcript, onend,
@@ -86,16 +103,13 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
    *  - Invalidates session token so any in-flight getUserMedia drops its stream
    *  - Schedules staggered safety re-runs to catch late-arriving streams
    */
-  const cleanupVoiceSession = useCallback((opts?: { scheduleSafety?: boolean }) => {
+  const cleanupVoiceSession = useCallback((reason: string, opts?: { scheduleSafety?: boolean }) => {
     // 1. Invalidate session — any in-flight getUserMedia callback will see this
     //    and immediately release its stream instead of adding it to our set.
     sessionTokenRef.current += 1;
 
-    // 2. Clear any pending stop fallback
-    if (stopFallbackTimeoutRef.current) {
-      clearTimeout(stopFallbackTimeoutRef.current);
-      stopFallbackTimeoutRef.current = null;
-    }
+    // 2. Clear any pending voice timers
+    clearVoiceTimers();
 
     // 3. Force-stop all MediaRecorder instances
     mediaRecordersRef.current.forEach((rec) => {
@@ -152,8 +166,70 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
         }, delay);
         safetyStopTimeoutsRef.current.push(t);
       });
+
+      const finalSafetyStop = setTimeout(() => {
+        activeStreamsRef.current.forEach((stream) => hardStopStream(stream));
+        const rec = recognitionRef.current;
+        if (rec) {
+          try { rec.stop(); } catch {}
+          try { rec.abort(); } catch {}
+        }
+        const idx = safetyStopTimeoutsRef.current.indexOf(finalSafetyStop);
+        if (idx >= 0) safetyStopTimeoutsRef.current.splice(idx, 1);
+      }, 300);
+      safetyStopTimeoutsRef.current.push(finalSafetyStop);
     }
-  }, []);
+  }, [clearVoiceTimers, hardStopStream]);
+
+  const finalizeTranscript = useCallback((transcript: string, transcriptConfidence: number, reason: string) => {
+    const committedText = transcript.trim();
+
+    if (!committedText) {
+      cleanupVoiceSession(reason);
+      if (stoppingRef.current || manualCancelRef.current) {
+        setState("idle");
+      } else if (!errorStateRef.current) {
+        setState("error");
+        setErrorMessage("No speech detected. Please try again.");
+      }
+      return;
+    }
+
+    if (!committedRef.current) {
+      if (transcriptConfidence > 0 && transcriptConfidence < minConfidence) {
+        committedRef.current = true;
+        errorStateRef.current = true;
+        setInterimTranscript("");
+        setState("error");
+        setErrorMessage("Could not understand speech clearly. Please try again.");
+        cleanupVoiceSession(reason);
+        return;
+      }
+
+      committedRef.current = true;
+      finalTranscriptRef.current = committedText;
+      finalConfidenceRef.current = transcriptConfidence;
+      interimRef.current = "";
+      setFinalTranscript(committedText);
+      setConfidence(transcriptConfidence);
+      setInterimTranscript("");
+      setState("processing");
+      onResultRef.current?.(committedText, transcriptConfidence);
+    }
+
+    cleanupVoiceSession(reason);
+    setTimeout(() => {
+      setState("captured");
+    }, 0);
+  }, [cleanupVoiceSession, minConfidence]);
+
+  const scheduleSilenceTimeout = useCallback(() => {
+    if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+    silenceTimeoutRef.current = setTimeout(() => {
+      const transcript = (finalTranscriptRef.current || interimRef.current).trim();
+      finalizeTranscript(transcript, finalConfidenceRef.current, "silence-timeout");
+    }, 2000);
+  }, [finalizeTranscript]);
 
   const clearSafetyStops = useCallback(() => {
     safetyStopTimeoutsRef.current.forEach((t) => clearTimeout(t));
