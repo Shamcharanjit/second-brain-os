@@ -318,35 +318,31 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
           const activeRecognition = recognitionRef.current === recognition;
           const shouldKeep = activeRecognition && !stoppingRef.current && !errorStateRef.current;
           if (!shouldKeep) {
-            try {
-              stream.getTracks().forEach((track) => track.stop());
-            } catch {}
+            hardStopStream(stream);
             return;
           }
+          // Stop any previous stream BEFORE storing the new one.
           stopMediaStream();
+          activeStreamsRef.current.add(stream);
           mediaStreamRef.current = stream;
         })
         .catch(() => {
           // SpeechRecognition surfaces the user-facing permission errors.
         });
     }
-  }, [lang, minConfidence, clearStopFallback, stopMediaStream, releaseRecognition]);
+  }, [lang, minConfidence, clearStopFallback, stopMediaStream, releaseRecognition, scheduleSafetyStop, hardStopStream]);
 
   const stopListening = useCallback(() => {
     stoppingRef.current = true;
     clearStopFallback();
     stopMediaStream();
+    scheduleSafetyStop();
 
     const rec = recognitionRef.current;
     if (!rec) return;
 
-    try {
-      rec.stop();
-    } catch {
-      releaseRecognition(rec);
-      setState("idle");
-      return;
-    }
+    try { rec.stop(); } catch {}
+    try { rec.abort(); } catch {}
 
     stopFallbackTimeoutRef.current = setTimeout(() => {
       stopMediaStream();
@@ -354,7 +350,7 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       setState((prev) => (prev === "listening" || prev === "processing" ? "idle" : prev));
       stopFallbackTimeoutRef.current = null;
     }, 800);
-  }, [clearStopFallback, stopMediaStream, releaseRecognition]);
+  }, [clearStopFallback, stopMediaStream, releaseRecognition, scheduleSafetyStop]);
 
   const reset = useCallback(() => {
     clearStopFallback();
