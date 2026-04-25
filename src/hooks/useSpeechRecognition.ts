@@ -131,9 +131,9 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       rec.onspeechend = null;
       rec.onstart = null;
     } catch {}
-    try {
-      rec.abort();
-    } catch {}
+    // Call BOTH stop() and abort() — Safari needs both to fully release the mic.
+    try { rec.stop(); } catch {}
+    try { rec.abort(); } catch {}
     if (recognitionRef.current === rec) {
       recognitionRef.current = null;
     }
@@ -142,10 +142,11 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
   useEffect(() => {
     return () => {
       clearStopFallback();
+      clearSafetyStop();
       stopMediaStream();
       releaseRecognition();
     };
-  }, [clearStopFallback, stopMediaStream, releaseRecognition]);
+  }, [clearStopFallback, clearSafetyStop, stopMediaStream, releaseRecognition]);
 
   const startListening = useCallback(() => {
     if (!SpeechRecognitionCtor) {
