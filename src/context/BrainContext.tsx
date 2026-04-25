@@ -81,7 +81,9 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
     const { aiData, reviewStatus } = mockAIProcess(text);
     const status = reviewStatus === "needs_review" ? "unprocessed" : autoRouteStatus(aiData.destination_suggestion);
     const newCapture: Capture = {
-      id: crypto.randomUUID(), raw_input: text, input_type: type,
+      id: `local-${crypto.randomUUID()}`,
+      cloud_id: null,
+      raw_input: text, input_type: type,
       created_at: new Date().toISOString(), processed: true, status,
       review_status: reviewStatus, ai_data: aiData,
       reviewed_at: null, manually_adjusted: false,
