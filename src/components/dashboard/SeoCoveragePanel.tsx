@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import { isFounderAdmin } from "@/lib/admin";
 import { Search, AlertTriangle, CheckCircle2, FileWarning, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,13 +28,7 @@ export default function SeoCoveragePanel() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const userRole = typeof user?.user_metadata?.role === "string" ? user.user_metadata.role : undefined;
-  const hasFounderAccess = userRole === "founder_admin" || isFounderAdmin(user?.email);
-
   useEffect(() => {
-    console.log("[SeoCoveragePanel] current user email:", user?.email ?? null);
-    console.log("[SeoCoveragePanel] current user_metadata.role:", userRole ?? null);
-
     if (authLoading) {
       setLoading(true);
       return;
@@ -54,11 +47,11 @@ export default function SeoCoveragePanel() {
           supabase.rpc("get_missing_metadata_pages" as never),
         ]);
         if (covRes.error) {
-          console.error("[SeoCoveragePanel] coverage RPC error payload:", covRes.error);
+          console.error("[SeoCoveragePanel] coverage RPC error:", covRes.error);
           setErrorMsg(covRes.error.message);
         }
         if (missRes.error) {
-          console.error("[SeoCoveragePanel] missing RPC error payload:", missRes.error);
+          console.error("[SeoCoveragePanel] missing RPC error:", missRes.error);
         }
         const cov = (covRes.data ?? null) as CoveragePayload | null;
         setCoverage(cov);
@@ -66,13 +59,15 @@ export default function SeoCoveragePanel() {
         const m = (missRes.data ?? null) as MissingPayload | null;
         setMissing(Array.isArray(m?.missing_pages) ? m!.missing_pages : []);
       } catch (err: any) {
-        console.error("[SeoCoveragePanel] unexpected RPC error payload:", err);
+        console.error("[SeoCoveragePanel] unexpected error:", err);
         setErrorMsg(err?.message ?? String(err));
       } finally {
         setLoading(false);
       }
     })();
-  }, [authLoading, user, userRole]);
+  }, [authLoading, user]);
+
+  if (!user) return null;
 
   if (loading) {
     return (
@@ -103,9 +98,6 @@ export default function SeoCoveragePanel() {
     <section className="space-y-4">
       <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
         <Search className="h-4 w-4" /> SEO Signals
-        <span className="text-[10px] text-muted-foreground/70 font-normal normal-case ml-1">
-          {hasFounderAccess ? "(Founder only)" : "(Admin analytics)"}
-        </span>
       </h2>
 
       {/* Coverage score hero */}
