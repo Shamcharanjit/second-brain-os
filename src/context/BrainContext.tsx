@@ -81,7 +81,9 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
     const { aiData, reviewStatus } = mockAIProcess(text);
     const status = reviewStatus === "needs_review" ? "unprocessed" : autoRouteStatus(aiData.destination_suggestion);
     const newCapture: Capture = {
-      id: crypto.randomUUID(), raw_input: text, input_type: type,
+      id: `local-${crypto.randomUUID()}`,
+      cloud_id: null,
+      raw_input: text, input_type: type,
       created_at: new Date().toISOString(), processed: true, status,
       review_status: reviewStatus, ai_data: aiData,
       reviewed_at: null, manually_adjusted: false,
@@ -96,7 +98,9 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
   const addCaptureWithAI = useCallback((text: string, type: "text" | "voice", preAiData: AIProcessedData, preReviewStatus: ReviewStatus): Capture => {
     const status = preReviewStatus === "needs_review" ? "unprocessed" : autoRouteStatus(preAiData.destination_suggestion);
     const newCapture: Capture = {
-      id: crypto.randomUUID(), raw_input: text, input_type: type,
+      id: `local-${crypto.randomUUID()}`,
+      cloud_id: null,
+      raw_input: text, input_type: type,
       created_at: new Date().toISOString(), processed: true, status,
       review_status: preReviewStatus, ai_data: preAiData,
       reviewed_at: null, manually_adjusted: false,
@@ -112,7 +116,9 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
   const addCaptureFromAction = useCallback((data: { text: string; projectId?: string; projectName?: string; actionId?: string }): Capture => {
     const { aiData } = mockAIProcess(data.text);
     const newCapture: Capture = {
-      id: crypto.randomUUID(), raw_input: data.text, input_type: "text",
+      id: `local-${crypto.randomUUID()}`,
+      cloud_id: null,
+      raw_input: data.text, input_type: "text",
       created_at: new Date().toISOString(), processed: true,
       status: "sent_to_today",
       review_status: "reviewed",

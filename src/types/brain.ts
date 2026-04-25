@@ -31,6 +31,7 @@ export interface AIProcessedData {
 
 export interface Capture {
   id: string;
+  cloud_id?: string | null;
   raw_input: string;
   input_type: "text" | "voice";
   created_at: string;
