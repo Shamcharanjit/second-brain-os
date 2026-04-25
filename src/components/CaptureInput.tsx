@@ -33,6 +33,7 @@ interface CaptureInputProps {
 
 export default function CaptureInput({ variant = "inline", onComplete }: CaptureInputProps) {
   const [text, setText] = useState("");
+  const [captureInputType, setCaptureInputType] = useState<"text" | "voice">("text");
   const [phase, setPhase] = useState<CapturePhase>("idle");
   const [lastResult, setLastResult] = useState<Capture | null>(null);
   const [triageResult, setTriageResult] = useState<{ triage: AITriageResult; source: "ai" | "local" | "unavailable" } | null>(null);
@@ -95,8 +96,9 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     await new Promise((r) => setTimeout(r, 400));
 
     const captureText = buildCaptureText(trimmed, pendingFiles);
-    const capture = addCapture(captureText, "text");
+    const capture = addCapture(captureText, captureInputType);
     setText("");
+    setCaptureInputType("text");
     setLastResult(capture);
 
     // Upload files in background
@@ -126,7 +128,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       onComplete?.();
       textareaRef.current?.focus();
     }, 3000);
-  }, [text, phase, pendingFiles, addCapture, onComplete, buildCaptureText, uploadFiles, reportUploadResults]);
+  }, [text, phase, pendingFiles, addCapture, captureInputType, onComplete, buildCaptureText, uploadFiles, reportUploadResults]);
 
   // AI triage flow
   const handleAITriage = useCallback(async () => {
@@ -152,15 +154,16 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       setTriageResult({ triage: result.triage, source: result.source });
       setPhase("triage_result");
     } catch {
-      const capture = addCapture(trimmed, "text");
+      const capture = addCapture(trimmed, captureInputType);
       setText("");
+      setCaptureInputType("text");
       setPendingFiles([]);
       setLastResult(capture);
       setPhase("done");
       toast.info("AI unavailable — captured with smart sort.");
       setTimeout(() => { setPhase("idle"); onComplete?.(); }, 3000);
     }
-  }, [text, phase, addCapture, onComplete, canUseAITriage, recordAITriageUse]);
+  }, [text, phase, addCapture, captureInputType, onComplete, canUseAITriage, recordAITriageUse]);
 
   // Apply triage result — use addCaptureWithAI to preserve real AI data
   const handleApplyTriage = useCallback(async () => {
@@ -168,8 +171,9 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
 
     const aiData = triageToAIData(triageResult.triage, capturedText);
     const reviewStatus = triageResult.triage.confidence >= 0.8 ? "auto_approved" as const : "needs_review" as const;
-    const capture = addCaptureWithAI(capturedText, "text", aiData, reviewStatus);
+    const capture = addCaptureWithAI(capturedText, captureInputType, aiData, reviewStatus);
     setText("");
+    setCaptureInputType("text");
 
     const filesToUpload = [...pendingFiles];
     setPendingFiles([]);
@@ -195,7 +199,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       onComplete?.();
       textareaRef.current?.focus();
     }, 3000);
-  }, [triageResult, capturedText, pendingFiles, addCaptureWithAI, onComplete, uploadFiles, reportUploadResults]);
+  }, [triageResult, capturedText, pendingFiles, addCaptureWithAI, captureInputType, onComplete, uploadFiles, reportUploadResults]);
 
   // Create project from triage
   const handleCreateProjectFromTriage = useCallback(() => {
@@ -206,8 +210,9 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   const handleDismissTriage = useCallback(async () => {
     if (!capturedText) return;
 
-    const capture = addCapture(capturedText, "text");
+    const capture = addCapture(capturedText, captureInputType);
     setText("");
+    setCaptureInputType("text");
 
     const filesToUpload = [...pendingFiles];
     setPendingFiles([]);
@@ -228,7 +233,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       onComplete?.();
       textareaRef.current?.focus();
     }, 3000);
-  }, [capturedText, pendingFiles, addCapture, onComplete, uploadFiles, reportUploadResults]);
+  }, [capturedText, pendingFiles, addCapture, captureInputType, onComplete, uploadFiles, reportUploadResults]);
 
   // --- Real voice capture via Web Speech API ---
   const speechRecognitionRef = useRef<any>(null);
