@@ -36,6 +36,8 @@ import AdminPlansPage from "@/pages/AdminPlansPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import HelpPage from "@/pages/HelpPage";
 import WhatsNewPage from "@/pages/WhatsNewPage";
+import LearnIndexPage from "@/pages/LearnIndexPage";
+import LearnDetailPage from "@/pages/LearnDetailPage";
 import NotFound from "@/pages/NotFound";
 import AppErrorBoundary from "@/components/system/AppErrorBoundary";
 import PageErrorBoundary from "@/components/system/PageErrorBoundary";
@@ -75,6 +77,8 @@ const App = () => (
                 <Route path="/invite" element={<InvitePage />} />
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/learn" element={<LearnIndexPage />} />
+                <Route path="/learn/:slug" element={<LearnDetailPage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
