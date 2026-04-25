@@ -964,21 +964,26 @@ export default function AdminAnalyticsPage() {
                 <p className="text-sm text-muted-foreground">No engagement data yet</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {[
                   { label: "Captures / User", icon: Zap, ...engagementHeat.captures },
                   { label: "Projects / User", icon: FolderKanban, ...engagementHeat.projects },
                   { label: "Memories / User", icon: BookOpen, ...engagementHeat.memories },
                   { label: "Voice / User", icon: Mic, ...engagementHeat.voice },
+                  { label: "Voice Captures (7d)", icon: Mic, total: engagementHeat.voice.total, perUser: engagementHeat.voice.total, level: engagementHeat.voice.level, isTotal: true },
                 ].map((item) => (
                   <div key={item.label} className="rounded-xl border border-border bg-card p-5 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-muted-foreground">{item.label}</span>
                       <item.icon className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    <p className="text-2xl font-bold text-foreground tabular-nums">{item.perUser.toFixed(1)}</p>
+                    <p className="text-2xl font-bold text-foreground tabular-nums">
+                      {(item as { isTotal?: boolean }).isTotal ? item.total : item.perUser.toFixed(1)}
+                    </p>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">{item.total} total (7d)</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {(item as { isTotal?: boolean }).isTotal ? "total voice captures (7d)" : `${item.total} total (7d)`}
+                      </span>
                       <EngagementBadge level={item.level} />
                     </div>
                   </div>
