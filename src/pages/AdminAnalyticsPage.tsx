@@ -22,6 +22,7 @@ import ActivationFunnelPanel from "@/components/dashboard/ActivationFunnelPanel"
 import ReferralVelocityPanel from "@/components/dashboard/ReferralVelocityPanel";
 import UserGeographyPanel from "@/components/dashboard/UserGeographyPanel";
 import SeoSignalsPanel from "@/components/dashboard/SeoSignalsPanel";
+import SeoCoveragePanel from "@/components/dashboard/SeoCoveragePanel";
 
 /* ── types ── */
 
