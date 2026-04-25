@@ -16,6 +16,7 @@ import { createPortalSession } from "@/lib/stripe/billing";
 import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLocalData } from "@/lib/data-export";
 import type { InsightHaloBackup } from "@/lib/data-export";
 import { ReferralCenter } from "@/components/settings/ReferralCenter";
+import WhatsNewTimeline from "@/components/WhatsNewTimeline";
 
 /* ── Access-level label logic ── */
 interface WaitlistMeta {
