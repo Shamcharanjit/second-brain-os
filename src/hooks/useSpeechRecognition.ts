@@ -68,11 +68,17 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     onResultRef.current = onResult;
   }, [onResult]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount — abort + detach handlers to release mic immediately
   useEffect(() => {
     return () => {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.abort(); } catch {}
+      const rec = recognitionRef.current;
+      if (rec) {
+        try {
+          rec.onresult = null;
+          rec.onerror = null;
+          rec.onend = null;
+        } catch {}
+        try { rec.abort(); } catch {}
         recognitionRef.current = null;
       }
     };
@@ -179,7 +185,31 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
       }
     };
 
+    // Force-release the microphone. SpeechRecognition.stop()/abort() does
+    // not always release the underlying MediaStream in Chrome/Android, leaving
+    // the browser mic indicator on. Detach handlers, abort, and null the ref
+    // so the recognition object (and its internal MediaStream) is GC'd.
+    const releaseMic = () => {
+      const rec = recognitionRef.current;
+      if (!rec) return;
+      try {
+        rec.onresult = null;
+        rec.onerror = null;
+        rec.onend = null;
+        rec.onaudiostart = null;
+        rec.onaudioend = null;
+        rec.onspeechstart = null;
+        rec.onspeechend = null;
+        rec.onstart = null;
+      } catch {}
+      try { rec.abort(); } catch {}
+      recognitionRef.current = null;
+    };
+
     recognition.onend = () => {
+      // Always release the mic on end — covers manual stop, auto-end, errors.
+      releaseMic();
+
       // If we already committed a result via onresult, transition to captured
       if (committedRef.current && !errorStateRef.current) {
         setState("captured");
@@ -242,11 +272,23 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
 
   const stopListening = useCallback(() => {
     stoppingRef.current = true;
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch {}
-    }
+    const rec = recognitionRef.current;
+    if (!rec) return;
+    try { rec.stop(); } catch {}
+    // Safety net: if onend doesn't fire within 800ms (some browsers hang on
+    // stop() and keep the mic indicator on), force-abort to release the mic.
+    setTimeout(() => {
+      const stillRec = recognitionRef.current;
+      if (stillRec) {
+        try {
+          stillRec.onresult = null;
+          stillRec.onerror = null;
+          stillRec.onend = null;
+        } catch {}
+        try { stillRec.abort(); } catch {}
+        recognitionRef.current = null;
+      }
+    }, 800);
   }, []);
 
   const reset = useCallback(() => {
