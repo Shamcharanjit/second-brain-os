@@ -3,17 +3,53 @@ import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useMemory } from "@/context/MemoryContext";
 import { useReviewMeta } from "@/context/ReviewMetaContext";
+import { useAuth } from "@/context/AuthContext";
 import { CalendarCheck, RotateCcw, FolderKanban, Brain, CheckCircle2, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMemo } from "react";
 import { formatDistanceToNow, isToday, differenceInDays } from "date-fns";
+
+function extractFirstName(user: ReturnType<typeof useAuth>["user"]): string | null {
+  if (!user) return null;
+  const meta: any = user.user_metadata || {};
+  const candidates: Array<string | undefined> = [
+    meta.first_name,
+    meta.given_name,
+    meta.firstName,
+    meta.full_name,
+    meta.name,
+    meta.display_name,
+    meta.preferred_username,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim()) {
+      const first = c.trim().split(/\s+/)[0];
+      if (first) return first.charAt(0).toUpperCase() + first.slice(1);
+    }
+  }
+  // Fallback: use email prefix if it looks like a name
+  const email = user.email || "";
+  const prefix = email.split("@")[0]?.replace(/[._-]+/g, " ").trim();
+  if (prefix && /^[a-zA-Z]/.test(prefix)) {
+    const first = prefix.split(/\s+/)[0];
+    if (first && first.length >= 2 && !/\d/.test(first)) {
+      return first.charAt(0).toUpperCase() + first.slice(1);
+    }
+  }
+  return null;
+}
 
 export default function DashboardHero() {
   const { captures } = useBrain();
   const { projects, getProjectHealth } = useProjects();
   const { memories } = useMemory();
   const { last_daily_review_at, last_weekly_review_at } = useReviewMeta();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const firstName = extractFirstName(user);
+  const hour = new Date().getHours();
+  const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greeting = firstName ? `${timeGreeting}, ${firstName}` : timeGreeting;
 
   const dailyDone = !!(last_daily_review_at && isToday(new Date(last_daily_review_at)));
 
