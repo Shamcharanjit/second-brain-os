@@ -50,6 +50,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(sess);
       setUser(sess?.user ?? null);
       setLoading(false);
+
+      // Fire-and-forget: capture country metadata for newly signed-in users
+      if (newUserId) {
+        setTimeout(() => { captureGeoMetadata().catch(() => {}); }, 0);
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session: sess } }) => {
@@ -62,6 +67,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(sess?.user ?? null);
       setLoading(false);
       initializedRef.current = true;
+      if (userId) {
+        setTimeout(() => { captureGeoMetadata().catch(() => {}); }, 0);
+      }
     });
 
     return () => { subscription.unsubscribe(); };
