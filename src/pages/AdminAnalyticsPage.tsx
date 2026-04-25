@@ -947,6 +947,9 @@ export default function AdminAnalyticsPage() {
           {/* ═══ REFERRAL VELOCITY ENGINE ═══ */}
           <ReferralVelocityPanel waitlist={waitlist as any} />
 
+          {/* ═══ USER GEOGRAPHY ═══ */}
+          <UserGeographyPanel />
+
           {/* ═══ ENGAGEMENT HEAT SIGNALS ═══ */}
           <section className="space-y-3">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
