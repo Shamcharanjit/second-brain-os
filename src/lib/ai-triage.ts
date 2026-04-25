@@ -40,6 +40,14 @@ async function callAITriage(rawInput: string, enrichedContext?: string): Promise
   });
 
   if (!resp.ok) {
+    // 404 = function not deployed on this Supabase project
+    // 503 = function deployed but AI not configured (missing LOVABLE_API_KEY)
+    // Treat both as "unavailable" — silent fallback, no console noise.
+    if (resp.status === 404 || resp.status === 503) {
+      const err = new Error("ai_unavailable");
+      (err as Error & { silent?: boolean }).silent = true;
+      throw err;
+    }
     const body = await resp.json().catch(() => ({ error: "Request failed" }));
     throw new Error(body.error || `HTTP ${resp.status}`);
   }
@@ -96,12 +104,13 @@ export async function runAITriage(
 ): Promise<{
   triage: AITriageResult;
   aiData: AIProcessedData;
-  source: "ai" | "local";
+  source: "ai" | "local" | "unavailable";
   usedEnrichedContext: boolean;
 }> {
   const hasEnrichment = !!enrichedContext && enrichedContext !== rawInput;
 
   // Try real AI first
+  let aiUnavailable = false;
   if (isAITriageAvailable()) {
     try {
       const triage = await callAITriage(rawInput, hasEnrichment ? enrichedContext : undefined);
@@ -111,12 +120,27 @@ export async function runAITriage(
       }
       return { triage, aiData, source: "ai", usedEnrichedContext: hasEnrichment };
     } catch (err) {
-      console.warn("AI triage failed, falling back to local:", err);
+      const silent = (err as Error & { silent?: boolean })?.silent;
+      if (silent) {
+        aiUnavailable = true;
+        // No console.warn — function not deployed yet is an expected state.
+      } else {
+        console.warn("AI triage failed, falling back to local:", err);
+      }
     }
   }
 
-  // Fallback to mock
-  const { aiData } = mockAIProcess(rawInput);
+  // Fallback: classify everything to inbox/general so capture never breaks.
+  const { aiData: mockData } = mockAIProcess(rawInput);
+  const aiData: AIProcessedData = aiUnavailable
+    ? {
+        ...mockData,
+        category: "note",
+        destination_suggestion: "inbox",
+        confidence: "needs_review",
+        review_reason: "AI organization will run when available.",
+      }
+    : mockData;
   const triage: AITriageResult = {
     type: aiData.category,
     title: aiData.title,
@@ -129,5 +153,5 @@ export async function runAITriage(
     suggestedNextAction: aiData.next_action,
     confidence: aiData.confidence === "high" ? 0.9 : aiData.confidence === "medium" ? 0.65 : 0.3,
   };
-  return { triage, aiData, source: "local", usedEnrichedContext: false };
+  return { triage, aiData, source: aiUnavailable ? "unavailable" : "local", usedEnrichedContext: false };
 }
