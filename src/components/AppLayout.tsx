@@ -8,6 +8,7 @@ import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
 import InsightHaloIcon from "@/components/branding/InsightHaloIcon";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { useConversionCampaignPrompt } from "@/hooks/useConversionCampaignPrompt";
+import { useReminderActivator } from "@/hooks/useReminderActivator";
 
 function UpgradePromptBanner({ strength, onShow, onClick, onDismiss }: {
   strength: string; onShow: () => void; onClick: () => void; onDismiss: () => void;
@@ -75,6 +76,8 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const navigate = useNavigate();
   const { user, signOut, cloudAvailable } = useAuth();
   const campaignPrompt = useConversionCampaignPrompt();
+  // Day-2 Retention Loop: surface due reminders as pinned Today captures
+  useReminderActivator();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
