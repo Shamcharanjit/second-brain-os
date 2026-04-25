@@ -150,7 +150,7 @@ function dbCaptureToCapture(row: any): Capture {
     id: row.id,
     cloud_id: row.id,
     raw_input: row.raw_input,
-    input_type: row.input_type,
+    input_type: row.input_type === "voice" ? "voice" : "text",
     created_at: row.created_at,
     processed: row.processed,
     status: row.status,
@@ -168,11 +168,17 @@ function dbCaptureToCapture(row: any): Capture {
   };
 }
 
+function normalizeInputType(value: any): "text" | "voice" {
+  // Preserve voice captures verbatim. Anything other than the literal "voice"
+  // falls back to "text" so Growth Intelligence (input_type='voice') counts correctly.
+  return value === "voice" ? "voice" : "text";
+}
+
 function captureInsertRow(userId: string, c: Capture) {
   return {
     user_id: userId,
     raw_input: c.raw_input,
-    input_type: c.input_type,
+    input_type: normalizeInputType(c.input_type),
     created_at: c.created_at,
     processed: c.processed,
     status: c.status,
@@ -195,7 +201,7 @@ function captureUpdateRow(userId: string, c: Capture) {
     cloud_id: c.cloud_id,
     user_id: userId,
     raw_input: c.raw_input,
-    input_type: c.input_type,
+    input_type: normalizeInputType(c.input_type),
     created_at: c.created_at,
     processed: c.processed,
     status: c.status,
