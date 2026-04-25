@@ -20,6 +20,7 @@ import PromptExperimentationPanel from "@/components/dashboard/PromptExperimenta
 import PaywallIntelligencePanel from "@/components/dashboard/PaywallIntelligencePanel";
 import ActivationFunnelPanel from "@/components/dashboard/ActivationFunnelPanel";
 import ReferralVelocityPanel from "@/components/dashboard/ReferralVelocityPanel";
+import UserGeographyPanel from "@/components/dashboard/UserGeographyPanel";
 
 /* ── types ── */
 
@@ -945,6 +946,9 @@ export default function AdminAnalyticsPage() {
 
           {/* ═══ REFERRAL VELOCITY ENGINE ═══ */}
           <ReferralVelocityPanel waitlist={waitlist as any} />
+
+          {/* ═══ USER GEOGRAPHY ═══ */}
+          <UserGeographyPanel />
 
           {/* ═══ ENGAGEMENT HEAT SIGNALS ═══ */}
           <section className="space-y-3">

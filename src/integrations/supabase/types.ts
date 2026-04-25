@@ -947,6 +947,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      get_user_geography_analytics: { Args: never; Returns: Json }
       get_user_referral_stats: { Args: never; Returns: Json }
       submit_waitlist: {
         Args: {
