@@ -64,13 +64,17 @@ export default function FirstCaptureFlow({ onComplete }: FirstCaptureFlowProps) 
 
     setPhase("processing");
     try {
-      const { triage } = await runAITriage(trimmed);
+      const { triage, source } = await runAITriage(trimmed);
       const aiData = triageToAIData(triage, trimmed);
       const reviewStatus = triage.confidence >= 0.8 ? ("auto_approved" as const) : ("needs_review" as const);
       const capture = addCaptureWithAI(trimmed, "text", aiData, reviewStatus);
       setResult({ capture, triage });
       setPhase("success");
-      toast.success("Insight captured.", { description: "InsightHalo organized this automatically." });
+      if (source === "unavailable") {
+        toast.success("Captured.", { description: "AI organization will run when available." });
+      } else {
+        toast.success("Insight captured.", { description: "InsightHalo organized this automatically." });
+      }
     } catch (err) {
       console.error("[FirstCaptureFlow] capture failed:", err);
       toast.error("Couldn't capture that. Please try again.");
