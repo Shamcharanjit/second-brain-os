@@ -52,8 +52,12 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
   const [confidence, setConfidence] = useState(0);
 
   const recognitionRef = useRef<any>(null);
+  // Track EVERY active MediaStream so we can release them all on cleanup.
+  // Safari/macOS keeps the orange mic indicator on if any track is still live.
+  const activeStreamsRef = useRef<Set<MediaStream>>(new Set());
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const stopFallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const safetyStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onResultRef = useRef(onResult);
   const stoppingRef = useRef(false);
   const committedRef = useRef(false);
@@ -73,14 +77,46 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     }
   }, []);
 
-  const stopMediaStream = useCallback(() => {
-    const stream = mediaStreamRef.current;
+  const clearSafetyStop = useCallback(() => {
+    if (safetyStopTimeoutRef.current) {
+      clearTimeout(safetyStopTimeoutRef.current);
+      safetyStopTimeoutRef.current = null;
+    }
+  }, []);
+
+  const hardStopStream = useCallback((stream: MediaStream | null | undefined) => {
     if (!stream) return;
     try {
-      stream.getTracks().forEach((track) => track.stop());
+      stream.getTracks().forEach((track) => {
+        try { track.stop(); } catch {}
+        try { track.enabled = false; } catch {}
+      });
     } catch {}
+    activeStreamsRef.current.delete(stream);
+  }, []);
+
+  const stopMediaStream = useCallback(() => {
+    // Stop ALL tracked streams, not just the latest one.
+    activeStreamsRef.current.forEach((stream) => {
+      try {
+        stream.getTracks().forEach((track) => {
+          try { track.stop(); } catch {}
+          try { track.enabled = false; } catch {}
+        });
+      } catch {}
+    });
+    activeStreamsRef.current.clear();
     mediaStreamRef.current = null;
   }, []);
+
+  const scheduleSafetyStop = useCallback(() => {
+    clearSafetyStop();
+    // Safari sometimes leaves the indicator on briefly; re-stop after 250ms.
+    safetyStopTimeoutRef.current = setTimeout(() => {
+      stopMediaStream();
+      safetyStopTimeoutRef.current = null;
+    }, 250);
+  }, [clearSafetyStop, stopMediaStream]);
 
   const releaseRecognition = useCallback((instance?: any) => {
     const rec = instance ?? recognitionRef.current;
