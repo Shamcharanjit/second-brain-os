@@ -104,7 +104,7 @@ export async function runAITriage(
 ): Promise<{
   triage: AITriageResult;
   aiData: AIProcessedData;
-  source: "ai" | "local";
+  source: "ai" | "local" | "unavailable";
   usedEnrichedContext: boolean;
 }> {
   const hasEnrichment = !!enrichedContext && enrichedContext !== rawInput;
