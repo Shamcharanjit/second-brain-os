@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { supabase, isSupabaseEnabled } from "@/lib/supabase/client";
 import { setCurrentUser, migrateUnscopedData } from "@/lib/persistence";
+import { captureGeoMetadata } from "@/lib/geo";
 import type { User, Session } from "@supabase/supabase-js";
 
 interface AuthContextType {
