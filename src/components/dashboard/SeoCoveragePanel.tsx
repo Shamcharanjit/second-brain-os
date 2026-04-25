@@ -74,10 +74,13 @@ export default function SeoCoveragePanel() {
     );
   }
 
-  if (!coverage || coverage.error) {
+  if (!coverage || coverage.error || errorMsg) {
     return (
-      <div className="rounded-xl border border-border bg-card p-6 text-center">
+      <div className="rounded-xl border border-border bg-card p-6 text-center space-y-1">
         <p className="text-sm text-muted-foreground">SEO coverage unavailable.</p>
+        {(errorMsg || coverage?.error) && (
+          <p className="text-xs text-destructive font-mono">{errorMsg ?? coverage?.error}</p>
+        )}
       </div>
     );
   }
