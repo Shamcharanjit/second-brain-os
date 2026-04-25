@@ -70,9 +70,18 @@ export function useSpeechRecognition(opts: UseSpeechRecognitionOptions = {}): Us
     onResultRef.current = onResult;
   }, [onResult]);
 
-  // Cleanup on unmount — abort + detach handlers to release mic immediately
+  // Cleanup on unmount — abort recognition, clear timers, and stop any held mic stream
   useEffect(() => {
     return () => {
+      if (stopFallbackTimeoutRef.current) {
+        clearTimeout(stopFallbackTimeoutRef.current);
+        stopFallbackTimeoutRef.current = null;
+      }
+      const stream = mediaStreamRef.current;
+      if (stream) {
+        try { stream.getTracks().forEach((track) => track.stop()); } catch {}
+        mediaStreamRef.current = null;
+      }
       const rec = recognitionRef.current;
       if (rec) {
         try {
