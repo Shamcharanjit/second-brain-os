@@ -140,12 +140,16 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       description: `Sorted to ${destLabel} as ${capture.ai_data?.category?.replace("_", " ")}${fileNote}`,
     });
 
+    const offerReminder = shouldOfferReminder(capture);
+    setShowReminderCard(offerReminder);
+
     timerRef.current = setTimeout(() => {
       timerRef.current = undefined;
       setPhase("idle");
+      setShowReminderCard(false);
       onComplete?.();
       textareaRef.current?.focus();
-    }, 3000);
+    }, offerReminder ? 12000 : 3000);
   }, [text, phase, pendingFiles, addCapture, captureInputType, onComplete, buildCaptureText, uploadFiles, reportUploadResults]);
 
   // AI triage flow
@@ -210,13 +214,17 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       description: `Organized as ${triageResult.triage.type.replace("_", " ")} → ${destLabel}`,
     });
 
+    const offerReminder = shouldOfferReminder(capture);
+    setShowReminderCard(offerReminder);
+
     timerRef.current = setTimeout(() => {
       timerRef.current = undefined;
       setPhase("idle");
       setTriageResult(null);
+      setShowReminderCard(false);
       onComplete?.();
       textareaRef.current?.focus();
-    }, 3000);
+    }, offerReminder ? 12000 : 3000);
   }, [triageResult, capturedText, pendingFiles, addCaptureWithAI, captureInputType, onComplete, uploadFiles, reportUploadResults]);
 
   // Create project from triage
