@@ -46,6 +46,7 @@ export type Database = {
       }
       announcements: {
         Row: {
+          audience: string
           created_at: string
           cta_label: string | null
           cta_link: string | null
@@ -60,6 +61,7 @@ export type Database = {
           visible_to: string | null
         }
         Insert: {
+          audience?: string
           created_at?: string
           cta_label?: string | null
           cta_link?: string | null
@@ -74,6 +76,7 @@ export type Database = {
           visible_to?: string | null
         }
         Update: {
+          audience?: string
           created_at?: string
           cta_label?: string | null
           cta_link?: string | null
@@ -436,6 +439,8 @@ export type Database = {
           impressions: number
           keywords: string[]
           last_updated: string
+          og_description: string
+          og_title: string
           page_slug: string
           title: string
           updated_at: string
@@ -449,6 +454,8 @@ export type Database = {
           impressions?: number
           keywords?: string[]
           last_updated?: string
+          og_description?: string
+          og_title?: string
           page_slug: string
           title?: string
           updated_at?: string
@@ -462,6 +469,8 @@ export type Database = {
           impressions?: number
           keywords?: string[]
           last_updated?: string
+          og_description?: string
+          og_title?: string
           page_slug?: string
           title?: string
           updated_at?: string
@@ -1023,6 +1032,7 @@ export type Database = {
       get_activation_health_score: { Args: never; Returns: Json }
       get_admin_analytics: { Args: never; Returns: Json }
       get_conversion_candidates: { Args: never; Returns: Json }
+      get_missing_metadata_pages: { Args: never; Returns: Json }
       get_paywall_variant_decision: {
         Args: { p_user_id: string }
         Returns: Json
@@ -1030,6 +1040,7 @@ export type Database = {
       get_paywall_variant_performance: { Args: never; Returns: Json }
       get_prompt_performance_summary: { Args: never; Returns: Json }
       get_rebuilt_funnel: { Args: never; Returns: Json }
+      get_seo_metadata_coverage: { Args: never; Returns: Json }
       get_seo_signals: { Args: never; Returns: Json }
       get_upgrade_prompt_decision: {
         Args: { p_user_id: string }

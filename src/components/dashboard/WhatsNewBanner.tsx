@@ -4,24 +4,26 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { fetchFeatureUpdates, fetchSeenIds, markAnnouncementSeen, type FeatureUpdate } from "@/lib/whats-new";
+import { isFounderAdmin } from "@/lib/admin";
 
 export default function WhatsNewBanner() {
   const { user, cloudAvailable } = useAuth();
   const navigate = useNavigate();
   const [latest, setLatest] = useState<FeatureUpdate | null>(null);
   const [hidden, setHidden] = useState(false);
+  const isAdmin = isFounderAdmin(user?.email);
 
   useEffect(() => {
     if (!cloudAvailable || !user) return;
     let cancelled = false;
     (async () => {
-      const [updates, seen] = await Promise.all([fetchFeatureUpdates(), fetchSeenIds(user.id)]);
+      const [updates, seen] = await Promise.all([fetchFeatureUpdates({ isAdmin }), fetchSeenIds(user.id)]);
       if (cancelled) return;
       const unseen = updates.find((u) => !seen.has(u.id));
       if (unseen) setLatest(unseen);
     })();
     return () => { cancelled = true; };
-  }, [user, cloudAvailable]);
+  }, [user, cloudAvailable, isAdmin]);
 
   const dismiss = async () => {
     if (latest && user) await markAnnouncementSeen(user.id, latest.id);

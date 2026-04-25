@@ -14,13 +14,19 @@ export type FeatureUpdate = {
   created_at: string;
   cta_label: string | null;
   cta_link: string | null;
+  audience: "user" | "admin" | "internal";
 };
 
-export async function fetchFeatureUpdates(): Promise<FeatureUpdate[]> {
+/**
+ * Fetch feature updates with audience filtering.
+ * - Subscribers (default): only `audience = 'user'`
+ * - Admins/founders: all audiences
+ */
+export async function fetchFeatureUpdates(opts?: { isAdmin?: boolean }): Promise<FeatureUpdate[]> {
   try {
     const { data, error } = await supabase
       .from("announcements" as never)
-      .select("id, title, message, version_tag, created_at, cta_label, cta_link, type, status, visible_from, visible_to")
+      .select("id, title, message, version_tag, created_at, cta_label, cta_link, type, status, visible_from, visible_to, audience")
       .eq("status", "active")
       .eq("type", "feature_update")
       .order("created_at", { ascending: false })
@@ -31,12 +37,15 @@ export async function fetchFeatureUpdates(): Promise<FeatureUpdate[]> {
       return [];
     }
     const now = Date.now();
+    const isAdmin = !!opts?.isAdmin;
     return ((data ?? []) as any[])
       .filter((a) => {
         const from = a.visible_from ? new Date(a.visible_from).getTime() : null;
         const to = a.visible_to ? new Date(a.visible_to).getTime() : null;
         if (from && now < from) return false;
         if (to && now > to) return false;
+        const audience = (a.audience ?? "user") as "user" | "admin" | "internal";
+        if (!isAdmin && audience !== "user") return false;
         return true;
       })
       .map((a) => ({
@@ -47,6 +56,7 @@ export async function fetchFeatureUpdates(): Promise<FeatureUpdate[]> {
         created_at: a.created_at,
         cta_label: a.cta_label ?? null,
         cta_link: a.cta_link ?? null,
+        audience: (a.audience ?? "user") as "user" | "admin" | "internal",
       }));
   } catch {
     return [];

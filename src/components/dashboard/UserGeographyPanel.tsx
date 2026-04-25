@@ -186,28 +186,60 @@ export default function UserGeographyPanel() {
         </div>
       </div>
 
-      {/* Top countries table */}
+      {/* Country breakdown table */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-3">
-        <p className="text-xs font-medium text-muted-foreground">Top Countries</p>
+        <p className="text-xs font-medium text-muted-foreground">Country Breakdown</p>
         <div className="space-y-1">
           <div className="grid grid-cols-12 gap-2 text-[10px] uppercase tracking-wider text-muted-foreground pb-2 border-b border-border">
-            <div className="col-span-5">Country</div>
+            <div className="col-span-4">Country</div>
             <div className="col-span-2 text-right">Users</div>
             <div className="col-span-2 text-right">Activated</div>
-            <div className="col-span-3 text-right">Activation Rate</div>
+            <div className="col-span-2 text-right">Act. Rate</div>
+            <div className="col-span-2 text-right">% of Total</div>
           </div>
           {sorted.slice(0, 10).map(([country, total]) => {
             const rate = Number(rates[country] ?? 0);
+            const pctTotal = Math.round((total / grandTotal) * 100);
             const rateColor = rate >= 60 ? "text-primary" : rate >= 30 ? "text-blue-500" : rate >= 10 ? "text-yellow-500" : "text-muted-foreground";
             return (
               <div key={country} className="grid grid-cols-12 gap-2 items-center py-1.5 text-xs">
-                <div className="col-span-5 text-foreground truncate">{country}</div>
+                <div className="col-span-4 text-foreground truncate">{country}</div>
                 <div className="col-span-2 text-right tabular-nums text-foreground">{total}</div>
                 <div className="col-span-2 text-right tabular-nums text-muted-foreground">{activated[country] ?? 0}</div>
-                <div className={cn("col-span-3 text-right tabular-nums font-semibold", rateColor)}>{rate}%</div>
+                <div className={cn("col-span-2 text-right tabular-nums font-semibold", rateColor)}>{rate}%</div>
+                <div className="col-span-2 text-right tabular-nums text-muted-foreground">{pctTotal}%</div>
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Top by activation rate widget */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+        <p className="text-xs font-medium text-muted-foreground">Top Countries by Activation Rate</p>
+        <div className="space-y-2">
+          {sorted
+            .filter(([country, total]) => country !== "Unknown" && total > 0)
+            .map(([country, total]) => ({ country, total, rate: Number(rates[country] ?? 0) }))
+            .sort((a, b) => b.rate - a.rate || b.total - a.total)
+            .slice(0, 5)
+            .map((row) => (
+              <div key={row.country} className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-foreground font-medium truncate">{row.country}</span>
+                  <span className="text-muted-foreground tabular-nums">{row.rate}% · {row.total} users</span>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full"
+                    style={{ width: `${Math.min(100, row.rate)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          {sorted.filter(([c, t]) => c !== "Unknown" && t > 0).length === 0 && (
+            <p className="text-xs text-muted-foreground">No country activation data yet.</p>
+          )}
         </div>
       </div>
 
