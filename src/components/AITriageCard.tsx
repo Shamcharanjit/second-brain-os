@@ -28,7 +28,7 @@ const destLabels: Record<string, string> = {
 
 interface AITriageCardProps {
   triage: AITriageResult;
-  source: "ai" | "local";
+  source: "ai" | "local" | "unavailable";
   onApply: () => void;
   onDismiss: () => void;
   onCreateProject?: () => void;
