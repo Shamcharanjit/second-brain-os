@@ -58,11 +58,9 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     return () => clearInterval(interval);
   }, [phase]);
 
-  useEffect(() => {
-    if (phase !== "recording" && text.trim().length === 0) {
-      setCaptureInputType("text");
-    }
-  }, [phase, text]);
+  // NOTE: do not auto-reset captureInputType here — voice paths must keep
+  // input_type = "voice" until the capture is actually submitted (handleSubmit
+  // / handleApplyTriage / handleDismissTriage explicitly reset it after use).
 
   useEffect(() => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
