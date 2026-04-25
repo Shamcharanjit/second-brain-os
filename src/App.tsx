@@ -34,6 +34,7 @@ import AdminAnnouncementsPage from "@/pages/AdminAnnouncementsPage";
 import InvitePage from "@/pages/InvitePage";
 import AdminPlansPage from "@/pages/AdminPlansPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import HelpPage from "@/pages/HelpPage";
 import NotFound from "@/pages/NotFound";
 import AppErrorBoundary from "@/components/system/AppErrorBoundary";
 import PageErrorBoundary from "@/components/system/PageErrorBoundary";
