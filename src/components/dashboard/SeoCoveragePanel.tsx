@@ -23,31 +23,42 @@ interface MissingPayload {
 }
 
 export default function SeoCoveragePanel() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [coverage, setCoverage] = useState<CoveragePayload | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const isFounder = isFounderAdmin(user?.email);
+  const userRole = typeof user?.user_metadata?.role === "string" ? user.user_metadata.role : undefined;
+  const hasFounderAccess = userRole === "founder_admin" || isFounderAdmin(user?.email);
 
   useEffect(() => {
-    if (!isFounder) {
+    console.log("[SeoCoveragePanel] current user email:", user?.email ?? null);
+    console.log("[SeoCoveragePanel] current user_metadata.role:", userRole ?? null);
+
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
+    if (!user) {
       setLoading(false);
       return;
     }
+
     (async () => {
       try {
+        setErrorMsg(null);
         const [covRes, missRes] = await Promise.all([
           supabase.rpc("get_seo_metadata_coverage" as never),
           supabase.rpc("get_missing_metadata_pages" as never),
         ]);
         if (covRes.error) {
-          console.error("[SeoCoveragePanel] coverage RPC error:", covRes.error);
+          console.error("[SeoCoveragePanel] coverage RPC error payload:", covRes.error);
           setErrorMsg(covRes.error.message);
         }
         if (missRes.error) {
-          console.error("[SeoCoveragePanel] missing RPC error:", missRes.error);
+          console.error("[SeoCoveragePanel] missing RPC error payload:", missRes.error);
         }
         const cov = (covRes.data ?? null) as CoveragePayload | null;
         setCoverage(cov);
@@ -55,16 +66,13 @@ export default function SeoCoveragePanel() {
         const m = (missRes.data ?? null) as MissingPayload | null;
         setMissing(Array.isArray(m?.missing_pages) ? m!.missing_pages : []);
       } catch (err: any) {
-        console.error("[SeoCoveragePanel]", err);
+        console.error("[SeoCoveragePanel] unexpected RPC error payload:", err);
         setErrorMsg(err?.message ?? String(err));
       } finally {
         setLoading(false);
       }
     })();
-  }, [isFounder]);
-
-  // Founder-only — silently hide for everyone else
-  if (!isFounder) return null;
+  }, [authLoading, user, userRole]);
 
   if (loading) {
     return (
@@ -95,7 +103,9 @@ export default function SeoCoveragePanel() {
     <section className="space-y-4">
       <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
         <Search className="h-4 w-4" /> SEO Signals
-        <span className="text-[10px] text-muted-foreground/70 font-normal normal-case ml-1">(Founder only)</span>
+        <span className="text-[10px] text-muted-foreground/70 font-normal normal-case ml-1">
+          {hasFounderAccess ? "(Founder only)" : "(Admin analytics)"}
+        </span>
       </h2>
 
       {/* Coverage score hero */}
