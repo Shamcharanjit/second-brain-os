@@ -50,17 +50,27 @@ export default function SeoPerformancePanel() {
       return;
     }
 
+    let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await supabase.rpc("get_seo_performance_signals" as any);
-        if (error) throw error;
-        setData(data as unknown as SeoPerf);
-      } catch {
+        const { data: rpcData, error } = await supabase.rpc("get_seo_performance_signals" as any);
+        if (cancelled) return;
+        if (error) {
+          console.warn("[SeoPerformancePanel] RPC error:", error.message);
+          setData(null);
+        } else {
+          setData((rpcData ?? null) as unknown as SeoPerf | null);
+        }
+      } catch (err: any) {
+        if (cancelled) return;
+        if (err?.name === "AbortError") return;
+        console.warn("[SeoPerformancePanel] unexpected:", err?.message ?? err);
         setData(null);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+    return () => { cancelled = true; };
   }, [authLoading, user]);
 
   if (!user) return null;
@@ -68,6 +78,9 @@ export default function SeoPerformancePanel() {
   if (!data || data.error) return null;
 
   const sources = Object.entries(data.source_counts || {}).sort((a, b) => b[1] - a[1]);
+  const landingPages = Array.isArray(data.landing_page_performance) ? data.landing_page_performance : [];
+  const countryPerf = Array.isArray(data.country_performance) ? data.country_performance : [];
+  const topSources = Array.isArray(data.top_search_sources) ? data.top_search_sources : [];
 
   return (
     <div className="rounded-2xl border bg-card p-6 space-y-5">
@@ -105,11 +118,11 @@ export default function SeoPerformancePanel() {
 
         <div>
           <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Top search sources</h3>
-          {data.top_search_sources.length === 0 ? (
+          {topSources.length === 0 ? (
             <p className="text-sm text-muted-foreground">No search traffic yet.</p>
           ) : (
             <div className="space-y-1.5">
-              {data.top_search_sources.map((s) => (
+              {topSources.map((s) => (
                 <div key={s.source} className="flex items-center justify-between text-sm border-b pb-1.5">
                   <span>{SOURCE_LABELS[s.source] ?? s.source}</span>
                   <span className="text-muted-foreground tabular-nums text-xs">
@@ -124,7 +137,7 @@ export default function SeoPerformancePanel() {
 
       <div>
         <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Landing page performance</h3>
-        {data.landing_page_performance.length === 0 ? (
+        {landingPages.length === 0 ? (
           <p className="text-sm text-muted-foreground">No landing data yet.</p>
         ) : (
           <div className="overflow-x-auto">
@@ -139,7 +152,7 @@ export default function SeoPerformancePanel() {
                 </tr>
               </thead>
               <tbody>
-                {data.landing_page_performance.map((p) => (
+                {landingPages.map((p) => (
                   <tr key={p.landing_page} className="border-b">
                     <td className="py-1.5 pr-3 font-mono text-xs truncate max-w-[200px]">{p.landing_page}</td>
                     <td className="text-right tabular-nums px-2">{p.visitors}</td>
@@ -158,7 +171,7 @@ export default function SeoPerformancePanel() {
         <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
           <Globe2 className="h-3.5 w-3.5" /> Search by country
         </h3>
-        {data.country_performance.length === 0 ? (
+        {countryPerf.length === 0 ? (
           <p className="text-sm text-muted-foreground">No country data yet.</p>
         ) : (
           <div className="overflow-x-auto">
@@ -172,7 +185,7 @@ export default function SeoPerformancePanel() {
                 </tr>
               </thead>
               <tbody>
-                {data.country_performance.map((c) => (
+                {countryPerf.map((c) => (
                   <tr key={c.country} className="border-b">
                     <td className="py-1.5 pr-3">{c.country}</td>
                     <td className="text-right tabular-nums px-2">{c.search_visitors}</td>

@@ -39,6 +39,7 @@ export default function SeoCoveragePanel() {
       return;
     }
 
+    let cancelled = false;
     (async () => {
       try {
         setErrorMsg(null);
@@ -46,12 +47,13 @@ export default function SeoCoveragePanel() {
           supabase.rpc("get_seo_metadata_coverage" as never),
           supabase.rpc("get_missing_metadata_pages" as never),
         ]);
+        if (cancelled) return;
         if (covRes.error) {
-          console.error("[SeoCoveragePanel] coverage RPC error:", covRes.error);
+          console.warn("[SeoCoveragePanel] coverage RPC error:", covRes.error.message);
           setErrorMsg(covRes.error.message);
         }
         if (missRes.error) {
-          console.error("[SeoCoveragePanel] missing RPC error:", missRes.error);
+          console.warn("[SeoCoveragePanel] missing RPC error:", missRes.error.message);
         }
         const cov = (covRes.data ?? null) as CoveragePayload | null;
         setCoverage(cov);
@@ -59,12 +61,15 @@ export default function SeoCoveragePanel() {
         const m = (missRes.data ?? null) as MissingPayload | null;
         setMissing(Array.isArray(m?.missing_pages) ? m!.missing_pages : []);
       } catch (err: any) {
-        console.error("[SeoCoveragePanel] unexpected error:", err);
+        if (cancelled) return;
+        if (err?.name === "AbortError") return;
+        console.warn("[SeoCoveragePanel] unexpected error:", err?.message ?? err);
         setErrorMsg(err?.message ?? String(err));
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+    return () => { cancelled = true; };
   }, [authLoading, user]);
 
   if (!user) return null;

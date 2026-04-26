@@ -31,22 +31,34 @@ export default function SeoSignalsPanel() {
       return;
     }
 
+    let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await supabase.rpc("get_seo_signals" as any);
-        if (error) throw error;
-        setData(data as unknown as SeoSignals);
-      } catch {
+        const { data: rpcData, error } = await supabase.rpc("get_seo_signals" as any);
+        if (cancelled) return;
+        if (error) {
+          console.warn("[SeoSignalsPanel] RPC error:", error.message);
+          setData(null);
+        } else {
+          setData((rpcData ?? null) as unknown as SeoSignals | null);
+        }
+      } catch (err: any) {
+        if (cancelled) return;
+        if (err?.name === "AbortError") return;
         setData(null);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+    return () => { cancelled = true; };
   }, [authLoading, user]);
 
   if (!user) return null;
   if (loading) return null;
   if (!data || data.error) return null;
+
+  const topPages = Array.isArray((data as any).top_pages) ? (data as any).top_pages : [];
+  const topKeywords = Array.isArray((data as any).top_keywords) ? (data as any).top_keywords : [];
 
   return (
     <div className="rounded-2xl border bg-card p-6 space-y-5">
@@ -82,11 +94,11 @@ export default function SeoSignalsPanel() {
       <div className="grid md:grid-cols-2 gap-5">
         <div>
           <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Top landing pages</h3>
-          {data.top_pages.length === 0 ? (
+          {topPages.length === 0 ? (
             <p className="text-sm text-muted-foreground">No SEO data yet.</p>
           ) : (
             <div className="space-y-1.5">
-              {data.top_pages.slice(0, 6).map((p) => (
+              {topPages.slice(0, 6).map((p) => (
                 <div key={p.page_slug} className="flex items-center justify-between text-sm border-b pb-1.5">
                   <span className="truncate mr-2 font-mono text-xs">{p.page_slug}</span>
                   <span className="text-muted-foreground tabular-nums text-xs">
@@ -100,11 +112,11 @@ export default function SeoSignalsPanel() {
 
         <div>
           <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Top keywords</h3>
-          {data.top_keywords.length === 0 ? (
+          {topKeywords.length === 0 ? (
             <p className="text-sm text-muted-foreground">No keyword data yet.</p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
-              {data.top_keywords.slice(0, 12).map((k) => (
+              {topKeywords.slice(0, 12).map((k) => (
                 <span
                   key={k.keyword}
                   className="text-xs px-2 py-1 rounded-full bg-muted border"
