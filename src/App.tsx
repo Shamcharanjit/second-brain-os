@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
 import ScrollToTop from "@/components/ScrollToTop";
+import GA4RouteTracker from "@/components/analytics/GA4RouteTracker";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -70,6 +71,7 @@ const App = () => (
           <SubscriptionProvider>
             <BrowserRouter>
               <ScrollToTop />
+              <GA4RouteTracker />
               <Routes>
                 {/* Public pages — no app chrome */}
                 <Route path="/" element={<LandingPage />} />
