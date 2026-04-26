@@ -4,6 +4,7 @@ import { mockAIProcess } from "@/lib/mock-ai";
 import { saveState, loadState } from "@/lib/persistence";
 import { fetchCaptures, upsertCaptures, syncCaptures } from "@/lib/supabase/data-layer";
 import { useCloudSync, useCloudHydration } from "@/hooks/useCloudSync";
+import { trackEvent } from "@/lib/analytics/ga4";
 
 const STORAGE_KEY = "insighthalo_brain";
 
