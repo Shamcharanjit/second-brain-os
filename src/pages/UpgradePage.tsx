@@ -12,6 +12,7 @@ import { isRazorpayEnabled } from "@/lib/razorpay/config";
 import { createCheckoutSession, createPortalSession } from "@/lib/stripe/billing";
 import { createRazorpaySubscription } from "@/lib/razorpay/billing";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/analytics/ga4";
 
 const FREE_FEATURES = [
   "Unlimited captures & local storage",
@@ -40,6 +41,7 @@ export default function UpgradePage() {
   const checkoutResult = searchParams.get("checkout");
 
   const handleUpgrade = async () => {
+    trackEvent("upgrade_clicked", { region: billingRegion, signed_in: !!user, billing_enabled: billingEnabled });
     if (!user) {
       toast.info("Please sign in first to upgrade.");
       navigate("/auth");

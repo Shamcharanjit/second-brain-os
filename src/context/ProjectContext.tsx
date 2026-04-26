@@ -3,6 +3,7 @@ import { Project, ProjectStatus, ProjectPriority, ProjectHealth, NextAction, Pro
 import { saveState, loadState } from "@/lib/persistence";
 import { fetchProjects, upsertProjects, syncProjects } from "@/lib/supabase/data-layer";
 import { useCloudSync, useCloudHydration } from "@/hooks/useCloudSync";
+import { trackEvent } from "@/lib/analytics/ga4";
 
 const STORAGE_KEY = "insighthalo_projects";
 
@@ -85,6 +86,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       created_at: now, last_updated: now, due_date: null,
     };
     setProjects((prev) => [newProj, ...prev]);
+    trackEvent("project_created", { priority, has_source_idea: !!sourceIdeaId });
     return newProj;
   }, []);
 

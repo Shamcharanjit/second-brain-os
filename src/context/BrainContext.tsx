@@ -4,6 +4,7 @@ import { mockAIProcess } from "@/lib/mock-ai";
 import { saveState, loadState } from "@/lib/persistence";
 import { fetchCaptures, upsertCaptures, syncCaptures } from "@/lib/supabase/data-layer";
 import { useCloudSync, useCloudHydration } from "@/hooks/useCloudSync";
+import { trackEvent } from "@/lib/analytics/ga4";
 
 const STORAGE_KEY = "insighthalo_brain";
 
@@ -92,6 +93,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       source_project_id: null, source_action_id: null,
     };
     setCaptures((prev) => [newCapture, ...prev]);
+    trackEvent("capture_created", { input_type: type, source: "manual" });
     return newCapture;
   }, []);
 
@@ -109,10 +111,9 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       source_project_id: null, source_action_id: null,
     };
     setCaptures((prev) => [newCapture, ...prev]);
+    trackEvent("capture_created", { input_type: type, source: "ai" });
     return newCapture;
   }, []);
-
-  // Create a capture directly routed to Today, e.g. from a project next action
   const addCaptureFromAction = useCallback((data: { text: string; projectId?: string; projectName?: string; actionId?: string }): Capture => {
     const { aiData } = mockAIProcess(data.text);
     const newCapture: Capture = {
