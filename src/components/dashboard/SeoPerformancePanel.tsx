@@ -50,17 +50,27 @@ export default function SeoPerformancePanel() {
       return;
     }
 
+    let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await supabase.rpc("get_seo_performance_signals" as any);
-        if (error) throw error;
-        setData(data as unknown as SeoPerf);
-      } catch {
+        const { data: rpcData, error } = await supabase.rpc("get_seo_performance_signals" as any);
+        if (cancelled) return;
+        if (error) {
+          console.warn("[SeoPerformancePanel] RPC error:", error.message);
+          setData(null);
+        } else {
+          setData((rpcData ?? null) as unknown as SeoPerf | null);
+        }
+      } catch (err: any) {
+        if (cancelled) return;
+        if (err?.name === "AbortError") return;
+        console.warn("[SeoPerformancePanel] unexpected:", err?.message ?? err);
         setData(null);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+    return () => { cancelled = true; };
   }, [authLoading, user]);
 
   if (!user) return null;
@@ -68,6 +78,9 @@ export default function SeoPerformancePanel() {
   if (!data || data.error) return null;
 
   const sources = Object.entries(data.source_counts || {}).sort((a, b) => b[1] - a[1]);
+  const landingPages = Array.isArray(data.landing_page_performance) ? data.landing_page_performance : [];
+  const countryPerf = Array.isArray(data.country_performance) ? data.country_performance : [];
+  const topSources = Array.isArray(data.top_search_sources) ? data.top_search_sources : [];
 
   return (
     <div className="rounded-2xl border bg-card p-6 space-y-5">
