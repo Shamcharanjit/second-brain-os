@@ -51,11 +51,22 @@ export default function SeoPerformancePanel() {
 
   if (!user) return null;
   if (loading) return null;
+  if (!data || data.error) {
+    return (
+      <div className="rounded-2xl border bg-card p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold">SEO Performance</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">No SEO performance data yet.</p>
+      </div>
+    );
+  }
 
-  const sources = Object.entries(data?.source_counts || {}).sort((a, b) => b[1] - a[1]);
-  const landingPages = Array.isArray(data?.landing_page_performance) ? data.landing_page_performance : [];
-  const countryPerf = Array.isArray(data?.country_performance) ? data.country_performance : [];
-  const topSources = Array.isArray(data?.top_search_sources) ? data.top_search_sources : [];
+  const sources = Object.entries(data.source_counts || {}).sort((a, b) => b[1] - a[1]);
+  const landingPages = Array.isArray(data.landing_page_performance) ? data.landing_page_performance : [];
+  const countryPerf = Array.isArray(data.country_performance) ? data.country_performance : [];
+  const topSources = Array.isArray(data.top_search_sources) ? data.top_search_sources : [];
 
   return (
     <div className="rounded-2xl border bg-card p-6 space-y-5">
