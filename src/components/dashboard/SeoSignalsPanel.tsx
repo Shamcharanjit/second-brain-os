@@ -31,17 +31,26 @@ export default function SeoSignalsPanel() {
       return;
     }
 
+    let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await supabase.rpc("get_seo_signals" as any);
-        if (error) throw error;
-        setData(data as unknown as SeoSignals);
-      } catch {
+        const { data: rpcData, error } = await supabase.rpc("get_seo_signals" as any);
+        if (cancelled) return;
+        if (error) {
+          console.warn("[SeoSignalsPanel] RPC error:", error.message);
+          setData(null);
+        } else {
+          setData((rpcData ?? null) as unknown as SeoSignals | null);
+        }
+      } catch (err: any) {
+        if (cancelled) return;
+        if (err?.name === "AbortError") return;
         setData(null);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+    return () => { cancelled = true; };
   }, [authLoading, user]);
 
   if (!user) return null;
