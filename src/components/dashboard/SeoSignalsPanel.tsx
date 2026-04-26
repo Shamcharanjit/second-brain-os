@@ -57,6 +57,9 @@ export default function SeoSignalsPanel() {
   if (loading) return null;
   if (!data || data.error) return null;
 
+  const topPages = Array.isArray(data.top_pages) ? data.top_pages : [];
+  const topKeywords = Array.isArray(data.top_keywords) ? data.top_keywords : [];
+
   return (
     <div className="rounded-2xl border bg-card p-6 space-y-5">
       <div className="flex items-center gap-2">
