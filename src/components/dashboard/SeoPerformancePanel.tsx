@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 import { Search, TrendingUp, Users, CheckCircle2, Globe2 } from "lucide-react";
 
 interface LandingRow { landing_page: string; visitors: number; signups: number; activations: number; conversion_rate: number; }
@@ -33,10 +34,22 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 export default function SeoPerformancePanel() {
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<SeoPerf | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
+    if (!user) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+
     (async () => {
       try {
         const { data, error } = await supabase.rpc("get_seo_performance_signals" as any);
@@ -48,8 +61,9 @@ export default function SeoPerformancePanel() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [authLoading, user]);
 
+  if (!user) return null;
   if (loading) return null;
   if (!data || data.error) return null;
 
