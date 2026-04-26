@@ -171,7 +171,7 @@ export default function SeoPerformancePanel() {
         <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
           <Globe2 className="h-3.5 w-3.5" /> Search by country
         </h3>
-        {data.country_performance.length === 0 ? (
+        {countryPerf.length === 0 ? (
           <p className="text-sm text-muted-foreground">No country data yet.</p>
         ) : (
           <div className="overflow-x-auto">
