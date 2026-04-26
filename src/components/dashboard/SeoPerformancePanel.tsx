@@ -56,7 +56,12 @@ export default function SeoPerformancePanel() {
         const { data: rpcData, error } = await supabase.rpc("get_seo_performance_signals" as any);
         if (cancelled) return;
         if (error) {
-          console.warn("[SeoPerformancePanel] RPC error:", error.message);
+          // Silently ignore missing-RPC (stale bundle) and forbidden errors —
+          // panel will gracefully render nothing.
+          const code = (error as any)?.code;
+          const msg = error.message ?? "";
+          const isMissing = code === "PGRST202" || code === "404" || /not find|404|does not exist/i.test(msg);
+          if (!isMissing) console.warn("[SeoPerformancePanel] RPC error:", msg);
           setData(null);
         } else {
           setData((rpcData ?? null) as unknown as SeoPerf | null);
