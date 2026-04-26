@@ -57,8 +57,8 @@ export default function SeoSignalsPanel() {
   if (loading) return null;
   if (!data || data.error) return null;
 
-  const topPages = Array.isArray(topPages) ? topPages : [];
-  const topKeywords = Array.isArray(topKeywords) ? topKeywords : [];
+  const topPages = Array.isArray((data as any).top_pages) ? (data as any).top_pages : [];
+  const topKeywords = Array.isArray((data as any).top_keywords) ? (data as any).top_keywords : [];
 
   return (
     <div className="rounded-2xl border bg-card p-6 space-y-5">
