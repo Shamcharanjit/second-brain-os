@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Search, TrendingUp, Users, CheckCircle2, Globe2 } from "lucide-react";
 
@@ -44,43 +43,25 @@ export default function SeoPerformancePanel() {
       return;
     }
 
-    if (!user) {
-      setData(null);
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data: rpcData, error } = await supabase.rpc("get_seo_performance_signals" as any);
-        if (cancelled) return;
-        if (error) {
-          // Silently ignore missing-RPC (stale bundle) and forbidden errors —
-          // panel will gracefully render nothing.
-          const code = (error as any)?.code;
-          const msg = error.message ?? "";
-          const isMissing = code === "PGRST202" || code === "404" || /not find|404|does not exist/i.test(msg);
-          if (!isMissing) console.warn("[SeoPerformancePanel] RPC error:", msg);
-          setData(null);
-        } else {
-          setData((rpcData ?? null) as unknown as SeoPerf | null);
-        }
-      } catch (err: any) {
-        if (cancelled) return;
-        if (err?.name === "AbortError") return;
-        console.warn("[SeoPerformancePanel] unexpected:", err?.message ?? err);
-        setData(null);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+    // Temporarily disable this panel's RPC call until production REST
+    // exposure is verified everywhere. Keep the dashboard stable and quiet.
+    setData(null);
+    setLoading(false);
   }, [authLoading, user]);
 
   if (!user) return null;
   if (loading) return null;
-  if (!data || data.error) return null;
+  if (!data || data.error) {
+    return (
+      <div className="rounded-2xl border bg-card p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold">SEO Performance</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">No SEO performance data yet.</p>
+      </div>
+    );
+  }
 
   const sources = Object.entries(data.source_counts || {}).sort((a, b) => b[1] - a[1]);
   const landingPages = Array.isArray(data.landing_page_performance) ? data.landing_page_performance : [];
