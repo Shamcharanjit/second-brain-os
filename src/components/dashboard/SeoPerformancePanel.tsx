@@ -118,11 +118,11 @@ export default function SeoPerformancePanel() {
 
         <div>
           <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Top search sources</h3>
-          {data.top_search_sources.length === 0 ? (
+          {topSources.length === 0 ? (
             <p className="text-sm text-muted-foreground">No search traffic yet.</p>
           ) : (
             <div className="space-y-1.5">
-              {data.top_search_sources.map((s) => (
+              {topSources.map((s) => (
                 <div key={s.source} className="flex items-center justify-between text-sm border-b pb-1.5">
                   <span>{SOURCE_LABELS[s.source] ?? s.source}</span>
                   <span className="text-muted-foreground tabular-nums text-xs">
