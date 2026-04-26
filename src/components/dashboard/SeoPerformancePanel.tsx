@@ -185,7 +185,7 @@ export default function SeoPerformancePanel() {
                 </tr>
               </thead>
               <tbody>
-                {data.country_performance.map((c) => (
+                {countryPerf.map((c) => (
                   <tr key={c.country} className="border-b">
                     <td className="py-1.5 pr-3">{c.country}</td>
                     <td className="text-right tabular-nums px-2">{c.search_visitors}</td>
