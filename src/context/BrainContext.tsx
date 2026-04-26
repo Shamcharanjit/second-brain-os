@@ -119,6 +119,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       return [newCapture, ...prev];
     });
     trackEvent("capture_created", { input_type: type, source: "ai" });
+    if (type === "voice") trackEvent("voice_capture", { source: "ai" });
     return newCapture;
   }, []);
   const addCaptureFromAction = useCallback((data: { text: string; projectId?: string; projectName?: string; actionId?: string }): Capture => {
