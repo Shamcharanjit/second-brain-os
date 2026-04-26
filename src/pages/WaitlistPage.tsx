@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { logFunnelEvent } from "@/lib/activation-funnel";
+import { trackEvent } from "@/lib/analytics/ga4";
 
 const USE_CASES = [
   "Work",

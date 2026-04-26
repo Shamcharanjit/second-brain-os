@@ -12,6 +12,7 @@ import { isRazorpayEnabled } from "@/lib/razorpay/config";
 import { createCheckoutSession, createPortalSession } from "@/lib/stripe/billing";
 import { createRazorpaySubscription } from "@/lib/razorpay/billing";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/analytics/ga4";
 
 const FREE_FEATURES = [
   "Unlimited captures & local storage",
