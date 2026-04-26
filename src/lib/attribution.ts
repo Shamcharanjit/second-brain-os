@@ -4,6 +4,7 @@
  * and links to a user on signup/login.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/analytics/ga4";
 
 const ANON_KEY = "ih_anon_id";
 const ATTRIBUTED_KEY = "ih_attributed_v1";
@@ -96,10 +97,14 @@ export async function linkAttributionToUser(userId: string, email: string | null
  */
 export async function markAttributionActivated(userId: string): Promise<void> {
   try {
-    await supabase
+    const { data } = await supabase
       .from("visitor_attribution" as any)
       .update({ activated_at: new Date().toISOString() })
       .eq("user_id", userId)
-      .is("activated_at", null);
+      .is("activated_at", null)
+      .select("id");
+    if (data && data.length > 0) {
+      try { trackEvent("activation_complete", { user_id: userId }); } catch { /* silent */ }
+    }
   } catch { /* silent */ }
 }
