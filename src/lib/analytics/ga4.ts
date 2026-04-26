@@ -29,9 +29,13 @@ export function trackPageview(path: string, title?: string) {
  */
 export type GA4EventName =
   | "capture_created"
+  | "first_capture"
   | "memory_saved"
   | "project_created"
   | "signup_completed"
+  | "signup"
+  | "login"
+  | "activation_complete"
   | "waitlist_joined"
   | "upgrade_clicked";
 
