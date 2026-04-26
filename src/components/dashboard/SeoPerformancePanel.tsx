@@ -137,7 +137,7 @@ export default function SeoPerformancePanel() {
 
       <div>
         <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Landing page performance</h3>
-        {data.landing_page_performance.length === 0 ? (
+        {landingPages.length === 0 ? (
           <p className="text-sm text-muted-foreground">No landing data yet.</p>
         ) : (
           <div className="overflow-x-auto">
@@ -152,7 +152,7 @@ export default function SeoPerformancePanel() {
                 </tr>
               </thead>
               <tbody>
-                {data.landing_page_performance.map((p) => (
+                {landingPages.map((p) => (
                   <tr key={p.landing_page} className="border-b">
                     <td className="py-1.5 pr-3 font-mono text-xs truncate max-w-[200px]">{p.landing_page}</td>
                     <td className="text-right tabular-nums px-2">{p.visitors}</td>
