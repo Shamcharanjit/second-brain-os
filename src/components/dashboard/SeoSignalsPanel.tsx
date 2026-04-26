@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 import { Search, TrendingUp, MousePointerClick, Eye } from "lucide-react";
 
 interface PageRow { page_slug: string; title: string; impressions: number; clicks: number; ctr: number; }
@@ -14,10 +15,22 @@ interface SeoSignals {
 }
 
 export default function SeoSignalsPanel() {
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<SeoSignals | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
+    if (!user) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+
     (async () => {
       try {
         const { data, error } = await supabase.rpc("get_seo_signals" as any);
@@ -29,8 +42,9 @@ export default function SeoSignalsPanel() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [authLoading, user]);
 
+  if (!user) return null;
   if (loading) return null;
   if (!data || data.error) return null;
 
