@@ -3,6 +3,7 @@ import { MemoryEntry, MemoryType } from "@/types/memory";
 import { saveState, loadState } from "@/lib/persistence";
 import { fetchMemories, upsertMemories, syncMemories } from "@/lib/supabase/data-layer";
 import { useCloudSync, useCloudHydration } from "@/hooks/useCloudSync";
+import { trackEvent } from "@/lib/analytics/ga4";
 
 const STORAGE_KEY = "insighthalo_memory";
 
@@ -63,6 +64,7 @@ export function MemoryProvider({ children }: { children: React.ReactNode }) {
       importance_score: data.importance_score ?? 50,
     };
     setMemories((prev) => [entry, ...prev]);
+    trackEvent("memory_saved", { memory_type: entry.memory_type });
     return entry;
   }, []);
 

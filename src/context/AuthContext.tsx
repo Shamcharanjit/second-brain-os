@@ -4,6 +4,7 @@ import { setCurrentUser, migrateUnscopedData } from "@/lib/persistence";
 import { captureGeoMetadata } from "@/lib/geo";
 import { linkAttributionToUser, markAttributionActivated } from "@/lib/attribution";
 import type { User, Session } from "@supabase/supabase-js";
+import { trackEvent } from "@/lib/analytics/ga4";
 
 interface AuthContextType {
   user: User | null;
@@ -90,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email, password,
       options: { emailRedirectTo: window.location.origin },
     });
+    if (!error) trackEvent("signup_completed", { method: "email" });
     return { error: error as Error | null };
   }, []);
 

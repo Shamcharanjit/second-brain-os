@@ -93,6 +93,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       source_project_id: null, source_action_id: null,
     };
     setCaptures((prev) => [newCapture, ...prev]);
+    trackEvent("capture_created", { input_type: type, source: "manual" });
     return newCapture;
   }, []);
 
