@@ -4,6 +4,7 @@
  * and links to a user on signup/login.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/analytics/ga4";
 
 const ANON_KEY = "ih_anon_id";
 const ATTRIBUTED_KEY = "ih_attributed_v1";
