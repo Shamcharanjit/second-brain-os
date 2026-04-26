@@ -104,10 +104,7 @@ export async function markAttributionActivated(userId: string): Promise<void> {
       .is("activated_at", null)
       .select("id");
     if (data && data.length > 0) {
-      try {
-        const { trackEvent } = await import("@/lib/analytics/ga4");
-        trackEvent("activation_complete", { user_id: userId });
-      } catch { /* silent */ }
+      try { trackEvent("activation_complete", { user_id: userId }); } catch { /* silent */ }
     }
   } catch { /* silent */ }
 }
