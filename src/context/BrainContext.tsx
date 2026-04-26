@@ -113,7 +113,10 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       idea_status: "new", converted_to_project_at: null,
       source_project_id: null, source_action_id: null,
     };
-    setCaptures((prev) => [newCapture, ...prev]);
+    setCaptures((prev) => {
+      if (prev.length === 0) trackEvent("first_capture", { input_type: type, source: "ai" });
+      return [newCapture, ...prev];
+    });
     trackEvent("capture_created", { input_type: type, source: "ai" });
     return newCapture;
   }, []);
