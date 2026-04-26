@@ -41,6 +41,7 @@ export default function UpgradePage() {
   const checkoutResult = searchParams.get("checkout");
 
   const handleUpgrade = async () => {
+    trackEvent("upgrade_clicked", { region: billingRegion, signed_in: !!user, billing_enabled: billingEnabled });
     if (!user) {
       toast.info("Please sign in first to upgrade.");
       navigate("/auth");
