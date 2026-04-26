@@ -78,7 +78,7 @@ export default function WaitlistPage() {
         setSubmitted(true);
         // Log funnel event
         logFunnelEvent("waitlist_signed_up", { email: email.trim().toLowerCase(), source: "waitlist_page" });
-        trackEvent("waitlist_joined", { source: "waitlist_page", has_referrer: !!refParam });
+        trackEvent("waitlist_signup", { source: "waitlist_page", has_referrer: !!refParam });
         // Fire-and-forget: send confirmation email (don't block UI)
         supabase.functions
           .invoke("send-waitlist-confirmation-email", {
