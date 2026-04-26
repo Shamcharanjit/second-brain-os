@@ -22,3 +22,26 @@ export function trackPageview(path: string, title?: string) {
     send_to: GA4_MEASUREMENT_ID,
   });
 }
+
+/**
+ * Fire a custom GA4 product event. Safe no-op if gtag.js hasn't loaded
+ * (e.g. blocked by an ad blocker or running in SSR/tests).
+ */
+export type GA4EventName =
+  | "capture_created"
+  | "memory_saved"
+  | "project_created"
+  | "signup_completed"
+  | "waitlist_joined"
+  | "upgrade_clicked";
+
+export function trackEvent(
+  name: GA4EventName,
+  params: Record<string, unknown> = {},
+) {
+  if (typeof window === "undefined" || typeof window.gtag !== "function") return;
+  window.gtag("event", name, {
+    ...params,
+    send_to: GA4_MEASUREMENT_ID,
+  });
+}
