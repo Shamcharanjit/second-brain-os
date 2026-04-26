@@ -98,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     if (!isSupabaseEnabled) return { error: new Error("Cloud not configured") };
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) trackEvent("login", { method: "email" });
     return { error: error as Error | null };
   }, []);
 
@@ -107,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider: "google",
       options: { redirectTo: `${window.location.origin}/app` },
     });
+    if (!error) trackEvent("login", { method: "google" });
     return { error: error as Error | null };
   }, []);
 
