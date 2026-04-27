@@ -5,6 +5,7 @@ import { captureGeoMetadata } from "@/lib/geo";
 import { linkAttributionToUser, markAttributionActivated } from "@/lib/attribution";
 import type { User, Session } from "@supabase/supabase-js";
 import { trackEvent } from "@/lib/analytics/ga4";
+import { phIdentify, phReset } from "@/lib/analytics/posthog";
 
 interface AuthContextType {
   user: User | null;
@@ -59,6 +60,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => { captureGeoMetadata().catch(() => {}); }, 0);
         setTimeout(() => { linkAttributionToUser(newUserId, userEmail).catch(() => {}); }, 0);
         setTimeout(() => { markAttributionActivated(newUserId).catch(() => {}); }, 0);
+        phIdentify(newUserId, { email: userEmail ?? undefined });
+      } else if (_event === "SIGNED_OUT") {
+        phReset();
       }
     });
 
@@ -77,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => { captureGeoMetadata().catch(() => {}); }, 0);
         setTimeout(() => { linkAttributionToUser(userId, userEmail).catch(() => {}); }, 0);
         setTimeout(() => { markAttributionActivated(userId).catch(() => {}); }, 0);
+        phIdentify(userId, { email: userEmail ?? undefined });
       }
     });
 
