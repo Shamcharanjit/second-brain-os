@@ -31,6 +31,17 @@ function addDismissed(id: string) {
   }
 }
 
+// Accounts younger than this don't see broadcast announcements — let them
+// focus on first capture / activation instead of feature changelogs.
+const NEW_USER_GRACE_PERIOD_DAYS = 7;
+
+function isNewAccount(user: ReturnType<typeof useAuth>["user"]): boolean {
+  if (!user?.created_at) return false;
+  const created = new Date(user.created_at).getTime();
+  const ageMs = Date.now() - created;
+  return ageMs < NEW_USER_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000;
+}
+
 export default function AnnouncementBanner() {
   const { user, cloudAvailable } = useAuth();
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
@@ -38,6 +49,8 @@ export default function AnnouncementBanner() {
 
   useEffect(() => {
     if (!cloudAvailable || !user) return;
+    // Suppress for fresh accounts so onboarding stays focused
+    if (isNewAccount(user)) return;
 
     const fetch = async () => {
       try {

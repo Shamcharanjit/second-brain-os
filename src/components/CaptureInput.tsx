@@ -41,7 +41,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   const [showReminderCard, setShowReminderCard] = useState(false);
   const [triageResult, setTriageResult] = useState<{ triage: AITriageResult; source: "ai" | "local" | "unavailable" } | null>(null);
   const [capturedText, setCapturedText] = useState("");
-  const { addCapture, addCaptureWithAI } = useBrain();
+  const { addCapture, addCaptureWithAI, captures } = useBrain();
   const { createProject, linkCapture: linkCaptureToProject } = useProjects();
   const { canUseAITriage, recordAITriageUse, shouldShowUpgradePrompt, aiTriageRemaining } = useSubscription();
   const [showCreateProject, setShowCreateProject] = useState(false);
@@ -77,6 +77,16 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
 
   useEffect(() => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
+  // Auto-focus on mount for users still building activation momentum (<3 captures).
+  // Removes the "find the input box" friction on first/early sessions.
+  useEffect(() => {
+    if (variant !== "inline") return;
+    if (captures.length >= 3) return;
+    const t = setTimeout(() => textareaRef.current?.focus(), 200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Build fallback text when files present but no text

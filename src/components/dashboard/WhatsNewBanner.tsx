@@ -6,6 +6,14 @@ import { useAuth } from "@/context/AuthContext";
 import { fetchFeatureUpdates, fetchSeenIds, markAnnouncementSeen, type FeatureUpdate } from "@/lib/whats-new";
 import { isFounderAdmin } from "@/lib/admin";
 
+const NEW_USER_GRACE_PERIOD_DAYS = 7;
+
+function isNewAccount(user: ReturnType<typeof useAuth>["user"]): boolean {
+  if (!user?.created_at) return false;
+  const ageMs = Date.now() - new Date(user.created_at).getTime();
+  return ageMs < NEW_USER_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000;
+}
+
 export default function WhatsNewBanner() {
   const { user, cloudAvailable } = useAuth();
   const navigate = useNavigate();
@@ -15,6 +23,7 @@ export default function WhatsNewBanner() {
 
   useEffect(() => {
     if (!cloudAvailable || !user) return;
+    if (isNewAccount(user)) return;
     let cancelled = false;
     (async () => {
       const [updates, seen] = await Promise.all([fetchFeatureUpdates({ isAdmin }), fetchSeenIds(user.id)]);

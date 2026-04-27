@@ -75,6 +75,8 @@ export default function DashboardHero() {
   }, [captures, projects, memories, getProjectHealth, last_daily_review_at, last_weekly_review_at]);
 
   const weeklyOverdue = !last_weekly_review_at || differenceInDays(new Date(), new Date(last_weekly_review_at)) >= 7;
+  // Don't guilt-trip new users with review reminders before they've built habit
+  const showReviewChips = captures.length >= 5;
 
   return (
     <section className="rounded-2xl border bg-card p-6 space-y-4">
@@ -88,31 +90,33 @@ export default function DashboardHero() {
       </div>
 
       {/* Review status chip */}
-      <div className="flex items-center gap-3">
-        {dailyDone ? (
-          <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1">
-            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-medium text-primary">Daily review complete</span>
-          </div>
-        ) : (
-          <button
-            onClick={() => navigate("/review")}
-            className="flex items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/30 px-3 py-1 transition-colors hover:border-primary/50 hover:bg-primary/5"
-          >
-            <Sun className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Daily review pending</span>
-          </button>
-        )}
-        {weeklyOverdue && (
-          <button
-            onClick={() => navigate("/review")}
-            className="flex items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/30 px-3 py-1 transition-colors hover:border-primary/50 hover:bg-primary/5"
-          >
-            <RotateCcw className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Weekly review due</span>
-          </button>
-        )}
-      </div>
+      {showReviewChips && (
+        <div className="flex items-center gap-3">
+          {dailyDone ? (
+            <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1">
+              <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs font-medium text-primary">Daily review complete</span>
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate("/review")}
+              className="flex items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/30 px-3 py-1 transition-colors hover:border-primary/50 hover:bg-primary/5"
+            >
+              <Sun className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Daily review pending</span>
+            </button>
+          )}
+          {weeklyOverdue && (
+            <button
+              onClick={() => navigate("/review")}
+              className="flex items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/30 px-3 py-1 transition-colors hover:border-primary/50 hover:bg-primary/5"
+            >
+              <RotateCcw className="h-3 w-3 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Weekly review due</span>
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => navigate("/today")}><CalendarCheck className="h-3.5 w-3.5" />Open Today</Button>
