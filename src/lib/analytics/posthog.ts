@@ -1,6 +1,10 @@
 import posthog from "posthog-js";
 
-const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
+// PostHog publishable key — safe to embed in client bundle (write-only, designed for browser use).
+// Env var takes precedence; defaults are the InsightHalo production project.
+const POSTHOG_KEY =
+  (import.meta.env.VITE_POSTHOG_KEY as string | undefined) ??
+  "phc_qZPincdx7oZDe6kWSxWXAczVPVMfT2DCjMgHNpKaGSzU";
 const POSTHOG_HOST =
   (import.meta.env.VITE_POSTHOG_HOST as string | undefined) ??
   "https://us.i.posthog.com";
