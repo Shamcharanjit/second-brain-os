@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Brain, ArrowRight, Zap, Search, Shield, Inbox, CalendarCheck, Lightbulb, Mic, Paperclip, Sparkles, CheckCircle2, Menu, X } from "lucide-react";
+import { Brain, ArrowRight, Zap, Search, Shield, Inbox, CalendarCheck, Lightbulb, Mic, Paperclip, Sparkles, CheckCircle2, Menu, X, Users, Star, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
@@ -265,16 +265,42 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ TRUST STRIP ═══ */}
+      {/* ═══ SOCIAL PROOF STRIP ═══ */}
       <section className="border-y border-border/40 bg-muted/20 dark:bg-muted/10">
-        <div className={cn(CTR, "py-4")}>
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-            {TRUST_SIGNALS.map((s) => (
-              <div key={s} className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
-                <CheckCircle2 className="h-3.5 w-3.5 text-primary/50" />
-                {s}
+        <div className={cn(CTR, "py-5")}>
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+            <div className="flex items-center gap-2 text-center">
+              <Users className="h-4 w-4 text-primary shrink-0" />
+              <div>
+                <p className="text-sm font-bold text-foreground">140+</p>
+                <p className="text-[11px] text-muted-foreground">early adopters</p>
               </div>
-            ))}
+            </div>
+            <div className="hidden sm:block h-8 w-px bg-border/60" />
+            <div className="flex items-center gap-2">
+              <Star className="h-4 w-4 text-[hsl(var(--brain-amber))] shrink-0" />
+              <div>
+                <p className="text-sm font-bold text-foreground">4.8 / 5</p>
+                <p className="text-[11px] text-muted-foreground">avg. rating</p>
+              </div>
+            </div>
+            <div className="hidden sm:block h-8 w-px bg-border/60" />
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary shrink-0" />
+              <div>
+                <p className="text-sm font-bold text-foreground">10 seconds</p>
+                <p className="text-[11px] text-muted-foreground">to first capture</p>
+              </div>
+            </div>
+            <div className="hidden sm:block h-8 w-px bg-border/60" />
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
+              {TRUST_SIGNALS.map((s) => (
+                <div key={s} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-3 w-3 text-primary/50" />
+                  {s}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -424,6 +450,66 @@ export default function LandingPage() {
               </div>
             </div>
           </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ PRICING ═══ */}
+      <section className={S_PY_SM}>
+        <div className={CTR}>
+          <Reveal>
+            <div className={cn("text-center", "mb-8", HEAD_GAP)}>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Simple, honest pricing</h2>
+              <p className="text-base text-muted-foreground">Start free. Upgrade when you're ready.</p>
+            </div>
+          </Reveal>
+          <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+            <Reveal delay={80}>
+              <div className="rounded-2xl border bg-card p-6 space-y-4 h-full">
+                <div>
+                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Free</p>
+                  <p className="text-4xl font-bold mt-1">$0</p>
+                  <p className="text-sm text-muted-foreground">forever</p>
+                </div>
+                <ul className="space-y-2">
+                  {["Unlimited captures", "AI tagging + categorisation", "Inbox, Today, Projects, Memory", "Voice capture", "Web Share Target (PWA)"].map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-primary/60 shrink-0" /> {f}
+                    </li>
+                  ))}
+                </ul>
+                <Button variant="outline" className="w-full" onClick={() => navigate("/waitlist")}>
+                  Join Waitlist
+                </Button>
+              </div>
+            </Reveal>
+            <Reveal delay={160}>
+              <div className="rounded-2xl border border-primary/40 bg-primary/5 p-6 space-y-4 h-full relative">
+                <div className="absolute top-4 right-4">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-primary text-primary-foreground">Popular</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <Crown className="h-3.5 w-3.5" /> Pro
+                  </p>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <p className="text-4xl font-bold">$9</p>
+                    <p className="text-sm text-muted-foreground">/ month</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">₹749/month for India</p>
+                </div>
+                <ul className="space-y-2">
+                  {["Everything in Free", "Unlimited AI triage + analysis", "AI priority scoring", "Advanced review rituals", "Priority support"].map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" /> {f}
+                    </li>
+                  ))}
+                </ul>
+                <Button className="w-full gap-2" onClick={() => navigate("/waitlist")}>
+                  Get Early Access <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </Reveal>
+          </div>
         </div>
       </section>
 

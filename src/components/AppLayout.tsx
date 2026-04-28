@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate, Outlet } from "react-router-dom";
-import { Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings, Crown, Sparkles, HelpCircle } from "lucide-react";
+import { Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Hourglass, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings, Crown, Sparkles, HelpCircle } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -10,6 +10,7 @@ import InsightHaloIcon from "@/components/branding/InsightHaloIcon";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { useConversionCampaignPrompt } from "@/hooks/useConversionCampaignPrompt";
 import { useReminderActivator } from "@/hooks/useReminderActivator";
+import ReviewReminderBanner from "@/components/ReviewReminderBanner";
 
 // Users below this capture count see a simplified sidebar — fewer choices
 // = lower cognitive load = higher activation conversion.
@@ -65,6 +66,7 @@ const NAV_PRIMARY: NavItem[] = [
   { to: "/today", label: "Today", icon: CalendarDays, essential: true },
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
+  { to: "/someday", label: "Someday", icon: Hourglass },
   { to: "/memory", label: "Memory", icon: Search },
 ];
 
@@ -223,6 +225,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         )}
 
         <AnnouncementBanner />
+        <ReviewReminderBanner />
 
         {/* Campaign upgrade prompt */}
         {campaignPrompt.shouldShow && campaignPrompt.strength !== "soft" && (

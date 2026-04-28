@@ -34,6 +34,7 @@ import AdminAnalyticsPage from "@/pages/AdminAnalyticsPage";
 import AdminAnnouncementsPage from "@/pages/AdminAnnouncementsPage";
 import InvitePage from "@/pages/InvitePage";
 import ShareTargetPage from "@/pages/ShareTargetPage";
+import SomedayPage from "@/pages/SomedayPage";
 import AdminPlansPage from "@/pages/AdminPlansPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import HelpPage from "@/pages/HelpPage";
@@ -102,6 +103,7 @@ const App = () => (
                   <Route path="/review" element={<PageErrorBoundary section="Review"><ReviewRitualsPage /></PageErrorBoundary>} />
                   <Route path="/memory" element={<MemoryPage />} />
                   <Route path="/ideas" element={<IdeasVaultPage />} />
+                  <Route path="/someday" element={<SomedayPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/help" element={<PageErrorBoundary section="Help"><HelpPage /></PageErrorBoundary>} />
                   <Route path="/whats-new" element={<PageErrorBoundary section="What's New"><WhatsNewPage /></PageErrorBoundary>} />

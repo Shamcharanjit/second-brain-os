@@ -9,6 +9,7 @@ import DashboardStrategy from "@/components/dashboard/DashboardStrategy";
 import DashboardMomentum from "@/components/dashboard/DashboardMomentum";
 import DashboardAlerts from "@/components/dashboard/DashboardAlerts";
 import CloudUpgradeNudge from "@/components/dashboard/CloudUpgradeNudge";
+import ReferralNudge from "@/components/dashboard/ReferralNudge";
 import FirstCaptureFlow from "@/components/dashboard/FirstCaptureFlow";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import CaptureInput from "@/components/CaptureInput";
@@ -78,6 +79,7 @@ export default function Dashboard() {
       <DashboardSignals />
 
       <CloudUpgradeNudge />
+      <ReferralNudge />
 
       <section className="space-y-3">
         <SectionHeader icon={Sparkles} label="Quick Capture" to="/capture-gateway" />
