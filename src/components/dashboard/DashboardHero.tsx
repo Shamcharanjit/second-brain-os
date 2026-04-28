@@ -77,6 +77,10 @@ export default function DashboardHero() {
   const weeklyOverdue = !last_weekly_review_at || differenceInDays(new Date(), new Date(last_weekly_review_at)) >= 7;
   // Don't guilt-trip new users with review reminders before they've built habit
   const showReviewChips = captures.length >= 5;
+  // Activation goal: nudge users toward 3 captures so AI has enough signal
+  const ACTIVATION_GOAL = 3;
+  const showActivationGoal = captures.length < ACTIVATION_GOAL;
+  const activationProgress = Math.min(captures.length, ACTIVATION_GOAL);
 
   return (
     <section className="rounded-2xl border bg-card p-6 space-y-4">
@@ -88,6 +92,38 @@ export default function DashboardHero() {
           ))}
         </div>
       </div>
+
+      {/* Activation goal — only shown until user reaches first milestone */}
+      {showActivationGoal && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                {activationProgress === 0
+                  ? "Capture 3 thoughts to unlock your second brain"
+                  : `${ACTIVATION_GOAL - activationProgress} more capture${ACTIVATION_GOAL - activationProgress === 1 ? "" : "s"} to unlock your second brain`}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                AI needs a few captures to start spotting patterns and routing for you.
+              </p>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {Array.from({ length: ACTIVATION_GOAL }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-2 w-2 rounded-full transition-colors ${
+                    i < activationProgress ? "bg-primary" : "bg-muted-foreground/20"
+                  }`}
+                  aria-hidden
+                />
+              ))}
+              <span className="ml-2 text-xs font-mono text-muted-foreground">
+                {activationProgress}/{ACTIVATION_GOAL}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Review status chip */}
       {showReviewChips && (

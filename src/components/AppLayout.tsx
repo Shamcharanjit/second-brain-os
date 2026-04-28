@@ -1,14 +1,19 @@
 import { NavLink, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings, Crown, Sparkles, HelpCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useBrain } from "@/context/BrainContext";
 import QuickCaptureModal from "@/components/QuickCaptureModal";
 import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
 import InsightHaloIcon from "@/components/branding/InsightHaloIcon";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { useConversionCampaignPrompt } from "@/hooks/useConversionCampaignPrompt";
 import { useReminderActivator } from "@/hooks/useReminderActivator";
+
+// Users below this capture count see a simplified sidebar — fewer choices
+// = lower cognitive load = higher activation conversion.
+const SIDEBAR_COMPLEXITY_UNLOCK = 5;
 
 function UpgradePromptBanner({ strength, onShow, onClick, onDismiss }: {
   strength: string; onShow: () => void; onClick: () => void; onDismiss: () => void;
@@ -44,27 +49,36 @@ function UpgradePromptBanner({ strength, onShow, onClick, onDismiss }: {
   );
 }
 
-// Sidebar nav grouped for clarity
-const NAV_PRIMARY = [
-  { to: "/app", label: "Dashboard", icon: () => <InsightHaloIcon size="xs" animated={false} /> },
-  { to: "/inbox", label: "Inbox", icon: Inbox },
-  { to: "/today", label: "Today", icon: CalendarDays },
+// Sidebar nav grouped for clarity. `essential: true` items always show,
+// even for new users. Other items only appear once the user crosses
+// SIDEBAR_COMPLEXITY_UNLOCK captures.
+type NavItem = {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }> | (() => JSX.Element);
+  essential?: boolean;
+};
+
+const NAV_PRIMARY: NavItem[] = [
+  { to: "/app", label: "Dashboard", icon: () => <InsightHaloIcon size="xs" animated={false} />, essential: true },
+  { to: "/inbox", label: "Inbox", icon: Inbox, essential: true },
+  { to: "/today", label: "Today", icon: CalendarDays, essential: true },
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
   { to: "/memory", label: "Memory", icon: Search },
 ];
 
-const NAV_SECONDARY = [
+const NAV_SECONDARY: NavItem[] = [
   { to: "/ai-review", label: "AI Review", icon: BrainCircuit },
   { to: "/voice", label: "Voice Capture", icon: Mic },
   { to: "/capture-gateway", label: "Capture Gateway", icon: Radio },
   { to: "/review", label: "Review Rituals", icon: RotateCcw },
 ];
 
-const NAV_ACCOUNT = [
+const NAV_ACCOUNT: NavItem[] = [
   { to: "/whats-new", label: "What's New", icon: Sparkles },
-  { to: "/help", label: "How to Use", icon: HelpCircle },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/help", label: "How to Use", icon: HelpCircle, essential: true },
+  { to: "/settings", label: "Settings", icon: Settings, essential: true },
   { to: "/upgrade", label: "Upgrade", icon: Crown },
 ];
 
@@ -76,7 +90,16 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut, cloudAvailable } = useAuth();
+  const { captures } = useBrain();
   const campaignPrompt = useConversionCampaignPrompt();
+
+  // Hide secondary nav items until user has built capture habit. Reduces
+  // choice paralysis on first sessions; reveals power features as they earn them.
+  const showFullNav = captures.length >= SIDEBAR_COMPLEXITY_UNLOCK;
+  const navPrimary = useMemo(() => showFullNav ? NAV_PRIMARY : NAV_PRIMARY.filter((l) => l.essential), [showFullNav]);
+  const navSecondary = useMemo(() => showFullNav ? NAV_SECONDARY : [], [showFullNav]);
+  const navAccount = useMemo(() => showFullNav ? NAV_ACCOUNT : NAV_ACCOUNT.filter((l) => l.essential), [showFullNav]);
+  const mobileNavLinks = useMemo(() => [...navPrimary, ...navSecondary, ...navAccount], [navPrimary, navSecondary, navAccount]);
   // Day-2 Retention Loop: surface due reminders as pinned Today captures
   useReminderActivator();
 
@@ -100,28 +123,38 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
         <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
           <p className="px-3 pt-2 pb-1 text-[9px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">Workspace</p>
-          {NAV_PRIMARY.map((l) => (
+          {navPrimary.map((l) => (
             <NavLink key={l.to} to={l.to} className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}`}>
               <l.icon className="h-4 w-4" />{l.label}
             </NavLink>
           ))}
 
-          <p className="px-3 pt-4 pb-1 text-[9px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">Tools</p>
-          {NAV_SECONDARY.map((l) => (
-            <NavLink key={l.to} to={l.to} className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}`}>
-              <l.icon className="h-4 w-4" />{l.label}
-            </NavLink>
-          ))}
+          {navSecondary.length > 0 && (
+            <>
+              <p className="px-3 pt-4 pb-1 text-[9px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">Tools</p>
+              {navSecondary.map((l) => (
+                <NavLink key={l.to} to={l.to} className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}`}>
+                  <l.icon className="h-4 w-4" />{l.label}
+                </NavLink>
+              ))}
+            </>
+          )}
 
           <p className="px-3 pt-4 pb-1 text-[9px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">Account</p>
-          {NAV_ACCOUNT.map((l) => (
+          {navAccount.map((l) => (
             <NavLink key={l.to} to={l.to} className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}`}>
               <l.icon className="h-4 w-4" />{l.label}
             </NavLink>
           ))}
+
+          {!showFullNav && (
+            <p className="px-3 pt-4 pb-1 text-[10px] text-sidebar-foreground/40 leading-snug">
+              More tools unlock as you capture
+            </p>
+          )}
         </nav>
         {/* Sync status + auth */}
         <div className="px-4 py-3 space-y-2 border-t border-sidebar-border">
@@ -159,7 +192,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         {mobileOpen && (
            <div className="md:hidden absolute inset-0 z-50 bg-background/95 backdrop-blur-sm pt-14 px-4 overflow-y-auto pb-20">
             <nav className="space-y-1">
-              {NAV_LINKS.map((l) => (
+              {mobileNavLinks.map((l) => (
                 <NavLink
                   key={l.to}
                   to={l.to}
