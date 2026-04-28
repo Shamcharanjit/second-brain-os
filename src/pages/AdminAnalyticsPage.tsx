@@ -20,6 +20,7 @@ import PromptExperimentationPanel from "@/components/dashboard/PromptExperimenta
 import PaywallIntelligencePanel from "@/components/dashboard/PaywallIntelligencePanel";
 import ActivationFunnelPanel from "@/components/dashboard/ActivationFunnelPanel";
 import ReferralVelocityPanel from "@/components/dashboard/ReferralVelocityPanel";
+import EmailSequencePanel from "@/components/dashboard/EmailSequencePanel";
 import UserGeographyPanel from "@/components/dashboard/UserGeographyPanel";
 import SeoSignalsPanel from "@/components/dashboard/SeoSignalsPanel";
 import SeoCoveragePanel from "@/components/dashboard/SeoCoveragePanel";
@@ -1217,6 +1218,9 @@ export default function AdminAnalyticsPage() {
               </Button>
             </div>
           </section>
+
+          {/* ═══ EMAIL RETENTION SEQUENCE ═══ */}
+          <EmailSequencePanel />
 
           {/* ═══ ACTIVATION FUNNEL INTELLIGENCE ═══ */}
           <section className="space-y-3">

@@ -33,6 +33,7 @@ import AdminWaitlistPage from "@/pages/AdminWaitlistPage";
 import AdminAnalyticsPage from "@/pages/AdminAnalyticsPage";
 import AdminAnnouncementsPage from "@/pages/AdminAnnouncementsPage";
 import InvitePage from "@/pages/InvitePage";
+import ShareTargetPage from "@/pages/ShareTargetPage";
 import AdminPlansPage from "@/pages/AdminPlansPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import HelpPage from "@/pages/HelpPage";
@@ -77,6 +78,7 @@ const App = () => (
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/waitlist" element={<WaitlistPage />} />
                 <Route path="/invite" element={<InvitePage />} />
+                <Route path="/share-target" element={<ShareTargetPage />} />
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
                 <Route path="/learn" element={<LearnIndexPage />} />

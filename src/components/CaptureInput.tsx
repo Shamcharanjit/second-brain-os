@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Mic, MicOff, Send, Sparkles, Check, Crown } from "lucide-react";
 import UploadPicker, { type PendingFile } from "@/components/capture/UploadPicker";
 import { useBrain } from "@/context/BrainContext";
@@ -34,7 +35,11 @@ interface CaptureInputProps {
 }
 
 export default function CaptureInput({ variant = "inline", onComplete }: CaptureInputProps) {
-  const [text, setText] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [text, setText] = useState(() => {
+    // Pre-fill from Web Share Target (?prefill=...) — consumed once on mount
+    return searchParams.get("prefill") || "";
+  });
   const [captureInputType, setCaptureInputType] = useState<"text" | "voice">("text");
   const [phase, setPhase] = useState<CapturePhase>("idle");
   const [lastResult, setLastResult] = useState<Capture | null>(null);
@@ -78,6 +83,16 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   useEffect(() => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
+
+  // Clear ?prefill= from URL after consuming it (prevents re-fill on refresh)
+  useEffect(() => {
+    if (searchParams.has("prefill")) {
+      searchParams.delete("prefill");
+      setSearchParams(searchParams, { replace: true });
+      // Focus the textarea so user can immediately submit or edit
+      setTimeout(() => textareaRef.current?.focus(), 100);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-focus on mount for users still building activation momentum (<3 captures).
   // Removes the "find the input box" friction on first/early sessions.

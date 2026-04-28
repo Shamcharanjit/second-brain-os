@@ -1,0 +1,53 @@
+{
+  "name": "InsightHalo",
+  "short_name": "InsightHalo",
+  "description": "Your AI Second Brain — capture thoughts, AI organises everything.",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#0b0f19",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon-v2.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-v2.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "share_target": {
+    "action": "/share-target",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text":  "text",
+      "url":   "url"
+    }
+  },
+  "shortcuts": [
+    {
+      "name": "Quick Capture",
+      "short_name": "Capture",
+      "description": "Capture a new thought instantly",
+      "url": "/app",
+      "icons": [{ "src": "/favicon-v2.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Today",
+      "short_name": "Today",
+      "description": "View your focus list for today",
+      "url": "/app/today",
+      "icons": [{ "src": "/favicon-v2.svg", "sizes": "any" }]
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "en-US",
+  "dir": "ltr"
+}
