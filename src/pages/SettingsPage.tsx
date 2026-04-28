@@ -9,13 +9,14 @@ import { toast } from "sonner";
 import {
   Settings, Shield, Cloud, HardDrive, Download, Upload,
   Trash2, RefreshCw, ArrowLeft, CheckCircle2, AlertTriangle, Heart,
-  Sparkles, Crown, CreditCard, User, Copy, Pencil, Loader2, X, Check,
+  Sparkles, Crown, CreditCard, User, Copy, Pencil, Loader2, X, Check, Bell,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { createPortalSession } from "@/lib/stripe/billing";
 import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLocalData } from "@/lib/data-export";
 import type { InsightHaloBackup } from "@/lib/data-export";
 import { ReferralCenter } from "@/components/settings/ReferralCenter";
+import { PushNotificationToggle } from "@/components/settings/PushNotificationToggle";
 import WhatsNewTimeline from "@/components/WhatsNewTimeline";
 
 /* ── Access-level label logic ── */
@@ -285,6 +286,14 @@ export default function SettingsPage() {
             <Button size="sm" variant="ghost" className="text-xs gap-1.5 text-muted-foreground" onClick={() => signOut()}>Sign out</Button>
           </div>
         )}
+      </section>
+
+      {/* Notifications */}
+      <section className="rounded-xl border bg-card p-5 space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+          <Bell className="h-4 w-4 text-primary" /> Notifications
+        </h2>
+        <PushNotificationToggle />
       </section>
 
       {/* Referral Center */}

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -12,38 +13,50 @@ import { MemoryProvider } from "@/context/MemoryContext";
 import { ReviewMetaProvider } from "@/context/ReviewMetaContext";
 import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import AppLayout from "@/components/AppLayout";
-import LandingPage from "@/pages/LandingPage";
-import Dashboard from "@/pages/Dashboard";
-import InboxPage from "@/pages/InboxPage";
-import TodayPage from "@/pages/TodayPage";
-import ProjectsPage from "@/pages/ProjectsPage";
-import AIReviewPage from "@/pages/AIReviewPage";
-import VoiceCapturePage from "@/pages/VoiceCapturePage";
-import IdeasVaultPage from "@/pages/IdeasVaultPage";
-import CaptureGatewayPage from "@/pages/CaptureGatewayPage";
-import ReviewRitualsPage from "@/pages/ReviewRitualsPage";
-import MemoryPage from "@/pages/MemoryPage";
-import AuthPage from "@/pages/AuthPage";
-import TermsPage from "@/pages/TermsPage";
-import PrivacyPage from "@/pages/PrivacyPage";
-import SettingsPage from "@/pages/SettingsPage";
-import UpgradePage from "@/pages/UpgradePage";
-import WaitlistPage from "@/pages/WaitlistPage";
-import AdminWaitlistPage from "@/pages/AdminWaitlistPage";
-import AdminAnalyticsPage from "@/pages/AdminAnalyticsPage";
-import AdminAnnouncementsPage from "@/pages/AdminAnnouncementsPage";
-import InvitePage from "@/pages/InvitePage";
-import ShareTargetPage from "@/pages/ShareTargetPage";
-import SomedayPage from "@/pages/SomedayPage";
-import AdminPlansPage from "@/pages/AdminPlansPage";
-import ResetPasswordPage from "@/pages/ResetPasswordPage";
-import HelpPage from "@/pages/HelpPage";
-import WhatsNewPage from "@/pages/WhatsNewPage";
-import LearnIndexPage from "@/pages/LearnIndexPage";
-import LearnDetailPage from "@/pages/LearnDetailPage";
-import NotFound from "@/pages/NotFound";
 import AppErrorBoundary from "@/components/system/AppErrorBoundary";
 import PageErrorBoundary from "@/components/system/PageErrorBoundary";
+
+// Route-level code splitting — each page loads only when first visited.
+// Core app routes (Dashboard, Inbox, Today) still load fast; heavy pages
+// (Admin, Voice, Memory, Review) are deferred until needed.
+const LandingPage          = lazy(() => import("@/pages/LandingPage"));
+const Dashboard            = lazy(() => import("@/pages/Dashboard"));
+const InboxPage            = lazy(() => import("@/pages/InboxPage"));
+const TodayPage            = lazy(() => import("@/pages/TodayPage"));
+const ProjectsPage         = lazy(() => import("@/pages/ProjectsPage"));
+const AIReviewPage         = lazy(() => import("@/pages/AIReviewPage"));
+const VoiceCapturePage     = lazy(() => import("@/pages/VoiceCapturePage"));
+const IdeasVaultPage       = lazy(() => import("@/pages/IdeasVaultPage"));
+const CaptureGatewayPage   = lazy(() => import("@/pages/CaptureGatewayPage"));
+const ReviewRitualsPage    = lazy(() => import("@/pages/ReviewRitualsPage"));
+const MemoryPage           = lazy(() => import("@/pages/MemoryPage"));
+const AuthPage             = lazy(() => import("@/pages/AuthPage"));
+const TermsPage            = lazy(() => import("@/pages/TermsPage"));
+const PrivacyPage          = lazy(() => import("@/pages/PrivacyPage"));
+const SettingsPage         = lazy(() => import("@/pages/SettingsPage"));
+const UpgradePage          = lazy(() => import("@/pages/UpgradePage"));
+const WaitlistPage         = lazy(() => import("@/pages/WaitlistPage"));
+const AdminWaitlistPage    = lazy(() => import("@/pages/AdminWaitlistPage"));
+const AdminAnalyticsPage   = lazy(() => import("@/pages/AdminAnalyticsPage"));
+const AdminAnnouncementsPage = lazy(() => import("@/pages/AdminAnnouncementsPage"));
+const InvitePage           = lazy(() => import("@/pages/InvitePage"));
+const ShareTargetPage      = lazy(() => import("@/pages/ShareTargetPage"));
+const SomedayPage          = lazy(() => import("@/pages/SomedayPage"));
+const AdminPlansPage       = lazy(() => import("@/pages/AdminPlansPage"));
+const ResetPasswordPage    = lazy(() => import("@/pages/ResetPasswordPage"));
+const HelpPage             = lazy(() => import("@/pages/HelpPage"));
+const WhatsNewPage         = lazy(() => import("@/pages/WhatsNewPage"));
+const LearnIndexPage       = lazy(() => import("@/pages/LearnIndexPage"));
+const LearnDetailPage      = lazy(() => import("@/pages/LearnDetailPage"));
+const NotFound             = lazy(() => import("@/pages/NotFound"));
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[40vh]">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+  );
+}
 
 const queryClient = new QueryClient();
 
@@ -74,6 +87,7 @@ const App = () => (
             <BrowserRouter>
               <ScrollToTop />
               <GA4RouteTracker />
+              <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public pages — no app chrome */}
                 <Route path="/" element={<LandingPage />} />
@@ -112,6 +126,7 @@ const App = () => (
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
             </BrowserRouter>
           </SubscriptionProvider>
         </AuthProvider>

@@ -10,10 +10,12 @@ import { useNavigate } from "react-router-dom";
 import {
   Inbox, AlertTriangle, Lightbulb, Clock, Search,
   ArrowUpDown, CheckCircle2, BrainCircuit, Sparkles, Zap,
+  CheckSquare, Square, CalendarCheck, Archive, X as XIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 type FilterValue = CaptureCategory | "all" | "pending_review" | "reviewed_filter" | "high_priority";
 type SortValue = "newest" | "priority" | "needs_decision";
@@ -39,11 +41,40 @@ const sortOptions: { label: string; value: SortValue }[] = [
 ];
 
 export default function InboxPage() {
-  const { captures } = useBrain();
+  const { captures, routeCapture, archiveCapture } = useBrain();
   const [filter, setFilter] = useState<FilterValue>("all");
   const [sort, setSort] = useState<SortValue>("needs_decision");
   const [search, setSearch] = useState("");
   const [detailCapture, setDetailCapture] = useState<Capture | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleBulkToToday = useCallback(async () => {
+    const ids = [...selectedIds];
+    await Promise.all(ids.map((id) => routeCapture(id, "sent_to_today")));
+    toast.success(`${ids.length} item${ids.length > 1 ? "s" : ""} moved to Today`);
+    exitSelectMode();
+  }, [selectedIds, routeCapture, exitSelectMode]);
+
+  const handleBulkArchive = useCallback(async () => {
+    const ids = [...selectedIds];
+    await Promise.all(ids.map((id) => archiveCapture(id)));
+    toast.success(`${ids.length} item${ids.length > 1 ? "s" : ""} archived`);
+    exitSelectMode();
+  }, [selectedIds, archiveCapture, exitSelectMode]);
 
   // Attachment counts (lightweight — only capture_id column fetched)
   const captureIds = useMemo(() => captures.map((c) => c.id), [captures]);
@@ -104,16 +135,27 @@ export default function InboxPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="space-y-1">
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-primary/10">
-            <BrainCircuit className="h-5 w-5 text-primary" />
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-primary/10">
+              <BrainCircuit className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Inbox</h1>
+              <p className="text-sm text-muted-foreground">
+                Review AI decisions, approve or adjust, and route to the right place.
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Inbox</h1>
-            <p className="text-sm text-muted-foreground">
-              Review AI decisions, approve or adjust, and route to the right place.
-            </p>
-          </div>
+          <Button
+            size="sm"
+            variant={selectMode ? "default" : "outline"}
+            className="gap-1.5 text-xs h-8 shrink-0"
+            onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+          >
+            {selectMode ? <XIcon className="h-3.5 w-3.5" /> : <CheckSquare className="h-3.5 w-3.5" />}
+            {selectMode ? "Cancel" : "Select"}
+          </Button>
         </div>
       </div>
 
@@ -186,7 +228,9 @@ export default function InboxPage() {
         ) : (
           <div className="space-y-4">
             {pendingReview.map((c) => (
-              <InboxCard key={c.id} capture={c} attachmentCount={attachmentCounts[c.id] ?? 0} onOpenDetail={setDetailCapture} searchMatch={activeSearchQuery ? searchIndex.getMatchInfo(c, activeSearchQuery) : undefined} />
+              <SelectableCard key={c.id} id={c.id} selectMode={selectMode} selected={selectedIds.has(c.id)} onToggle={toggleSelect}>
+                <InboxCard capture={c} attachmentCount={attachmentCounts[c.id] ?? 0} onOpenDetail={selectMode ? undefined : setDetailCapture} searchMatch={activeSearchQuery ? searchIndex.getMatchInfo(c, activeSearchQuery) : undefined} />
+              </SelectableCard>
             ))}
           </div>
         )}
@@ -202,7 +246,9 @@ export default function InboxPage() {
           </div>
           <div className="space-y-2">
             {reviewed.slice(0, 8).map((c) => (
-              <InboxCard key={c.id} capture={c} attachmentCount={attachmentCounts[c.id] ?? 0} onOpenDetail={setDetailCapture} searchMatch={activeSearchQuery ? searchIndex.getMatchInfo(c, activeSearchQuery) : undefined} />
+              <SelectableCard key={c.id} id={c.id} selectMode={selectMode} selected={selectedIds.has(c.id)} onToggle={toggleSelect}>
+                <InboxCard capture={c} attachmentCount={attachmentCounts[c.id] ?? 0} onOpenDetail={selectMode ? undefined : setDetailCapture} searchMatch={activeSearchQuery ? searchIndex.getMatchInfo(c, activeSearchQuery) : undefined} />
+              </SelectableCard>
             ))}
           </div>
         </section>
@@ -213,6 +259,59 @@ export default function InboxPage() {
         open={!!detailCapture}
         onOpenChange={(open) => { if (!open) setDetailCapture(null); }}
       />
+
+      {/* Bulk action bar — floats at bottom when items are selected */}
+      {selectMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+5.5rem)] md:bottom-10 left-1/2 -translate-x-1/2 z-50">
+          <div className="flex items-center gap-2 rounded-2xl border bg-card shadow-xl px-4 py-3">
+            <span className="text-xs font-semibold text-foreground mr-1">
+              {selectedIds.size} selected
+            </span>
+            <Button size="sm" className="gap-1.5 text-xs h-8" onClick={handleBulkToToday}>
+              <CalendarCheck className="h-3.5 w-3.5" /> Move to Today
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs h-8" onClick={handleBulkArchive}>
+              <Archive className="h-3.5 w-3.5" /> Archive
+            </Button>
+            <button onClick={exitSelectMode} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground ml-1">
+              <XIcon className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Wraps a card with a selection overlay in select mode.
+// In select mode: clicking anywhere toggles selection, card actions are blocked.
+function SelectableCard({ id, selectMode, selected, onToggle, children }: {
+  id: string;
+  selectMode: boolean;
+  selected: boolean;
+  onToggle: (id: string) => void;
+  children: React.ReactNode;
+}) {
+  if (!selectMode) return <>{children}</>;
+  return (
+    <div
+      className={`relative cursor-pointer rounded-xl transition-all ${selected ? "ring-2 ring-primary shadow-sm" : "ring-1 ring-transparent"}`}
+      onClick={() => onToggle(id)}
+    >
+      {/* Checkbox indicator */}
+      <div className="absolute top-3 right-3 z-10 flex items-center justify-center h-5 w-5 rounded border-2 bg-background transition-colors"
+        style={{ borderColor: selected ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))" }}
+      >
+        {selected && (
+          <svg className="h-3 w-3 text-primary" fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5" />
+          </svg>
+        )}
+      </div>
+      {/* Card — pointer events off so clicks bubble to wrapper */}
+      <div className="pointer-events-none select-none pr-8">
+        {children}
+      </div>
     </div>
   );
 }

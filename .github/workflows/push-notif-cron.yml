@@ -1,0 +1,18 @@
+name: Daily Push Notifications
+
+on:
+  schedule:
+    # 14:05 UTC daily — just after the 2pm threshold the app uses for review reminders
+    - cron: "5 14 * * *"
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  send-push-notifications:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger send-push-notifications Edge Function
+        run: |
+          curl -s -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/send-push-notifications" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json"
