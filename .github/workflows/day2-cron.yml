@@ -1,0 +1,28 @@
+name: Daily Day-2 Re-engagement Emails
+
+on:
+  schedule:
+    # Run every day at 9:00 AM UTC (2:30 PM IST)
+    - cron: "0 9 * * *"
+  workflow_dispatch: # allow manual trigger for testing
+
+jobs:
+  send-emails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Trigger day-2 email function
+        run: |
+          response=$(curl -s -o /tmp/resp.json -w "%{http_code}" \
+            -X POST \
+            "https://qanoiqzanywjrcuhsmny.supabase.co/functions/v1/send-day2-emails" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          echo "HTTP status: $response"
+          echo "Response: $(cat /tmp/resp.json)"
+          if [ "$response" != "200" ]; then
+            echo "Function returned non-200 status"
+            exit 1
+          fi

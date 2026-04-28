@@ -6,12 +6,14 @@ import { useCaptureSearchIndex } from "@/hooks/useCaptureSearchIndex";
 import { CaptureCategory, Capture } from "@/types/brain";
 import type { CaptureSearchMatchResult } from "@/lib/capture-search-match";
 import { useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Inbox, AlertTriangle, Lightbulb, Clock, Search,
-  ArrowUpDown, CheckCircle2, BrainCircuit, Sparkles,
+  ArrowUpDown, CheckCircle2, BrainCircuit, Sparkles, Zap,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 type FilterValue = CaptureCategory | "all" | "pending_review" | "reviewed_filter" | "high_priority";
 type SortValue = "newest" | "priority" | "needs_decision";
@@ -174,10 +176,13 @@ export default function InboxPage() {
         </div>
 
         {pendingReview.length === 0 ? (
-          <EmptyState
-            message={activeSearchQuery ? "No captures match this search." : "All caught up! No items need review."}
-            isSearch={!!activeSearchQuery}
-          />
+          activeSearchQuery ? (
+            <EmptyState message="No captures match this search." isSearch />
+          ) : captures.length === 0 ? (
+            <NewUserEmptyState />
+          ) : (
+            <EmptyState message="All caught up! No items need review." />
+          )
         ) : (
           <div className="space-y-4">
             {pendingReview.map((c) => (
@@ -222,6 +227,48 @@ function KPICard({ icon, label, value, accent, highlight }: {
         <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
       </div>
       <p className={`text-2xl font-bold tracking-tight ${accent}`}>{value}</p>
+    </div>
+  );
+}
+
+function NewUserEmptyState() {
+  const navigate = useNavigate();
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+      <div className="flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-1">
+        <BrainCircuit className="h-8 w-8 text-primary" />
+      </div>
+      <div className="space-y-1.5">
+        <p className="text-sm font-semibold text-foreground">Your inbox is empty — let's fill it</p>
+        <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
+          Capture a thought, task or idea and AI will tag, categorise and route it here automatically.
+        </p>
+      </div>
+      <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+        <Button
+          size="sm"
+          className="gap-1.5 text-xs h-8"
+          onClick={() => navigate("/app")}
+        >
+          <Zap className="h-3.5 w-3.5" />
+          Capture my first thought
+        </Button>
+      </div>
+      <div className="mt-2 rounded-xl border border-border/60 bg-muted/30 p-4 max-w-sm text-left space-y-2">
+        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">How it works</p>
+        <div className="space-y-1.5">
+          {[
+            "Type any thought — task, idea, or reminder",
+            "AI tags, scores priority and suggests next action",
+            "Review AI decisions and route to Today or Projects",
+          ].map((step, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <span className="flex items-center justify-center h-4 w-4 rounded-full bg-primary/15 text-[9px] font-bold text-primary shrink-0 mt-0.5">{i + 1}</span>
+              <p className="text-xs text-muted-foreground">{step}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

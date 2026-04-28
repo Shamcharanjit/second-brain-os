@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useBrain } from "@/context/BrainContext";
 import { useIntegrationActions } from "@/hooks/useIntegrationActions";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import {
   CalendarCheck, Clock, AlertTriangle, CheckCircle2, Zap, Star,
   ArrowRight, Check, Inbox, Hourglass, FolderKanban,
-  Pencil, X, ChevronDown, Gauge, Undo2,
+  Pencil, X, ChevronDown, Gauge, Undo2, BrainCircuit,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -34,6 +35,7 @@ export default function TodayPage() {
     routeCapture, editCaptureAI,
   } = useBrain();
   const { syncCompletionToProject } = useIntegrationActions();
+  const navigate = useNavigate();
   const [showCompleted, setShowCompleted] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -179,15 +181,57 @@ export default function TodayPage() {
           {queue.length > 0 && <Badge variant="secondary" className="text-[10px] px-2 py-0.5">{queue.length}</Badge>}
         </div>
         {active.length === 0 && pinned.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-            <CalendarCheck className="h-12 w-12 text-muted-foreground/20 mb-1" />
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">No items for today yet</p>
-              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                Route items from your Inbox or capture a new thought to build your daily focus list.
-              </p>
+          captures.length === 0 ? (
+            /* Brand new user — no captures at all */
+            <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+              <div className="flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-1">
+                <BrainCircuit className="h-8 w-8 text-primary" />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-sm font-semibold text-foreground">Today starts with a capture</p>
+                <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                  Your daily focus list lives here. Capture thoughts in your Inbox — then route the important ones to Today.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                <Button size="sm" className="gap-1.5 text-xs h-8" onClick={() => navigate("/app")}>
+                  <Zap className="h-3.5 w-3.5" /> Capture first thought
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs h-8" onClick={() => navigate("/app/inbox")}>
+                  <Inbox className="h-3.5 w-3.5" /> Go to Inbox
+                </Button>
+              </div>
+              <div className="mt-2 rounded-xl border border-border/60 bg-muted/30 p-4 max-w-sm text-left space-y-2">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Building your Today list</p>
+                <div className="space-y-1.5">
+                  {[
+                    "Capture tasks and ideas in your Inbox",
+                    'Review AI decisions, then click "Send to Today"',
+                    "Come back here to work through your daily focus",
+                  ].map((step, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <span className="flex items-center justify-center h-4 w-4 rounded-full bg-primary/15 text-[9px] font-bold text-primary shrink-0 mt-0.5">{i + 1}</span>
+                      <p className="text-xs text-muted-foreground">{step}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Returning user — inbox has items but none routed to Today */
+            <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+              <CalendarCheck className="h-12 w-12 text-muted-foreground/20 mb-1" />
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-foreground">No items for today yet</p>
+                <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                  Route items from your Inbox to build today's focus list.
+                </p>
+              </div>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs h-8 mt-1" onClick={() => navigate("/app/inbox")}>
+                <Inbox className="h-3.5 w-3.5" /> Open Inbox
+              </Button>
+            </div>
+          )
         ) : queue.length === 0 && pinned.length > 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">All items are pinned as Top Focus.</p>
         ) : (
