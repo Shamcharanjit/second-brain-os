@@ -23,13 +23,16 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // React core — tiny, cache forever
-          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/") || id.includes("node_modules/react/jsx")) {
-            return "react";
-          }
-          // React Router
-          if (id.includes("node_modules/react-router") || id.includes("node_modules/@remix-run")) {
-            return "router";
+          // Keep React + React-DOM + router together in one "framework" chunk.
+          // Splitting React into its own chunk causes createContext initialisation
+          // race conditions when vendor code loads before the React chunk is ready.
+          if (
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/react-dom/") ||
+            id.includes("node_modules/react-router") ||
+            id.includes("node_modules/@remix-run")
+          ) {
+            return "framework";
           }
           // Radix UI primitives (used by shadcn) — large, rarely changes
           if (id.includes("node_modules/@radix-ui/")) {
@@ -51,11 +54,7 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("node_modules/@tanstack/")) {
             return "tanstack";
           }
-          // AI / heavy libs
-          if (id.includes("node_modules/openai") || id.includes("node_modules/ai")) {
-            return "ai";
-          }
-          // Remaining vendor code
+          // Everything else (sonner, clsx, zod, etc.) — stable, cache well
           if (id.includes("node_modules/")) {
             return "vendor";
           }
