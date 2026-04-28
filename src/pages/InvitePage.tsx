@@ -8,7 +8,7 @@ import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
 import { toast } from "sonner";
 import { logFunnelEvent } from "@/lib/activation-funnel";
 
-type InviteStatus = "loading" | "invalid" | "ready" | "activating" | "done";
+type InviteStatus = "loading" | "invalid" | "already_activated" | "ready" | "activating" | "done";
 
 export default function InvitePage() {
   const [searchParams] = useSearchParams();
@@ -50,7 +50,16 @@ export default function InvitePage() {
 
         console.log("[InvitePage] check-invite-token response:", parsed);
 
-        if (!parsed?.valid || !parsed?.email) {
+        if (!parsed?.valid) {
+          if (parsed?.already_activated && parsed?.email) {
+            setEmail(parsed.email);
+            setStatus("already_activated");
+          } else {
+            setStatus("invalid");
+          }
+          return;
+        }
+        if (!parsed?.email) {
           setStatus("invalid");
           return;
         }
@@ -154,6 +163,35 @@ export default function InvitePage() {
           </p>
           <div className="flex flex-col gap-2">
             <Button onClick={() => navigate("/waitlist")}>Join the Waitlist</Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-xs text-muted-foreground">
+              Back to home
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "already_activated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="w-full max-w-sm space-y-6 text-center">
+          <InsightHaloLogo variant="auth" />
+          <ShieldCheck className="h-8 w-8 text-primary mx-auto" />
+          <h1 className="text-xl font-bold tracking-tight">Your account is ready</h1>
+          <p className="text-sm text-muted-foreground">
+            You've already set up your InsightHalo account. Sign in to continue where you left off.
+          </p>
+          {email && (
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <p className="text-[11px] text-muted-foreground mb-0.5">Signing in as</p>
+              <p className="text-sm font-medium">{email}</p>
+            </div>
+          )}
+          <div className="flex flex-col gap-2">
+            <Button onClick={() => navigate(`/auth?email=${encodeURIComponent(email)}`)}>
+              Sign In to InsightHalo
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-xs text-muted-foreground">
               Back to home
             </Button>

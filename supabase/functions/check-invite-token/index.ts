@@ -44,9 +44,26 @@ Deno.serve(async (req) => {
     }
 
     if (!data) {
+      // Check if this token exists but was already activated — give the user a
+      // helpful "sign in instead" response rather than a generic "invalid" error.
+      const { data: activatedRow } = await supabase
+        .from("waitlist_signups")
+        .select("email, activation_completed_at")
+        .eq("invite_token", token.trim())
+        .not("activation_completed_at", "is", null)
+        .maybeSingle();
+
+      if (activatedRow?.email) {
+        console.log("[check-invite-token] Token already activated for:", activatedRow.email);
+        return new Response(
+          JSON.stringify({ valid: false, already_activated: true, email: activatedRow.email }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       console.log("[check-invite-token] No matching row for token");
       return new Response(
-        JSON.stringify({ valid: false, email: null }),
+        JSON.stringify({ valid: false, already_activated: false, email: null }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
