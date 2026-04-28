@@ -10,6 +10,7 @@ import DashboardMomentum from "@/components/dashboard/DashboardMomentum";
 import DashboardAlerts from "@/components/dashboard/DashboardAlerts";
 import CloudUpgradeNudge from "@/components/dashboard/CloudUpgradeNudge";
 import FirstCaptureFlow from "@/components/dashboard/FirstCaptureFlow";
+import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import CaptureInput from "@/components/CaptureInput";
 import { Sparkles, Inbox, FolderKanban, Brain, BarChart3 } from "lucide-react";
 import { useFirstRun } from "@/hooks/useFirstRun";
@@ -71,6 +72,7 @@ export default function Dashboard() {
     <div className="space-y-8">
       <WhatsNewBanner />
       <DashboardHero />
+      <OnboardingChecklist />
 
       <SectionHeader icon={Inbox} label="Signals" to="/inbox" />
       <DashboardSignals />
