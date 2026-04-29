@@ -17,6 +17,8 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import type { CaptureSearchMatchResult } from "@/lib/capture-search-match";
 import { splitForHighlight } from "@/lib/capture-search-match";
+import LinkPreviewCard from "@/components/LinkPreviewCard";
+import { extractUrl } from "@/hooks/useLinkPreview";
 
 const categoryColors: Record<CaptureCategory, string> = {
   task: "bg-[hsl(var(--brain-teal))]/15 text-[hsl(var(--brain-teal))]",
@@ -229,6 +231,10 @@ export default function InboxCard({ capture, attachmentCount = 0, onOpenDetail, 
           </div>
           {expanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
         </button>
+        {/* Link preview — shown when raw_input contains a URL */}
+        {extractUrl(capture.raw_input) && (
+          <LinkPreviewCard text={capture.raw_input} />
+        )}
 
         {/* AI interpretation */}
         <div className="rounded-lg bg-primary/5 border border-primary/10 px-4 py-3 space-y-3">

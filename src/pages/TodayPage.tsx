@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBrain } from "@/context/BrainContext";
 import { useIntegrationActions } from "@/hooks/useIntegrationActions";
@@ -8,11 +8,20 @@ import { Input } from "@/components/ui/input";
 import {
   CalendarCheck, Clock, AlertTriangle, CheckCircle2, Zap, Star,
   ArrowRight, Check, Inbox, Hourglass, FolderKanban,
-  Pencil, X, ChevronDown, Gauge, Undo2, BrainCircuit,
+  Pencil, X, ChevronDown, Gauge, Undo2, BrainCircuit, GripVertical,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import type { Capture, CaptureCategory, UrgencyLevel } from "@/types/brain";
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor,
+  useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, sortableKeyboardCoordinates,
+  verticalListSortingStrategy, useSortable, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const categoryLabel: Record<CaptureCategory, string> = {
   task: "Task", idea: "Idea", reminder: "Reminder", goal: "Goal", note: "Note",
@@ -46,6 +55,38 @@ export default function TodayPage() {
   const [editNextAction, setEditNextAction] = useState("");
   const [editTags, setEditTags] = useState("");
 
+  // Drag-to-reorder: manual sort order for the queue section (not pinned items).
+  // Persisted to localStorage per calendar day so order survives page refresh.
+  const todayKey = `today_order_${format(new Date(), "yyyy-MM-dd")}`;
+  const [manualOrder, setManualOrder] = useState<Record<string, number>>(() => {
+    try { return JSON.parse(localStorage.getItem(todayKey) ?? "{}"); } catch { return {}; }
+  });
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active: dragActive, over } = event;
+    if (!over || dragActive.id === over.id) return;
+    // Read current ids from the DOM order via a ref-free approach:
+    // we'll use setManualOrder with a functional updater and pass the ordered ids via closure
+    setManualOrder((prev) => {
+      // Reconstruct current queue order from prev
+      const ids = Object.keys(prev).sort((a, b) => (prev[a] ?? 9999) - (prev[b] ?? 9999));
+      // Also include any items not yet in prev (new arrivals at the end)
+      const allIds = Array.from(new Set([...ids, dragActive.id as string, over.id as string]));
+      const oldIdx = allIds.indexOf(dragActive.id as string);
+      const newIdx = allIds.indexOf(over.id as string);
+      const newIds = arrayMove(allIds, oldIdx, newIdx);
+      const next: Record<string, number> = {};
+      newIds.forEach((id, i) => { next[id] = i; });
+      try { localStorage.setItem(todayKey, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [todayKey]);
+
   /* ── Today items = sent_to_today ── */
   const todayItems = useMemo(() => {
     return captures.filter((c) => c.status === "sent_to_today");
@@ -74,6 +115,15 @@ export default function TodayPage() {
 
   const pinned = active.filter((c) => c.is_pinned_today);
   const queue = active.filter((c) => !c.is_pinned_today);
+
+  // Apply manual drag order to queue; new items (not yet in manualOrder) go to the end
+  const orderedQueue = useMemo(() => {
+    return [...queue].sort((a, b) => {
+      const aIdx = manualOrder[a.id] ?? 9999;
+      const bIdx = manualOrder[b.id] ?? 9999;
+      return aIdx - bIdx;
+    });
+  }, [queue, manualOrder]);
   const pinnedCount = pinned.length;
 
   // Stats
@@ -232,21 +282,25 @@ export default function TodayPage() {
               </Button>
             </div>
           )
-        ) : queue.length === 0 && pinned.length > 0 ? (
+        ) : orderedQueue.length === 0 && pinned.length > 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">All items are pinned as Top Focus.</p>
         ) : (
-          <div className="space-y-2">
-            {queue.map((c) => (
-              <TodayCard
-                key={c.id} capture={c} isPinSection={false}
-                onComplete={handleComplete} onDefer={handleDefer}
-                onTogglePin={togglePinToday} onEdit={startEdit}
-                editingId={editingId}
-                editState={{ editTitle, setEditTitle, editPriority, setEditPriority, editUrgency, setEditUrgency, editNextAction, setEditNextAction, editTags, setEditTags }}
-                onSaveEdit={saveEdit} onCancelEdit={() => setEditingId(null)}
-              />
-            ))}
-          </div>
+          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={orderedQueue.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {orderedQueue.map((c) => (
+                  <SortableTodayCard
+                    key={c.id} capture={c} isPinSection={false}
+                    onComplete={handleComplete} onDefer={handleDefer}
+                    onTogglePin={togglePinToday} onEdit={startEdit}
+                    editingId={editingId}
+                    editState={{ editTitle, setEditTitle, editPriority, setEditPriority, editUrgency, setEditUrgency, editNextAction, setEditNextAction, editTags, setEditTags }}
+                    onSaveEdit={saveEdit} onCancelEdit={() => setEditingId(null)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </section>
 
@@ -287,6 +341,31 @@ export default function TodayPage() {
           )}
         </section>
       )}
+    </div>
+  );
+}
+
+/* ── Sortable wrapper — adds drag handle to TodayCard ── */
+function SortableTodayCard(props: TodayCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.capture.id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+      className="flex items-start gap-1"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="mt-[18px] p-1 text-muted-foreground/30 hover:text-muted-foreground/70 cursor-grab active:cursor-grabbing shrink-0 touch-none"
+        tabIndex={-1}
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <div className="flex-1 min-w-0">
+        <TodayCard {...props} />
+      </div>
     </div>
   );
 }
