@@ -1,14 +1,16 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MessageSquare, Send, Mail, Globe, ArrowDown,
   BrainCircuit, CheckCircle2, Clock, Mic, Zap, ChevronRight,
-  Sparkles, Shield, Radio, Inbox,
+  Sparkles, Shield, Radio, Inbox, Upload, FileText, Image,
+  X, Loader2, AlertCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useBrain } from "@/context/BrainContext";
+import { supabase } from "@/lib/supabase/client";
 import { mockAIProcess } from "@/lib/mock-ai";
 import type { AIProcessedData } from "@/types/brain";
 
@@ -78,18 +80,129 @@ const FLOW_STEPS = [
   { icon: CheckCircle2, label: "Organized", sublabel: "Inbox / Today / Ideas / Project" },
 ];
 
+type DropState = "idle" | "dragging" | "processing" | "done" | "error";
+
+interface ExtractionResult {
+  extracted_text: string;
+  summary: string;
+  document_type: string;
+  file_name: string;
+}
+
+const ACCEPTED_MIME = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"];
+
 export default function CaptureGatewayPage() {
   const { captures, addCapture } = useBrain();
   const navigate = useNavigate();
 
+  /* ── Text simulator state ── */
   const [simChannel, setSimChannel] = useState<ChannelId>("whatsapp");
   const [simText, setSimText] = useState("");
   const [simVoice, setSimVoice] = useState(false);
   const [simResult, setSimResult] = useState<{ aiData: AIProcessedData; reviewStatus: string } | null>(null);
   const [simSaved, setSimSaved] = useState(false);
 
+  /* ── File drop state ── */
+  const [dropState, setDropState] = useState<DropState>("idle");
+  const [dropError, setDropError] = useState<string | null>(null);
+  const [extraction, setExtraction] = useState<ExtractionResult | null>(null);
+  const [editedText, setEditedText] = useState("");
+  const [dropSaved, setDropSaved] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const channelIcon = (ch: ChannelId) => CHANNELS.find((c) => c.id === ch)!;
 
+  /* ── File drop handlers ── */
+  const processFile = useCallback(async (file: File) => {
+    if (!ACCEPTED_MIME.includes(file.type)) {
+      setDropError(`Unsupported file type: ${file.type || "unknown"}. Drop a JPG, PNG, GIF, WebP, or PDF.`);
+      setDropState("error");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setDropError("File is too large. Maximum size is 10 MB.");
+      setDropState("error");
+      return;
+    }
+
+    setDropState("processing");
+    setDropError(null);
+    setExtraction(null);
+    setEditedText("");
+    setDropSaved(false);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = (supabase as any).supabaseUrl as string;
+      const anonKey    = (supabase as any).supabaseKey  as string;
+
+      const form = new FormData();
+      form.append("file", file);
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/extract-file-text`, {
+        method: "POST",
+        headers: {
+          apikey: anonKey,
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: form,
+        signal: AbortSignal.timeout(45_000),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error ?? `HTTP ${res.status}`);
+
+      setExtraction({ ...data, file_name: file.name });
+      setEditedText(data.extracted_text ?? "");
+      setDropState("done");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Extraction failed";
+      setDropError(msg);
+      setDropState("error");
+    }
+  }, []);
+
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDropState((s) => s === "processing" || s === "done" ? s : "dragging");
+  }, []);
+
+  const onDragLeave = useCallback((e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDropState((s) => s === "processing" || s === "done" ? s : "idle");
+    }
+  }, []);
+
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  }, [processFile]);
+
+  const onFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+    e.target.value = "";
+  }, [processFile]);
+
+  function handleDropSave() {
+    if (!editedText.trim()) return;
+    const note = extraction?.summary
+      ? `[${extraction.document_type}] ${editedText}`
+      : editedText;
+    addCapture(note, "text");
+    setDropSaved(true);
+  }
+
+  function resetDrop() {
+    setDropState("idle");
+    setDropError(null);
+    setExtraction(null);
+    setEditedText("");
+    setDropSaved(false);
+  }
+
+  /* ── Text simulator handlers ── */
   function handleSimulate() {
     if (!simText.trim()) return;
     const result = mockAIProcess(simText);
@@ -151,6 +264,149 @@ export default function CaptureGatewayPage() {
         <p className="text-sm font-medium text-foreground">"Great ideas don't wait for the right screen."</p>
         <p className="text-xs text-muted-foreground">Capture from where you already think. Turn messages into meaningful action.</p>
       </div>
+
+      {/* ── File / Image Drop Zone ── */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Upload className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Drop a File — AI Extracts the Text</h2>
+        </div>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+          className="hidden"
+          onChange={onFileChange}
+        />
+
+        {/* Drop zone — idle / dragging / processing */}
+        {(dropState === "idle" || dropState === "dragging" || dropState === "processing") && (
+          <div
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            onClick={() => dropState !== "processing" && fileInputRef.current?.click()}
+            className={`rounded-xl border-2 border-dashed transition-all cursor-pointer p-10 flex flex-col items-center justify-center gap-3 text-center
+              ${dropState === "dragging"
+                ? "border-primary bg-primary/5 scale-[1.01]"
+                : dropState === "processing"
+                ? "border-primary/40 bg-muted/20 cursor-wait"
+                : "border-border bg-muted/20 hover:border-primary/50 hover:bg-muted/40"
+              }`}
+          >
+            {dropState === "processing" ? (
+              <>
+                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                <p className="text-sm font-medium text-foreground">Extracting text with AI…</p>
+                <p className="text-xs text-muted-foreground">This usually takes 5–15 seconds</p>
+              </>
+            ) : dropState === "dragging" ? (
+              <>
+                <Upload className="h-8 w-8 text-primary" />
+                <p className="text-sm font-semibold text-primary">Drop to extract text</p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Image className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Drag & drop a screenshot or PDF</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">or click to browse — JPG, PNG, GIF, WebP, PDF · max 10 MB</p>
+                </div>
+                <p className="text-[11px] text-muted-foreground/60">AI reads the file and extracts all text → save to your brain</p>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Error state */}
+        {dropState === "error" && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="flex-1 space-y-1">
+              <p className="text-sm font-medium text-destructive">Extraction failed</p>
+              <p className="text-xs text-muted-foreground">{dropError}</p>
+            </div>
+            <Button size="sm" variant="ghost" onClick={resetDrop} className="shrink-0 h-7 px-2 text-xs">
+              Try again
+            </Button>
+          </div>
+        )}
+
+        {/* Result state */}
+        {dropState === "done" && extraction && (
+          <div className="rounded-xl border bg-card p-5 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BrainCircuit className="h-4 w-4 text-primary" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">AI Extraction</span>
+              </div>
+              <button onClick={resetDrop} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Meta */}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Badge variant="secondary" className="text-[10px] gap-1">
+                <FileText className="h-3 w-3" />
+                {extraction.file_name}
+              </Badge>
+              <Badge variant="outline" className="text-[10px] capitalize">{extraction.document_type}</Badge>
+            </div>
+
+            {/* Summary */}
+            {extraction.summary && (
+              <div className="rounded-lg bg-muted/40 p-3 space-y-1">
+                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Summary</p>
+                <p className="text-xs text-foreground/80 leading-relaxed">{extraction.summary}</p>
+              </div>
+            )}
+
+            {/* Editable extracted text */}
+            <div className="space-y-2">
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Extracted Text — edit before saving</p>
+              <Textarea
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                className="min-h-[120px] text-xs font-mono leading-relaxed resize-y"
+                placeholder="No text extracted — type a note manually"
+              />
+            </div>
+
+            {/* Save action */}
+            <div className="flex items-center gap-3">
+              {!dropSaved ? (
+                <Button
+                  size="sm"
+                  onClick={handleDropSave}
+                  disabled={!editedText.trim()}
+                  className="gap-1.5 text-xs"
+                >
+                  <CheckCircle2 className="h-3 w-3" />
+                  Save to Brain
+                </Button>
+              ) : (
+                <p className="text-xs text-primary font-medium flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Saved and routed to Inbox
+                </p>
+              )}
+              <Button size="sm" variant="ghost" onClick={resetDrop} className="text-xs text-muted-foreground">
+                Drop another file
+              </Button>
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* Connected Channels */}
       <section className="space-y-4">
