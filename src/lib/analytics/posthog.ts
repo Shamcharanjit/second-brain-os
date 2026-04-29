@@ -26,6 +26,9 @@ export function initPostHog() {
     capture_pageview: false,
     autocapture: false,
     disable_session_recording: false,
+    // Disable feature-flags polling — we don't use flags and the /flags endpoint
+    // returns 401 noise in the console when the project isn't configured for it.
+    advanced_disable_feature_flags: true,
     loaded: (ph) => {
       if (import.meta.env.DEV) ph.debug(false);
     },

@@ -35,13 +35,17 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET, chrome-extension, and Supabase API calls
+  // Skip non-GET and anything the SW shouldn't touch
   if (
     request.method !== "GET" ||
+    url.protocol === "blob:"      ||   // audio/video blobs (Voice Capture)
+    url.protocol === "data:"      ||   // inline data URIs
     url.protocol === "chrome-extension:" ||
     url.hostname.includes("supabase.co") ||
     url.hostname.includes("googletagmanager.com") ||
-    url.hostname.includes("posthog.com")
+    url.hostname.includes("posthog.com") ||
+    url.hostname.includes("fonts.googleapis.com") ||
+    url.hostname.includes("fonts.gstatic.com")
   ) {
     return;
   }
