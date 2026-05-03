@@ -12,7 +12,14 @@ jobs:
     steps:
       - name: Trigger send-push-notifications Edge Function
         run: |
-          curl -s -X POST \
-            "${{ secrets.SUPABASE_URL }}/functions/v1/send-push-notifications" \
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://qanoiqzanywjrcuhsmny.supabase.co/functions/v1/send-push-notifications" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Content-Type: application/json"
+            -H "Content-Type: application/json")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+          echo "HTTP $HTTP_CODE: $BODY"
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 500 ]; then
+            echo "Edge function returned error $HTTP_CODE" && exit 1
+          fi
+          echo "Done."
