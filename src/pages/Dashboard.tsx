@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardWelcome from "@/components/dashboard/DashboardWelcome";
@@ -10,7 +10,6 @@ import DashboardMomentum from "@/components/dashboard/DashboardMomentum";
 import DashboardAlerts from "@/components/dashboard/DashboardAlerts";
 import CloudUpgradeNudge from "@/components/dashboard/CloudUpgradeNudge";
 import ReferralNudge from "@/components/dashboard/ReferralNudge";
-import FirstCaptureFlow from "@/components/dashboard/FirstCaptureFlow";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import CaptureInput from "@/components/CaptureInput";
 import { Sparkles, Inbox, FolderKanban, Brain, BarChart3 } from "lucide-react";
@@ -20,6 +19,8 @@ import { useFirstProductActions } from "@/hooks/useFirstProductActions";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useMemory } from "@/context/MemoryContext";
+
+const ONBOARDING_KEY = "ih_onboarding_v1";
 
 function SectionHeader({ icon: Icon, label, to }: { icon: React.ElementType; label: string; to?: string }) {
   const navigate = useNavigate();
@@ -46,28 +47,20 @@ function SectionHeader({ icon: Icon, label, to }: { icon: React.ElementType; lab
 
 export default function Dashboard() {
   const isFirstRun = useFirstRun();
+  const navigate = useNavigate();
   const { captures } = useBrain();
   const { projects } = useProjects();
   const { memories } = useMemory();
-  const [firstCaptureDismissed, setFirstCaptureDismissed] = useState(false);
 
   useActivationFunnelTracker();
   useFirstProductActions(captures.length, projects.length, memories.length);
 
-  if (isFirstRun) {
-    if (!firstCaptureDismissed) {
-      return (
-        <div className="space-y-8 py-6">
-          <FirstCaptureFlow onComplete={() => setFirstCaptureDismissed(true)} />
-        </div>
-      );
+  // Redirect brand-new users to the onboarding wizard (once, until they complete it)
+  useEffect(() => {
+    if (isFirstRun && !localStorage.getItem(ONBOARDING_KEY)) {
+      navigate("/onboarding", { replace: true });
     }
-    return (
-      <div className="space-y-8">
-        <DashboardWelcome />
-      </div>
-    );
-  }
+  }, [isFirstRun, navigate]);
 
   return (
     <div className="space-y-8">

@@ -48,6 +48,7 @@ const HelpPage             = lazy(() => import("@/pages/HelpPage"));
 const WhatsNewPage         = lazy(() => import("@/pages/WhatsNewPage"));
 const LearnIndexPage       = lazy(() => import("@/pages/LearnIndexPage"));
 const LearnDetailPage      = lazy(() => import("@/pages/LearnDetailPage"));
+const OnboardingPage       = lazy(() => import("@/pages/OnboardingPage"));
 const NotFound             = lazy(() => import("@/pages/NotFound"));
 
 function PageLoader() {
@@ -60,6 +61,7 @@ function PageLoader() {
 
 const queryClient = new QueryClient();
 
+// Full sidebar layout — used for all normal app routes
 function AppProvidersShell() {
   return (
     <BrainProvider>
@@ -69,6 +71,21 @@ function AppProvidersShell() {
             <AppLayout>
               <Outlet />
             </AppLayout>
+          </ReviewMetaProvider>
+        </MemoryProvider>
+      </ProjectProvider>
+    </BrainProvider>
+  );
+}
+
+// Providers only, no sidebar — used for full-screen flows like Onboarding
+function AppDataOnlyShell() {
+  return (
+    <BrainProvider>
+      <ProjectProvider>
+        <MemoryProvider>
+          <ReviewMetaProvider>
+            <Outlet />
           </ReviewMetaProvider>
         </MemoryProvider>
       </ProjectProvider>
@@ -104,6 +121,11 @@ const App = () => (
                 <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
                 <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
                 <Route path="/admin/plans" element={<AdminPlansPage />} />
+
+                {/* Onboarding — full-screen, data providers but no sidebar */}
+                <Route element={<AppDataOnlyShell />}>
+                  <Route path="/onboarding" element={<OnboardingPage />} />
+                </Route>
 
                 {/* App routes — wrapped in sidebar layout */}
                 <Route element={<AppProvidersShell />}>
