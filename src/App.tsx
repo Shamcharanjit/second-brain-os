@@ -49,6 +49,7 @@ const WhatsNewPage         = lazy(() => import("@/pages/WhatsNewPage"));
 const LearnIndexPage       = lazy(() => import("@/pages/LearnIndexPage"));
 const LearnDetailPage      = lazy(() => import("@/pages/LearnDetailPage"));
 const OnboardingPage       = lazy(() => import("@/pages/OnboardingPage"));
+const WeeklyReviewPage     = lazy(() => import("@/pages/WeeklyReviewPage"));
 const NotFound             = lazy(() => import("@/pages/NotFound"));
 
 function PageLoader() {
@@ -137,6 +138,7 @@ const App = () => (
                   <Route path="/voice" element={<VoiceCapturePage />} />
                   <Route path="/capture-gateway" element={<PageErrorBoundary section="Capture Gateway"><CaptureGatewayPage /></PageErrorBoundary>} />
                   <Route path="/review" element={<PageErrorBoundary section="Review"><ReviewRitualsPage /></PageErrorBoundary>} />
+                  <Route path="/review/weekly" element={<PageErrorBoundary section="Weekly Review"><WeeklyReviewPage /></PageErrorBoundary>} />
                   <Route path="/memory" element={<MemoryPage />} />
                   <Route path="/ideas" element={<IdeasVaultPage />} />
                   <Route path="/someday" element={<SomedayPage />} />
