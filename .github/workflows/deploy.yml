@@ -33,21 +33,27 @@ jobs:
           VITE_SUPABASE_URL: https://qanoiqzanywjrcuhsmny.supabase.co
           VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
 
-      # 5. Deploy dist/ to Hostinger via FTPS
+      # 5. Deploy dist/ to Hostinger via lftp (more reliable than FTP action)
+      - name: Install lftp
+        run: sudo apt-get install -y lftp
+
       - name: Deploy to Hostinger
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: 21
-          local-dir: ./dist/
-          server-dir: /public_html/
-          # Only upload changed files (faster subsequent deploys)
-          dangerous-clean-slate: false
-          timeout: 60000
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          lftp -c "
+            set ftp:ssl-allow yes;
+            set ftp:ssl-force no;
+            set ssl:verify-certificate no;
+            set net:timeout 30;
+            set net:max-retries 3;
+            set net:reconnect-interval-base 5;
+            open -u '$FTP_USER','$FTP_PASS' ftp://$FTP_HOST;
+            mirror --reverse --delete --parallel=5 --verbose \
+              --exclude-glob .git* \
+              --exclude-glob node_modules/ \
+              ./dist/ /public_html/;
+            quit
+          "
