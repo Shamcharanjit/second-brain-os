@@ -10,6 +10,7 @@ import {
   Settings, Shield, Cloud, HardDrive, Download, Upload,
   Trash2, RefreshCw, ArrowLeft, CheckCircle2, AlertTriangle, Heart,
   Sparkles, Crown, CreditCard, User, Copy, Pencil, Loader2, X, Check, Bell,
+  Mail, Bookmark, ExternalLink,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { createPortalSession } from "@/lib/stripe/billing";
@@ -40,6 +41,118 @@ function getAccessLabel(isPro: boolean, isEarlyAccess: boolean, subscriptionStat
   if (subscriptionStatus === "active" || subscriptionStatus === "trialing") return "Approved Invite";
   // 4. Pending Waitlist
   return "Pending Waitlist";
+}
+
+// ── Email-to-Inbox section ────────────────────────────────────────────────────
+const CAPTURE_EMAIL_DOMAIN = "capture.insighthalo.com";
+
+function EmailToInboxSection({ userId }: { userId: string }) {
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [provisioning, setProvisioning] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("user_capture_emails")
+      .select("token")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        setToken(data?.token ?? null);
+        setLoading(false);
+      });
+  }, [userId]);
+
+  const provision = async () => {
+    setProvisioning(true);
+    const newToken = crypto.randomUUID().replace(/-/g, "").slice(0, 20);
+    const { error } = await supabase
+      .from("user_capture_emails")
+      .insert({ user_id: userId, token: newToken });
+    if (!error) {
+      setToken(newToken);
+      toast.success("Capture email address created!");
+    } else {
+      toast.error("Could not provision email. Try again.");
+    }
+    setProvisioning(false);
+  };
+
+  const captureEmail = token ? `capture+${token}@${CAPTURE_EMAIL_DOMAIN}` : null;
+
+  return (
+    <section className="rounded-xl border bg-card p-5 space-y-4">
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+        <Mail className="h-4 w-4 text-primary" /> Email to Inbox
+      </h2>
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        Forward or send emails to your personal capture address and they'll appear in your Inbox automatically.
+      </p>
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : captureEmail ? (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 rounded-lg bg-muted/50 border border-border px-3 py-2">
+            <p className="text-xs font-mono text-foreground flex-1 break-all">{captureEmail}</p>
+            <Button
+              variant="ghost" size="icon" className="h-6 w-6 shrink-0"
+              onClick={() => { navigator.clipboard.writeText(captureEmail); toast.success("Email address copied!"); }}
+            >
+              <Copy className="h-3 w-3" />
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Send any email here — the subject + body become a capture in your Inbox.
+          </p>
+        </div>
+      ) : (
+        <Button size="sm" className="gap-1.5 text-xs" onClick={provision} disabled={provisioning}>
+          {provisioning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />}
+          Generate my capture email
+        </Button>
+      )}
+    </section>
+  );
+}
+
+// ── Bookmarklet section ───────────────────────────────────────────────────────
+function BookmarkletSection() {
+  const bookmarkletCode = `javascript:(function(){var u=encodeURIComponent(window.location.href);var t=encodeURIComponent(document.title);window.open('https://insighthalo.com/capture-gateway?url='+u+'&title='+t,'_blank','width=480,height=360');})();`;
+
+  return (
+    <section className="rounded-xl border bg-card p-5 space-y-4">
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+        <Bookmark className="h-4 w-4 text-primary" /> Browser Bookmarklet
+      </h2>
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        Drag the button below to your bookmarks bar. Click it on any webpage to instantly capture the page to your Inbox.
+      </p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        {/* The draggable link IS the bookmarklet */}
+        <a
+          href={bookmarkletCode}
+          className="inline-flex items-center gap-1.5 rounded-lg border-2 border-primary bg-primary/5 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/10 transition-colors cursor-grab active:cursor-grabbing select-none"
+          onClick={(e) => { e.preventDefault(); toast.info("Drag this button to your bookmarks bar!"); }}
+          draggable
+        >
+          <Bookmark className="h-4 w-4" /> ✦ Save to InsightHalo
+        </a>
+        <p className="text-[10px] text-muted-foreground leading-snug max-w-xs">
+          Drag the button above to your browser's bookmarks bar. Then click it on any page to capture it.
+        </p>
+      </div>
+      <div className="rounded-lg bg-muted/40 border border-border/50 px-3 py-2 space-y-1">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Manual install</p>
+        <p className="text-[10px] text-muted-foreground">Create a new bookmark. Set the URL to the code below.</p>
+        <div className="flex items-start gap-2 mt-1">
+          <code className="text-[9px] font-mono text-foreground/70 break-all flex-1 leading-relaxed">{bookmarkletCode}</code>
+          <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={() => { navigator.clipboard.writeText(bookmarkletCode); toast.success("Code copied!"); }}>
+            <Copy className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default function SettingsPage() {
@@ -482,6 +595,14 @@ export default function SettingsPage() {
           )}
         </div>
       </section>
+
+      {/* Email-to-Inbox */}
+      {user && (
+        <EmailToInboxSection userId={user.id} />
+      )}
+
+      {/* Bookmarklet */}
+      <BookmarkletSection />
 
       {/* Data Ownership */}
       <section className="rounded-xl border border-dashed bg-muted/30 p-5 space-y-3">

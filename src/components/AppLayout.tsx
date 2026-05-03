@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate, Outlet } from "react-router-dom";
-import { Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Hourglass, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings, Crown, Sparkles, HelpCircle, MoreHorizontal } from "lucide-react";
+import { Inbox, CalendarDays, FolderKanban, BrainCircuit, Mic, Lightbulb, Hourglass, Menu, X, Plus, Radio, RotateCcw, Search, LogIn, LogOut, Cloud, HardDrive, Settings, Crown, Sparkles, HelpCircle, MoreHorizontal, MessageSquare, FileText, Target, BarChart2, Timer } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -74,6 +74,10 @@ const NAV_PRIMARY: NavItem[] = [
 ];
 
 const NAV_SECONDARY: NavItem[] = [
+  { to: "/ai-chat", label: "AI Chat", icon: MessageSquare },
+  { to: "/goals", label: "Goals", icon: Target },
+  { to: "/scratchpad", label: "Scratchpad", icon: FileText },
+  { to: "/analytics", label: "Analytics", icon: BarChart2 },
   { to: "/ai-review", label: "AI Review", icon: BrainCircuit },
   { to: "/voice", label: "Voice Capture", icon: Mic },
   { to: "/capture-gateway", label: "Capture Gateway", icon: Radio },

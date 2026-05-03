@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback } from "react";
 import HabitsSection from "@/components/HabitsSection";
+import { usePomodoroContext } from "@/components/PomodoroOverlay";
 import { useNavigate } from "react-router-dom";
 import { useBrain } from "@/context/BrainContext";
 import { useIntegrationActions } from "@/hooks/useIntegrationActions";
@@ -9,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import {
   CalendarCheck, Clock, AlertTriangle, CheckCircle2, Zap, Star,
   ArrowRight, Check, Inbox, Hourglass, FolderKanban,
-  Pencil, X, ChevronDown, Gauge, Undo2, BrainCircuit, GripVertical,
+  Pencil, X, ChevronDown, Gauge, Undo2, BrainCircuit, GripVertical, Timer,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -402,6 +403,7 @@ function TodayCard({
 }: TodayCardProps) {
   const ai = capture.ai_data!;
   const isEditing = editingId === capture.id;
+  const pomodoro = usePomodoroContext();
   const [showDefer, setShowDefer] = useState(false);
 
   return (
@@ -505,6 +507,14 @@ function TodayCard({
           <div className="flex items-center gap-2 pt-1 border-t border-border/50">
             <Button size="sm" className="h-7 text-xs gap-1" onClick={() => onComplete(capture.id)}>
               <Check className="h-3 w-3" /> Done
+            </Button>
+            <Button
+              size="sm" variant="outline"
+              className="h-7 text-xs gap-1 text-[hsl(var(--brain-purple))] border-[hsl(var(--brain-purple))/0.4] hover:bg-[hsl(var(--brain-purple))/0.08]"
+              onClick={() => pomodoro.start(ai?.title ?? capture.raw_input.slice(0, 40))}
+              title="Start a 25-min focus session on this task"
+            >
+              <Timer className="h-3 w-3" /> Focus
             </Button>
             <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => onTogglePin(capture.id)}>
               <Star className={`h-3 w-3 ${capture.is_pinned_today ? "fill-[hsl(var(--brain-amber))] text-[hsl(var(--brain-amber))]" : ""}`} />

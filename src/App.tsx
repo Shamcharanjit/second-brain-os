@@ -11,6 +11,9 @@ import { BrainProvider } from "@/context/BrainContext";
 import { ProjectProvider } from "@/context/ProjectContext";
 import { MemoryProvider } from "@/context/MemoryContext";
 import { HabitProvider } from "@/context/HabitContext";
+import { GoalProvider } from "@/context/GoalContext";
+import { PomodoroProvider } from "@/components/PomodoroOverlay";
+import PomodoroOverlay from "@/components/PomodoroOverlay";
 import { ReviewMetaProvider } from "@/context/ReviewMetaContext";
 import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import AppLayout from "@/components/AppLayout";
@@ -54,6 +57,10 @@ const WeeklyReviewPage     = lazy(() => import("@/pages/WeeklyReviewPage"));
 const NotFound             = lazy(() => import("@/pages/NotFound"));
 const ProjectDetailPage    = lazy(() => import("@/pages/ProjectDetailPage"));
 const SharedCapturePage    = lazy(() => import("@/pages/SharedCapturePage"));
+const AIChatPage           = lazy(() => import("@/pages/AIChatPage"));
+const ScratchpadPage       = lazy(() => import("@/pages/ScratchpadPage"));
+const GoalsPage            = lazy(() => import("@/pages/GoalsPage"));
+const AnalyticsPage        = lazy(() => import("@/pages/AnalyticsPage"));
 
 function PageLoader() {
   return (
@@ -73,9 +80,14 @@ function AppProvidersShell() {
         <MemoryProvider>
           <ReviewMetaProvider>
             <HabitProvider>
-              <AppLayout>
-                <Outlet />
-              </AppLayout>
+              <GoalProvider>
+                <PomodoroProvider>
+                  <AppLayout>
+                    <Outlet />
+                  </AppLayout>
+                  <PomodoroOverlay />
+                </PomodoroProvider>
+              </GoalProvider>
             </HabitProvider>
           </ReviewMetaProvider>
         </MemoryProvider>
@@ -92,7 +104,9 @@ function AppDataOnlyShell() {
         <MemoryProvider>
           <ReviewMetaProvider>
             <HabitProvider>
-              <Outlet />
+              <GoalProvider>
+                <Outlet />
+              </GoalProvider>
             </HabitProvider>
           </ReviewMetaProvider>
         </MemoryProvider>
@@ -151,6 +165,10 @@ const App = () => (
                   <Route path="/memory" element={<MemoryPage />} />
                   <Route path="/ideas" element={<IdeasVaultPage />} />
                   <Route path="/someday" element={<SomedayPage />} />
+                  <Route path="/ai-chat" element={<PageErrorBoundary section="AI Chat"><AIChatPage /></PageErrorBoundary>} />
+                  <Route path="/scratchpad" element={<PageErrorBoundary section="Scratchpad"><ScratchpadPage /></PageErrorBoundary>} />
+                  <Route path="/goals" element={<PageErrorBoundary section="Goals"><GoalsPage /></PageErrorBoundary>} />
+                  <Route path="/analytics" element={<PageErrorBoundary section="Analytics"><AnalyticsPage /></PageErrorBoundary>} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/help" element={<PageErrorBoundary section="Help"><HelpPage /></PageErrorBoundary>} />
                   <Route path="/whats-new" element={<PageErrorBoundary section="What's New"><WhatsNewPage /></PageErrorBoundary>} />
