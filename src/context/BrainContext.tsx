@@ -75,6 +75,14 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
     async (userId) => sanitizeCaptures(await fetchCaptures(userId)),
     upsertCaptures,
     (d) => d.length === 0,
+    // Merge: preserve local-only captures (cloud_id=null) that haven't been
+    // synced yet — prevents back-navigation data loss within the debounce window.
+    (local: Capture[], cloud: Capture[]) => {
+      const cloudIdSet = new Set(cloud.map((c) => c.id));
+      const unsynced = local.filter((c) => !c.cloud_id && !cloudIdSet.has(c.id));
+      // Prepend unsynced items so they appear newest-first
+      return unsynced.length > 0 ? [...unsynced, ...cloud] : cloud;
+    },
   );
   useCloudSync(captures, syncCaptures);
 

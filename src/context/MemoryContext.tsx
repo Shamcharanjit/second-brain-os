@@ -49,6 +49,12 @@ export function MemoryProvider({ children }: { children: React.ReactNode }) {
     async (userId) => sanitizeMemories(await fetchMemories(userId)),
     upsertMemories,
     (d) => d.length === 0,
+    // Merge: keep local items not yet present in cloud (debounce-window safety)
+    (local: MemoryEntry[], cloud: MemoryEntry[]) => {
+      const cloudIdSet = new Set(cloud.map((m) => m.id));
+      const unsynced = local.filter((m) => !cloudIdSet.has(m.id));
+      return unsynced.length > 0 ? [...unsynced, ...cloud] : cloud;
+    },
   );
   useCloudSync(memories, syncMemories);
 

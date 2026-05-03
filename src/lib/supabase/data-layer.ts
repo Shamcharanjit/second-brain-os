@@ -64,12 +64,23 @@ export async function syncCaptures(userId: string, captures: Capture[]): Promise
     .map((c) => c.cloud_id ?? (c.id.startsWith("local-") ? null : c.id))
     .filter((id): id is string => Boolean(id));
 
+  // Safety window: never delete cloud rows created within the last 60 seconds.
+  // This prevents the race where writeCaptures inserts a row and updates localStorage
+  // with the new cloud ID, but React state still has cloud_id=null — causing the
+  // next syncCaptures call to see the row as an orphan and delete it.
+  const ORPHAN_SAFE_WINDOW_MS = 60_000;
+  const cutoffTs = new Date(Date.now() - ORPHAN_SAFE_WINDOW_MS).toISOString();
+
   const { data: cloudRows, error: fetchErr } = await supabase
     .from("user_captures")
-    .select("id")
+    .select("id, created_at")
     .eq("user_id", writeUserId);
   if (fetchErr) { console.error("syncCaptures fetch error:", fetchErr); return; }
-  const orphanIds = (cloudRows ?? []).map((r: any) => r.id).filter((id: string) => !confirmedCloudIds.includes(id));
+
+  const orphanIds = (cloudRows ?? [])
+    .filter((r: any) => !confirmedCloudIds.includes(r.id) && r.created_at < cutoffTs)
+    .map((r: any) => r.id);
+
   if (orphanIds.length > 0) {
     const { error: delErr } = await supabase.from("user_captures").delete().in("id", orphanIds);
     if (delErr) console.error("syncCaptures delete error:", delErr);
@@ -251,12 +262,16 @@ export async function syncProjects(userId: string, projects: Project[]): Promise
     if (error) { console.error("syncProjects upsert error:", error); return; }
   }
   const localIds = projects.map((p) => p.id);
+  const ORPHAN_SAFE_WINDOW_MS = 60_000;
+  const cutoffTs = new Date(Date.now() - ORPHAN_SAFE_WINDOW_MS).toISOString();
   const { data: cloudRows, error: fetchErr } = await supabase
     .from("user_projects")
-    .select("id")
+    .select("id, created_at")
     .eq("user_id", userId);
   if (fetchErr) { console.error("syncProjects fetch error:", fetchErr); return; }
-  const orphanIds = (cloudRows ?? []).map((r: any) => r.id).filter((id: string) => !localIds.includes(id));
+  const orphanIds = (cloudRows ?? [])
+    .filter((r: any) => !localIds.includes(r.id) && r.created_at < cutoffTs)
+    .map((r: any) => r.id);
   if (orphanIds.length > 0) {
     const { error: delErr } = await supabase.from("user_projects").delete().in("id", orphanIds);
     if (delErr) console.error("syncProjects delete error:", delErr);
@@ -332,12 +347,16 @@ export async function syncMemories(userId: string, memories: MemoryEntry[]): Pro
     if (error) { console.error("syncMemories upsert error:", error); return; }
   }
   const localIds = memories.map((m) => m.id);
+  const ORPHAN_SAFE_WINDOW_MS = 60_000;
+  const cutoffTs = new Date(Date.now() - ORPHAN_SAFE_WINDOW_MS).toISOString();
   const { data: cloudRows, error: fetchErr } = await supabase
     .from("user_memory_entries")
-    .select("id")
+    .select("id, created_at")
     .eq("user_id", userId);
   if (fetchErr) { console.error("syncMemories fetch error:", fetchErr); return; }
-  const orphanIds = (cloudRows ?? []).map((r: any) => r.id).filter((id: string) => !localIds.includes(id));
+  const orphanIds = (cloudRows ?? [])
+    .filter((r: any) => !localIds.includes(r.id) && r.created_at < cutoffTs)
+    .map((r: any) => r.id);
   if (orphanIds.length > 0) {
     const { error: delErr } = await supabase.from("user_memory_entries").delete().in("id", orphanIds);
     if (delErr) console.error("syncMemories delete error:", delErr);

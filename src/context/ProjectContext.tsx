@@ -67,6 +67,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     async (userId) => sanitizeProjects(await fetchProjects(userId)),
     upsertProjects,
     (d) => d.length === 0,
+    // Merge: keep local items not yet present in cloud (debounce-window safety)
+    (local: Project[], cloud: Project[]) => {
+      const cloudIdSet = new Set(cloud.map((p) => p.id));
+      const unsynced = local.filter((p) => !cloudIdSet.has(p.id));
+      return unsynced.length > 0 ? [...unsynced, ...cloud] : cloud;
+    },
   );
   useCloudSync(projects, syncProjects);
 

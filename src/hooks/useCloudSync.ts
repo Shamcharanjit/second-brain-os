@@ -53,7 +53,13 @@ export function useCloudSync<T>(
 /**
  * On first auth-aware load: hydrates from cloud if available,
  * or seeds cloud from local data if cloud is empty.
- * After hydration, overwrites localStorage to prevent stale resurrection.
+ * After hydration, merges (not overwrites) to preserve any local items
+ * that haven't been synced to cloud yet (e.g. created within the debounce window).
+ *
+ * @param mergeFn Optional merge strategy — called with (local, cloud) when cloud has
+ *   data. Should return the canonical merged state. Default: returns cloud data as-is
+ *   (original behaviour). Supply a merge function to prevent unsync'd local items from
+ *   being lost when the provider remounts before the debounce fires.
  */
 export function useCloudHydration<T>(
   localData: T,
@@ -62,6 +68,7 @@ export function useCloudHydration<T>(
   fetchFn: (userId: string) => Promise<T>,
   seedFn: (userId: string, data: T) => Promise<void>,
   isEmpty: (data: T) => boolean,
+  mergeFn?: (local: T, cloud: T) => T,
 ) {
   const { user } = useAuth();
   const hydratedRef = useRef(false);
@@ -74,9 +81,10 @@ export function useCloudHydration<T>(
       try {
         const cloudData = await fetchFn(user.id);
         if (!isEmpty(cloudData)) {
-          // Cloud has data — use it and overwrite local to stay in sync
-          setData(cloudData);
-          saveState(storageKey, cloudData);
+          // Cloud has data — merge with any unsync'd local items, then persist
+          const merged = mergeFn ? mergeFn(localData, cloudData) : cloudData;
+          setData(merged);
+          saveState(storageKey, merged);
         } else if (!isEmpty(localData)) {
           // Cloud empty, local has data — seed cloud
           await seedFn(user.id, localData);
