@@ -3,6 +3,7 @@ import CaptureDetailDrawer from "@/components/capture/CaptureDetailDrawer";
 import { useBrain } from "@/context/BrainContext";
 import { useCaptureAttachmentCounts } from "@/hooks/useCaptureAttachments";
 import { useCaptureSearchIndex } from "@/hooks/useCaptureSearchIndex";
+import { useAllTags } from "@/hooks/useAllTags";
 import { CaptureCategory, Capture } from "@/types/brain";
 import type { CaptureSearchMatchResult } from "@/lib/capture-search-match";
 import { useState, useMemo, useCallback } from "react";
@@ -10,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Inbox, AlertTriangle, Lightbulb, Clock, Search,
   ArrowUpDown, CheckCircle2, BrainCircuit, Sparkles, Zap,
-  CheckSquare, Square, CalendarCheck, Archive, X as XIcon,
+  CheckSquare, Square, CalendarCheck, Archive, X as XIcon, Tag,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,8 @@ export default function InboxPage() {
   const [detailCapture, setDetailCapture] = useState<Capture | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const allTags = useAllTags();
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -116,8 +119,12 @@ export default function InboxPage() {
       }
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
+    // Tag filter
+    if (selectedTag) {
+      list = list.filter((c) => (c.ai_data?.tags ?? []).includes(selectedTag));
+    }
     return list;
-  }, [active, filter, sort, search]);
+  }, [active, filter, sort, search, selectedTag]);
 
   const pendingReview = filtered.filter((c) => c.review_status !== "reviewed");
   const reviewed = filtered.filter((c) => c.review_status === "reviewed");
@@ -205,6 +212,33 @@ export default function InboxPage() {
             </button>
           ))}
         </div>
+
+        {/* Tag filter chips — only shown when tags exist */}
+        {allTags.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Tag className="h-3 w-3 text-muted-foreground shrink-0" />
+            {selectedTag && (
+              <button
+                onClick={() => setSelectedTag(null)}
+                className="rounded-lg px-2 py-1 text-[10px] font-medium border border-primary bg-primary/10 text-primary flex items-center gap-1"
+              >
+                {selectedTag} <XIcon className="h-2.5 w-2.5" />
+              </button>
+            )}
+            {allTags.slice(0, 12).map(({ tag, count }) => (
+              tag !== selectedTag && (
+                <button
+                  key={tag}
+                  onClick={() => setSelectedTag(tag)}
+                  className="rounded-lg px-2 py-1 text-[10px] font-medium border border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
+                >
+                  {tag}
+                  <span className="ml-1 text-muted-foreground/60">{count}</span>
+                </button>
+              )
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Pending Review Section */}

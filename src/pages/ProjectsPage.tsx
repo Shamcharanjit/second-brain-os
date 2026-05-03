@@ -56,6 +56,7 @@ export default function ProjectsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [filter, setFilter] = useState<FilterTab>("all");
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
   const projectsWithHealth = useMemo(() =>
     projects.map((p) => ({ ...p, health: getProjectHealth(p) })),
@@ -206,7 +207,7 @@ export default function ProjectsPage() {
                 className={`rounded-xl border bg-card p-5 space-y-4 hover:shadow-md transition-shadow cursor-pointer ${
                   project.health === "stalled" ? "border-[hsl(var(--brain-rose))/0.3]" : project.health === "at_risk" ? "border-[hsl(var(--brain-amber))/0.2]" : ""
                 }`}
-                onClick={() => setSelectedId(project.id)}
+                onClick={() => navigate(`/projects/${project.id}`)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">

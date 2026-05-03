@@ -1,4 +1,5 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
+import HabitsSection from "@/components/HabitsSection";
 import { useNavigate } from "react-router-dom";
 import { useBrain } from "@/context/BrainContext";
 import { useIntegrationActions } from "@/hooks/useIntegrationActions";
@@ -191,6 +192,9 @@ export default function TodayPage() {
           {format(new Date(), "EEEE, MMM d")}
         </span>
       </div>
+
+      {/* ── Habits ── */}
+      <HabitsSection />
 
       {/* KPI Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

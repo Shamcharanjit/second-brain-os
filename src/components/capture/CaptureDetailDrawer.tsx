@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { shareCapture } from "@/lib/sharing";
 import { Capture } from "@/types/brain";
 import { useCaptureAttachmentDetails } from "@/hooks/useCaptureAttachments";
 import { useCaptureExtractions } from "@/hooks/useCaptureExtractions";
@@ -29,7 +30,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import {
-  Mic, Type, Sparkles, Clock, ArrowRight, ChevronDown, ChevronRight, Brain, RefreshCw, Loader2,
+  Mic, Type, Sparkles, Clock, ArrowRight, ChevronDown, ChevronRight, Brain, RefreshCw, Loader2, Share2,
 } from "lucide-react";
 
 interface Props {
@@ -49,6 +50,25 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
   const { replaceCaptureAI } = useBrain();
   const [ctxOpen, setCtxOpen] = useState(false);
   const [reanalyzing, setReanalyzing] = useState(false);
+  const [sharing, setSharing] = useState(false);
+
+  const handleShare = useCallback(async () => {
+    if (!capture || sharing) return;
+    setSharing(true);
+    try {
+      const result = await shareCapture(capture);
+      if (result) {
+        await navigator.clipboard.writeText(result.url);
+        toast.success("Share link copied to clipboard!", { description: result.url });
+      } else {
+        toast.error("Sharing requires sign-in.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Could not create share link.");
+    } finally {
+      setSharing(false);
+    }
+  }, [capture, sharing]);
 
   const handleReanalyze = useCallback(async () => {
     if (!capture || reanalyzing) return;
@@ -82,20 +102,34 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader className="pb-4">
-          <SheetTitle className="text-lg leading-snug">
-            {ai?.title ?? "Capture"}
-          </SheetTitle>
-          <SheetDescription className="flex items-center gap-2 text-xs">
-            <span className="inline-flex items-center gap-1">
-              {capture.input_type === "voice" ? <Mic className="h-3 w-3" /> : <Type className="h-3 w-3" />}
-              {capture.input_type === "voice" ? "Voice" : "Text"}
-            </span>
-            <span>·</span>
-            <span className="inline-flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {formatDistanceToNow(new Date(capture.created_at), { addSuffix: true })}
-            </span>
-          </SheetDescription>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <SheetTitle className="text-lg leading-snug">
+                {ai?.title ?? "Capture"}
+              </SheetTitle>
+              <SheetDescription className="flex items-center gap-2 text-xs mt-1">
+                <span className="inline-flex items-center gap-1">
+                  {capture.input_type === "voice" ? <Mic className="h-3 w-3" /> : <Type className="h-3 w-3" />}
+                  {capture.input_type === "voice" ? "Voice" : "Text"}
+                </span>
+                <span>·</span>
+                <span className="inline-flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {formatDistanceToNow(new Date(capture.created_at), { addSuffix: true })}
+                </span>
+              </SheetDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 shrink-0"
+              onClick={handleShare}
+              disabled={sharing}
+              title="Copy share link"
+            >
+              {sharing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
         </SheetHeader>
 
         <div className="space-y-5 pb-6">

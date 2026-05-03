@@ -13,6 +13,7 @@ import { useReminderActivator } from "@/hooks/useReminderActivator";
 import ReviewReminderBanner from "@/components/ReviewReminderBanner";
 import GlobalSearch from "@/components/GlobalSearch";
 import NotificationCentre from "@/components/NotificationCentre";
+import KeyboardShortcutsOverlay from "@/components/KeyboardShortcutsOverlay";
 
 // Users below this capture count see a simplified sidebar — fewer choices
 // = lower cognitive load = higher activation conversion.
@@ -93,6 +94,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut, cloudAvailable } = useAuth();
@@ -110,12 +112,26 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   // Day-2 Retention Loop: surface due reminders as pinned Today captures
   useReminderActivator();
 
-  // Global Cmd+K / Ctrl+K shortcut
+  // Global keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Cmd+K / Ctrl+K → search
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setSearchOpen((o) => !o);
+        return;
+      }
+      // Cmd+J / Ctrl+J → quick capture
+      if ((e.metaKey || e.ctrlKey) && e.key === "j") {
+        e.preventDefault();
+        setCaptureOpen((o) => !o);
+        return;
+      }
+      // ? → keyboard shortcuts (only when not in an input/textarea)
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (e.key === "?" && tag !== "INPUT" && tag !== "TEXTAREA" && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setShortcutsOpen((o) => !o);
       }
     };
     document.addEventListener("keydown", handler);
@@ -346,6 +362,9 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
       {/* Global Search / Command Palette */}
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
+
+      {/* Keyboard Shortcuts Overlay */}
+      <KeyboardShortcutsOverlay open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
     </div>
   );
 }

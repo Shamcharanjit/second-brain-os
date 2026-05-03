@@ -10,6 +10,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { BrainProvider } from "@/context/BrainContext";
 import { ProjectProvider } from "@/context/ProjectContext";
 import { MemoryProvider } from "@/context/MemoryContext";
+import { HabitProvider } from "@/context/HabitContext";
 import { ReviewMetaProvider } from "@/context/ReviewMetaContext";
 import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import AppLayout from "@/components/AppLayout";
@@ -51,6 +52,8 @@ const LearnDetailPage      = lazy(() => import("@/pages/LearnDetailPage"));
 const OnboardingPage       = lazy(() => import("@/pages/OnboardingPage"));
 const WeeklyReviewPage     = lazy(() => import("@/pages/WeeklyReviewPage"));
 const NotFound             = lazy(() => import("@/pages/NotFound"));
+const ProjectDetailPage    = lazy(() => import("@/pages/ProjectDetailPage"));
+const SharedCapturePage    = lazy(() => import("@/pages/SharedCapturePage"));
 
 function PageLoader() {
   return (
@@ -69,9 +72,11 @@ function AppProvidersShell() {
       <ProjectProvider>
         <MemoryProvider>
           <ReviewMetaProvider>
-            <AppLayout>
-              <Outlet />
-            </AppLayout>
+            <HabitProvider>
+              <AppLayout>
+                <Outlet />
+              </AppLayout>
+            </HabitProvider>
           </ReviewMetaProvider>
         </MemoryProvider>
       </ProjectProvider>
@@ -86,7 +91,9 @@ function AppDataOnlyShell() {
       <ProjectProvider>
         <MemoryProvider>
           <ReviewMetaProvider>
-            <Outlet />
+            <HabitProvider>
+              <Outlet />
+            </HabitProvider>
           </ReviewMetaProvider>
         </MemoryProvider>
       </ProjectProvider>
@@ -109,6 +116,7 @@ const App = () => (
               <Routes>
                 {/* Public pages — no app chrome */}
                 <Route path="/" element={<LandingPage />} />
+                <Route path="/share/:token" element={<SharedCapturePage />} />
                 <Route path="/waitlist" element={<WaitlistPage />} />
                 <Route path="/invite" element={<InvitePage />} />
                 <Route path="/share-target" element={<ShareTargetPage />} />
@@ -134,6 +142,7 @@ const App = () => (
                   <Route path="/inbox" element={<PageErrorBoundary section="Inbox"><InboxPage /></PageErrorBoundary>} />
                   <Route path="/today" element={<TodayPage />} />
                   <Route path="/projects" element={<PageErrorBoundary section="Projects"><ProjectsPage /></PageErrorBoundary>} />
+                  <Route path="/projects/:id" element={<PageErrorBoundary section="Project Detail"><ProjectDetailPage /></PageErrorBoundary>} />
                   <Route path="/ai-review" element={<AIReviewPage />} />
                   <Route path="/voice" element={<VoiceCapturePage />} />
                   <Route path="/capture-gateway" element={<PageErrorBoundary section="Capture Gateway"><CaptureGatewayPage /></PageErrorBoundary>} />

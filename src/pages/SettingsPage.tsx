@@ -15,6 +15,10 @@ import { supabase } from "@/lib/supabase/client";
 import { createPortalSession } from "@/lib/stripe/billing";
 import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLocalData } from "@/lib/data-export";
 import type { InsightHaloBackup } from "@/lib/data-export";
+import { exportMarkdown, exportCSV } from "@/lib/export";
+import { useBrain } from "@/context/BrainContext";
+import { useProjects } from "@/context/ProjectContext";
+import { useMemory } from "@/context/MemoryContext";
 import { ReferralCenter } from "@/components/settings/ReferralCenter";
 import { PushNotificationToggle } from "@/components/settings/PushNotificationToggle";
 import WhatsNewTimeline from "@/components/WhatsNewTimeline";
@@ -41,6 +45,9 @@ function getAccessLabel(isPro: boolean, isEarlyAccess: boolean, subscriptionStat
 export default function SettingsPage() {
   const { user, cloudAvailable, signOut } = useAuth();
   const { plan, isPro, isEarlyAccess, aiTriageRemaining, aiTriageUsedToday, limits, billingEnabled, subscriptionStatus, currentPeriodEnd, loadingSubscription } = useSubscription();
+  const { captures } = useBrain();
+  const { projects } = useProjects();
+  const { memories } = useMemory();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -385,9 +392,17 @@ export default function SettingsPage() {
           <p className="text-xs text-muted-foreground">
             Download a complete backup of your captures, projects, memory entries, and review data as a JSON file. You can restore from this backup at any time.
           </p>
-          <Button size="sm" className="gap-1.5" onClick={handleExport}>
-            <Download className="h-3.5 w-3.5" /> Export all data
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" className="gap-1.5" onClick={handleExport}>
+              <Download className="h-3.5 w-3.5" /> JSON backup
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { exportMarkdown(captures, projects, memories); toast.success("Markdown export downloaded"); }}>
+              <Download className="h-3.5 w-3.5" /> Markdown
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { exportCSV(captures); toast.success("CSV export downloaded"); }}>
+              <Download className="h-3.5 w-3.5" /> CSV (captures)
+            </Button>
+          </div>
         </div>
       </section>
 
