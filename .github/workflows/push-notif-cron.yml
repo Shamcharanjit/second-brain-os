@@ -14,7 +14,7 @@ jobs:
         run: |
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             "https://qanoiqzanywjrcuhsmny.supabase.co/functions/v1/send-push-notifications" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Content-Type: application/json")
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | head -n-1)
