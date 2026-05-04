@@ -58,14 +58,20 @@ async function extractWithGemini(
         { type: "text", text: "Extract all text from this image, summarize it, and identify the document type. Use the extract_content tool." },
       ];
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  // Use Gemini direct API (OpenAI-compatible) — works with both GEMINI_API_KEY and LOVABLE_API_KEY
+  const isGeminiDirect = !apiKey.startsWith("lv_") && !apiKey.startsWith("sk-lovable");
+  const endpoint = isGeminiDirect
+    ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+    : "https://ai.gateway.lovable.dev/v1/chat/completions";
+  const model = isGeminiDirect ? "gemini-2.0-flash" : "google/gemini-2.5-flash";
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userContent },
@@ -134,8 +140,10 @@ Deno.serve(async (req) => {
     });
   }
 
+  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) {
+  const AI_KEY = GEMINI_API_KEY || LOVABLE_API_KEY;
+  if (!AI_KEY) {
     return new Response(JSON.stringify({ error: "Server configuration missing" }), {
       status: 503,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -179,7 +187,7 @@ Deno.serve(async (req) => {
   const fileBytes = new Uint8Array(arrayBuffer);
 
   try {
-    const result = await extractWithGemini(fileBytes, mimeType, LOVABLE_API_KEY);
+    const result = await extractWithGemini(fileBytes, mimeType, AI_KEY);
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -9,6 +9,17 @@ const corsHeaders = {
 
 const BUCKET = "capture-uploads";
 
+// ── AI endpoint resolver ──
+// Returns the right endpoint + model based on the API key type.
+// GEMINI_API_KEY (Google AI Studio) uses the direct Gemini OpenAI-compatible API.
+// LOVABLE_API_KEY uses the Lovable gateway.
+function getAiConfig(apiKey: string): { endpoint: string; model: string } {
+  const isLovable = apiKey.startsWith("lv_") || apiKey.startsWith("sk-lovable");
+  return isLovable
+    ? { endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions", model: "google/gemini-2.5-flash" }
+    : { endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", model: "gemini-2.0-flash" };
+}
+
 // ── Helpers ──
 
 function resolveKind(mimeType: string | null): "image" | "pdf" | "audio" | "other" {
@@ -35,15 +46,16 @@ async function extractImage(
   apiKey: string
 ): Promise<{ extracted_text: string; summary: string; structured_json: Record<string, unknown> }> {
   const base64 = fileToBase64(fileBytes);
+  const { endpoint: aiEndpoint, model: aiModel } = getAiConfig(apiKey);
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await fetch(aiEndpoint, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: aiModel,
       messages: [
         {
           role: "system",
@@ -116,15 +128,16 @@ async function extractPdf(
 ): Promise<{ extracted_text: string; summary: string; structured_json: Record<string, unknown> }> {
   // Send PDF as base64 to vision model for text extraction
   const base64 = fileToBase64(fileBytes);
+  const { endpoint: aiEndpoint2, model: aiModel2 } = getAiConfig(apiKey);
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await fetch(aiEndpoint2, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: aiModel2,
       messages: [
         {
           role: "system",
@@ -196,15 +209,16 @@ async function extractAudio(
   apiKey: string
 ): Promise<{ extracted_text: string; summary: string; structured_json: Record<string, unknown> }> {
   const base64 = fileToBase64(fileBytes);
+  const { endpoint: aiEndpoint3, model: aiModel3 } = getAiConfig(apiKey);
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await fetch(aiEndpoint3, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: aiModel3,
       messages: [
         {
           role: "system",
@@ -287,11 +301,13 @@ serve(async (req) => {
       );
     }
 
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const AI_KEY = GEMINI_API_KEY || LOVABLE_API_KEY;
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!LOVABLE_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!AI_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       return new Response(
         JSON.stringify({ error: "Server configuration missing" }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -393,19 +409,19 @@ serve(async (req) => {
 
     // 5. Route extraction by kind
     let result: { extracted_text: string; summary: string; structured_json: Record<string, unknown> };
-    let provider = "lovable-ai";
-    let model = "google/gemini-2.5-flash";
+    let provider = GEMINI_API_KEY ? "gemini-direct" : "lovable-ai";
+    let model = GEMINI_API_KEY ? "gemini-2.0-flash" : "google/gemini-2.5-flash";
 
     try {
       switch (kind) {
         case "image":
-          result = await extractImage(fileBytes, attachment.mime_type || "image/jpeg", LOVABLE_API_KEY);
+          result = await extractImage(fileBytes, attachment.mime_type || "image/jpeg", AI_KEY);
           break;
         case "pdf":
-          result = await extractPdf(fileBytes, LOVABLE_API_KEY);
+          result = await extractPdf(fileBytes, AI_KEY);
           break;
         case "audio":
-          result = await extractAudio(fileBytes, attachment.mime_type || "audio/mpeg", LOVABLE_API_KEY);
+          result = await extractAudio(fileBytes, attachment.mime_type || "audio/mpeg", AI_KEY);
           break;
         default:
           throw new Error("Unsupported kind: " + kind);

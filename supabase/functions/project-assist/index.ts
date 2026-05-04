@@ -88,13 +88,19 @@ serve(async (req) => {
       });
     }
 
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
+    const AI_KEY = GEMINI_API_KEY || LOVABLE_API_KEY;
+    if (!AI_KEY) {
       return new Response(JSON.stringify({ error: "AI not configured" }), {
         status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const AI_ENDPOINT = GEMINI_API_KEY
+      ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+      : "https://ai.gateway.lovable.dev/v1/chat/completions";
+    const AI_MODEL = GEMINI_API_KEY ? "gemini-2.0-flash" : "google/gemini-3-flash-preview";
 
     const toolDef = TOOL_DEFS[action];
     if (!toolDef) {
@@ -116,14 +122,14 @@ ${actionsText}
 
 Provide your ${action.replace(/_/g, " ")} analysis.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(AI_ENDPOINT, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${AI_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: AI_MODEL,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
