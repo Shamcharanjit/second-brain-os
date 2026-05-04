@@ -8,6 +8,9 @@
  * Auth: requires SUPABASE_SERVICE_ROLE_KEY (passed as Bearer token by CI).
  *
  * POST body: { entries: ChangelogEntry[] }
+ *
+ * Upsert key: `slug` (text, unique) — the human-readable id from changelog.json
+ * The primary key (id UUID) is auto-generated and never touched.
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
@@ -18,7 +21,7 @@ const corsHeaders = {
 };
 
 interface ChangelogEntry {
-  id: string;
+  id: string;           // used as slug
   title: string;
   message: string;
   version_tag?: string | null;
@@ -44,8 +47,10 @@ Deno.serve(async (req) => {
       return Response.json({ success: false, error: "entries array required" }, { status: 400, headers: corsHeaders });
     }
 
+    // Build rows — do NOT include `id` (UUID auto-generated).
+    // Use `slug` (the human-readable id from changelog.json) as upsert key.
     const rows = entries.map((e) => ({
-      id: e.id,                               // stable slug — used as upsert key
+      slug: e.id,                              // stable human-readable key
       type: "feature_update",
       status: "active",
       title: e.title,
@@ -59,10 +64,10 @@ Deno.serve(async (req) => {
       visible_to: null,
     }));
 
-    const { error, count } = await supabase
+    const { error, data } = await supabase
       .from("announcements")
-      .upsert(rows, { onConflict: "id", ignoreDuplicates: false })
-      .select("id");
+      .upsert(rows, { onConflict: "slug", ignoreDuplicates: false })
+      .select("slug");
 
     if (error) {
       console.error("Upsert error:", error);
@@ -70,7 +75,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(`sync-changelog: upserted ${rows.length} entries`);
-    return Response.json({ success: true, upserted: rows.length }, { headers: corsHeaders });
+    return Response.json({ success: true, upserted: rows.length, slugs: data?.map((r: any) => r.slug) }, { headers: corsHeaders });
   } catch (err) {
     console.error("sync-changelog error:", err);
     return Response.json({ success: false, error: String(err) }, { status: 500, headers: corsHeaders });
