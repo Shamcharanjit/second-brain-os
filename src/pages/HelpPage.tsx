@@ -5,7 +5,7 @@ import {
   Search, Mic, RotateCcw, ArrowRight, ChevronDown, ChevronUp,
   Mail, Bookmark, Target, BarChart2, MessageSquare, FileText,
   Timer, Bell, Paperclip, Keyboard, HelpCircle, ExternalLink,
-  Zap, Brain, Play,
+  Zap, Brain, Play, Users, Gift, Download,
 } from "lucide-react";
 import InsightHaloIcon from "@/components/branding/InsightHaloIcon";
 
@@ -25,7 +25,7 @@ const FAQS = [
   },
   {
     q: "Can I use InsightHalo on mobile?",
-    a: "Yes — InsightHalo works in any mobile browser. Open insighthalo.com in Safari or Chrome and tap 'Add to Home Screen' to install it like a native app.",
+    a: "Yes — InsightHalo works in any mobile browser. Open insighthalo.com in Safari or Chrome and tap 'Add to Home Screen' to install it like a native app. On mobile, swipe right on any capture to pin it, or swipe left to archive.",
   },
   {
     q: "How do I capture from my phone or email?",
@@ -45,11 +45,27 @@ const FAQS = [
   },
   {
     q: "Can I export my data?",
-    a: "Yes — go to Settings → Data Ownership to export all your captures and memories as JSON at any time.",
+    a: "Yes — go to Settings → Data Ownership to export as JSON, Markdown, CSV, Notion-compatible JSON, or Google Calendar (.ics) format. All exports are client-side — nothing is sent to our servers.",
   },
   {
     q: "What does AI Chat do?",
-    a: "AI Chat lets you ask questions about your own second brain. 'What did I capture this week about fundraising?' or 'Which projects need attention?' — it searches your actual data and responds conversationally.",
+    a: "AI Chat lets you ask questions about your own second brain. 'What did I capture this week about fundraising?' or 'Which projects need attention?' — it searches your actual captures, projects, and memories to respond conversationally.",
+  },
+  {
+    q: "How does the AI semantic memory search work?",
+    a: "Toggle the ⚡ AI button on the Memory page. Instead of matching keywords, it understands the meaning of your query and finds memories that are conceptually similar — even if they use completely different words.",
+  },
+  {
+    q: "What is a Team Workspace?",
+    a: "A shared space for your team. Create one from the sidebar switcher or by pressing ⌘K and searching 'workspace'. Share an 8-character invite code with teammates. Any capture can be shared to the workspace feed with an optional note.",
+  },
+  {
+    q: "How does the referral programme work?",
+    a: "Share your referral link (/referral) and when friends join, you unlock rewards: Early Supporter badge (1 signup), AI credits (3), 1 month Pro free (5), and 3 months Pro + Founder status (10).",
+  },
+  {
+    q: "Will duplicate captures be detected?",
+    a: "Yes — as you type a capture, InsightHalo checks if something very similar already exists (55%+ word overlap). An amber banner shows the similar capture before you submit.",
   },
 ];
 
@@ -129,9 +145,27 @@ const FEATURES = [
   },
   {
     icon: Search,
-    title: "Memory Search",
-    body: "Full-text search across everything you've ever captured. Find that thing you saved 6 months ago instantly.",
+    title: "AI Semantic Search",
+    body: "Toggle ⚡ AI on the Memory page. Finds memories by meaning — not just keywords. Ask anything in plain English.",
     to: "/memory",
+  },
+  {
+    icon: Users,
+    title: "Team Workspace",
+    body: "Create or join a shared workspace. Share any capture to your team's live feed with an optional note. Invite anyone with an 8-character code.",
+    to: "/workspace",
+  },
+  {
+    icon: Gift,
+    title: "Refer & Earn",
+    body: "Share your referral link. Earn badges, AI credits, and up to 3 months Pro free by inviting friends.",
+    to: "/referral",
+  },
+  {
+    icon: Download,
+    title: "Export",
+    body: "Export everything as JSON, Markdown, CSV, Notion-compatible JSON, or Google Calendar .ics. Find it in Settings → Data Ownership.",
+    to: "/settings",
   },
   {
     icon: Mail,

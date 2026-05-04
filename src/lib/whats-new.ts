@@ -1,7 +1,12 @@
 /**
  * What's New — feature update data layer.
- * Reads from public.announcements (type='feature_update') and tracks per-user
- * "seen" state via public.user_seen_announcements.
+ *
+ * Primary source: public.announcements (type='feature_update') in Supabase.
+ * Populated automatically on every push to main via the sync-changelog
+ * GitHub Action → sync-changelog edge function → changelog.json.
+ *
+ * Fallback: /changelog.json (public static file) — used when Supabase is
+ * unreachable or the table is empty (e.g. first deploy, local dev).
  */
 
 import { supabase } from "@/lib/supabase/client";
@@ -22,7 +27,34 @@ export type FeatureUpdate = {
  * - Subscribers (default): only `audience = 'user'`
  * - Admins/founders: all audiences
  */
+/** Load the bundled /changelog.json as a guaranteed fallback. */
+async function fetchLocalChangelog(): Promise<FeatureUpdate[]> {
+  try {
+    const res = await fetch("/changelog.json");
+    if (!res.ok) return [];
+    const raw: Array<{
+      id: string; title: string; message: string;
+      version_tag?: string | null; cta_label?: string | null;
+      cta_link?: string | null; date: string; audience?: string;
+    }> = await res.json();
+    return raw.map((e) => ({
+      id: e.id,
+      title: e.title,
+      message: e.message,
+      version_tag: e.version_tag ?? null,
+      created_at: e.date ? `${e.date}T00:00:00Z` : new Date().toISOString(),
+      cta_label: e.cta_label ?? null,
+      cta_link: e.cta_link ?? null,
+      audience: (e.audience ?? "user") as "user" | "admin" | "internal",
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchFeatureUpdates(opts?: { isAdmin?: boolean }): Promise<FeatureUpdate[]> {
+  const isAdmin = !!opts?.isAdmin;
+
   try {
     const { data, error } = await supabase
       .from("announcements" as never)
@@ -33,12 +65,12 @@ export async function fetchFeatureUpdates(opts?: { isAdmin?: boolean }): Promise
       .limit(50);
 
     if (error) {
-      console.warn("[whats-new] fetch error", error.message);
-      return [];
+      console.warn("[whats-new] fetch error — falling back to changelog.json", error.message);
+      return fetchLocalChangelog();
     }
+
     const now = Date.now();
-    const isAdmin = !!opts?.isAdmin;
-    return ((data ?? []) as any[])
+    const remoteUpdates = ((data ?? []) as any[])
       .filter((a) => {
         const from = a.visible_from ? new Date(a.visible_from).getTime() : null;
         const to = a.visible_to ? new Date(a.visible_to).getTime() : null;
@@ -58,8 +90,12 @@ export async function fetchFeatureUpdates(opts?: { isAdmin?: boolean }): Promise
         cta_link: a.cta_link ?? null,
         audience: (a.audience ?? "user") as "user" | "admin" | "internal",
       }));
+
+    // If Supabase has entries, use them. Otherwise fall back to local JSON.
+    if (remoteUpdates.length > 0) return remoteUpdates;
+    return fetchLocalChangelog();
   } catch {
-    return [];
+    return fetchLocalChangelog();
   }
 }
 
