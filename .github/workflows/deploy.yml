@@ -35,18 +35,28 @@ jobs:
           SSH_PORT: 65002
           SSH_USER: u655326214
         run: |
-          # Write private key
+          # Write private key (printf preserves newlines reliably)
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
           # Trust host fingerprint without interactive prompt
-          ssh-keyscan -p $SSH_PORT $SSH_HOST >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-          # Sync dist/ to public_html/ — fast, reliable, no FTP firewall issues
+          # Verify SSH connection before rsync
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            "$SSH_USER@$SSH_HOST" "echo SSH_OK" || {
+              echo "ERROR: SSH connection failed"
+              exit 1
+            }
+
+          # Sync dist/ to public_html/
           rsync -az --delete \
-            -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=no" \
+            -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=no -o BatchMode=yes" \
             ./dist/ \
-            $SSH_USER@$SSH_HOST:/home/$SSH_USER/domains/insighthalo.com/public_html/
+            "$SSH_USER@$SSH_HOST:/home/$SSH_USER/domains/insighthalo.com/public_html/"
 
           echo "Deploy complete ✓"
