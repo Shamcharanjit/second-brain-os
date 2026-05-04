@@ -28,28 +28,54 @@ jobs:
           VITE_SUPABASE_URL: https://qanoiqzanywjrcuhsmny.supabase.co
           VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
 
-      - name: Install lftp
-        run: sudo apt-get install -y lftp
+      # Attempt 1 — plain FTP (what worked on run #34)
+      - name: Deploy to Hostinger (attempt 1)
+        id: deploy1
+        continue-on-error: true
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./dist/
+          server-dir: /public_html/
+          dangerous-clean-slate: false
+          timeout: 120000
+          log-level: minimal
 
-      - name: Deploy to Hostinger via FTP
-        env:
-          FTP_HOST: ${{ secrets.FTP_HOST }}
-          FTP_USER: ${{ secrets.FTP_USERNAME }}
-          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
-        run: |
-          # Use netrc so special characters in password are handled safely
-          printf 'machine %s\nlogin %s\npassword %s\n' \
-            "$FTP_HOST" "$FTP_USER" "$FTP_PASS" > ~/.netrc
-          chmod 600 ~/.netrc
+      # Attempt 2 — retry if attempt 1 timed out (different runner IP)
+      - name: Deploy to Hostinger (attempt 2)
+        id: deploy2
+        continue-on-error: true
+        if: steps.deploy1.outcome == 'failure'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./dist/
+          server-dir: /public_html/
+          dangerous-clean-slate: false
+          timeout: 120000
+          log-level: minimal
 
-          lftp -e "
-            set ftp:passive-mode yes;
-            set ftp:ssl-allow yes;
-            set net:timeout 60;
-            set net:max-retries 5;
-            set net:reconnect-interval-base 10;
-            mirror --reverse --parallel=4 ./dist/ /public_html/;
-            quit
-          " ftp://$FTP_HOST
-
-          rm -f ~/.netrc
+      # Attempt 3 — final retry with FTPS
+      - name: Deploy to Hostinger (attempt 3 — FTPS)
+        id: deploy3
+        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          local-dir: ./dist/
+          server-dir: /public_html/
+          dangerous-clean-slate: false
+          timeout: 120000
+          log-level: minimal
