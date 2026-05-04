@@ -63,6 +63,7 @@ const ScratchpadPage       = lazy(() => import("@/pages/ScratchpadPage"));
 const GoalsPage            = lazy(() => import("@/pages/GoalsPage"));
 const AnalyticsPage        = lazy(() => import("@/pages/AnalyticsPage"));
 const WorkspacePage        = lazy(() => import("@/pages/WorkspacePage"));
+const ReferralPage         = lazy(() => import("@/pages/ReferralPage"));
 
 function PageLoader() {
   return (
@@ -176,6 +177,7 @@ const App = () => (
                   <Route path="/goals" element={<PageErrorBoundary section="Goals"><GoalsPage /></PageErrorBoundary>} />
                   <Route path="/analytics" element={<PageErrorBoundary section="Analytics"><AnalyticsPage /></PageErrorBoundary>} />
                   <Route path="/workspace" element={<PageErrorBoundary section="Workspace"><WorkspacePage /></PageErrorBoundary>} />
+                  <Route path="/referral" element={<PageErrorBoundary section="Referral"><ReferralPage /></PageErrorBoundary>} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/help" element={<PageErrorBoundary section="Help"><HelpPage /></PageErrorBoundary>} />
                   <Route path="/whats-new" element={<PageErrorBoundary section="What's New"><WhatsNewPage /></PageErrorBoundary>} />

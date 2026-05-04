@@ -19,7 +19,7 @@ import {
   Search, ArrowRight, CalendarDays, Inbox, FolderKanban, Lightbulb,
   Brain, Target, BarChart2, FileText, RotateCcw, Settings, HelpCircle,
   Sparkles, MessageSquare, Zap, Timer, Rocket, BookOpen, Home,
-  BrainCircuit, X, Users,
+  BrainCircuit, X, Users, Gift,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
@@ -102,6 +102,12 @@ const COMMANDS: Command[] = [
     label: "Team Workspace", desc: "Shared feed and team captures",
     action: (nav, { closeCommandPalette }) => { nav("/workspace"); closeCommandPalette(); },
     keywords: ["workspace", "team", "shared", "collaborate", "members"],
+  },
+  {
+    id: "go-referral", group: "navigate", icon: Gift,
+    label: "Refer & Earn", desc: "Share your link and unlock rewards",
+    action: (nav, { closeCommandPalette }) => { nav("/referral"); closeCommandPalette(); },
+    keywords: ["referral", "invite", "earn", "rewards", "share", "friends"],
   },
   {
     id: "go-scratchpad", group: "navigate", icon: FileText,

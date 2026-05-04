@@ -9,7 +9,8 @@ interface GoalContextType {
   createGoal: (title: string, lifeArea: LifeArea, description?: string, targetDate?: string | null) => Goal;
   updateGoal: (id: string, updates: Partial<Pick<Goal, "title" | "description" | "life_area" | "status" | "target_date" | "notes">>) => void;
   deleteGoal: (id: string) => void;
-  addMilestone: (goalId: string, text: string) => void;
+  addMilestone: (goalId: string, text: string, targetDate?: string | null) => void;
+  updateMilestone: (goalId: string, milestoneId: string, updates: Partial<Pick<Milestone, "text" | "target_date">>) => void;
   toggleMilestone: (goalId: string, milestoneId: string) => void;
   removeMilestone: (goalId: string, milestoneId: string) => void;
   linkProject: (goalId: string, projectId: string) => void;
@@ -40,11 +41,18 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
     setGoals((prev) => prev.map((g) => g.id === id ? touch({ ...g, status: "archived" as GoalStatus }) : g));
   }, []);
 
-  const addMilestone = useCallback((goalId: string, text: string) => {
+  const addMilestone = useCallback((goalId: string, text: string, targetDate: string | null = null) => {
     setGoals((prev) => prev.map((g) => {
       if (g.id !== goalId) return g;
-      const m: Milestone = { id: crypto.randomUUID(), text, is_completed: false, completed_at: null };
+      const m: Milestone = { id: crypto.randomUUID(), text, is_completed: false, completed_at: null, target_date: targetDate };
       return touch({ ...g, milestones: [...g.milestones, m] });
+    }));
+  }, []);
+
+  const updateMilestone = useCallback((goalId: string, milestoneId: string, updates: Partial<Pick<Milestone, "text" | "target_date">>) => {
+    setGoals((prev) => prev.map((g) => {
+      if (g.id !== goalId) return g;
+      return touch({ ...g, milestones: g.milestones.map((m) => m.id === milestoneId ? { ...m, ...updates } : m) });
     }));
   }, []);
 
@@ -74,7 +82,7 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <GoalContext.Provider value={{ goals, createGoal, updateGoal, deleteGoal, addMilestone, toggleMilestone, removeMilestone, linkProject, unlinkProject, getGoalProgress }}>
+    <GoalContext.Provider value={{ goals, createGoal, updateGoal, deleteGoal, addMilestone, updateMilestone, toggleMilestone, removeMilestone, linkProject, unlinkProject, getGoalProgress }}>
       {children}
     </GoalContext.Provider>
   );

@@ -6,6 +6,7 @@ export interface Milestone {
   text: string;
   is_completed: boolean;
   completed_at: string | null;
+  target_date: string | null;
 }
 
 export interface Goal {

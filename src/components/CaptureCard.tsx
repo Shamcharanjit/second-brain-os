@@ -3,10 +3,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Mic, Type, ArrowRight, FolderOpen, Gauge, ShieldCheck, ShieldQuestion,
-  Clock, CalendarCheck, Lightbulb, Brain, FolderKanban, Pin, Archive, Pencil, Repeat,
+  Clock, CalendarCheck, Lightbulb, Brain, FolderKanban, Pin, Archive, Pencil, Repeat, Users,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
+import { useState } from "react";
+import { useWorkspace } from "@/context/WorkspaceContext";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 const categoryConfig: Record<CaptureCategory, { label: string; color: string }> = {
   task: { label: "Task", color: "bg-[hsl(var(--brain-teal))]/15 text-[hsl(var(--brain-teal))]" },
@@ -31,15 +39,72 @@ interface CaptureCardProps {
   onArchive?: (id: string) => void;
 }
 
+// ── Share-to-Workspace Dialog ──────────────────────────────────────────────────
+function ShareDialog({ capture, open, onClose }: { capture: Capture; open: boolean; onClose: () => void }) {
+  const { activeWorkspace, shareCapture } = useWorkspace();
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function handleShare() {
+    if (!activeWorkspace) return;
+    setBusy(true);
+    const ok = await shareCapture(capture.id, capture.raw_input, capture.ai_data, note);
+    setBusy(false);
+    if (ok) {
+      toast.success(`Shared to ${activeWorkspace.name}`);
+      setNote("");
+      onClose();
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            Share to {activeWorkspace?.name ?? "Workspace"}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-1">
+          <div className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground line-clamp-3">
+            {(capture.ai_data as { title?: string })?.title ?? capture.raw_input.slice(0, 120)}
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Add a note (optional)</Label>
+            <Input
+              placeholder="Why are you sharing this?"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleShare()}
+              autoFocus
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+          <Button onClick={handleShare} disabled={busy} className="gap-1.5">
+            <Users className="h-3.5 w-3.5" />
+            {busy ? "Sharing…" : "Share"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function CaptureCard({
   capture, expanded = false,
   onEdit, onConvertToProject, onConvertToMemory, onPin, onArchive,
 }: CaptureCardProps) {
   const ai = capture.ai_data;
+  const { activeWorkspace } = useWorkspace();
+  const [shareOpen, setShareOpen] = useState(false);
+
   if (!ai) return null;
 
   const cat = categoryConfig[ai.category];
-  const hasActions = onEdit || onConvertToProject || onConvertToMemory || onPin || onArchive;
+  const hasActions = onEdit || onConvertToProject || onConvertToMemory || onPin || onArchive || !!activeWorkspace;
 
   // Swipe gestures — only active when quick-action handlers are provided
   const { bind, translateX, swipeState } = useSwipeGesture({
@@ -192,13 +257,19 @@ export default function CaptureCard({
             </Button>
           )}
           {onArchive && (
-            <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1 text-muted-foreground ml-auto" onClick={() => onArchive(capture.id)}>
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1 text-muted-foreground" onClick={() => onArchive(capture.id)}>
               <Archive className="h-2.5 w-2.5" /> Archive
+            </Button>
+          )}
+          {activeWorkspace && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1 text-muted-foreground ml-auto" onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}>
+              <Users className="h-2.5 w-2.5" /> Share
             </Button>
           )}
         </div>
       )}
     </div>
+    <ShareDialog capture={capture} open={shareOpen} onClose={() => setShareOpen(false)} />
     </div>
   );
 }

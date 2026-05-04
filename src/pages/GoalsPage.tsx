@@ -5,7 +5,6 @@
 import { useState, useMemo } from "react";
 import { useGoals } from "@/context/GoalContext";
 import { Goal, LifeArea, GoalStatus, LIFE_AREA_CONFIG } from "@/types/goal";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,11 +12,37 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { formatDistanceToNow, format } from "date-fns";
+import { format, isPast, parseISO } from "date-fns";
 import {
   Plus, Target, CheckCircle2, Circle, Trash2, ChevronDown, ChevronRight,
-  CalendarClock, TrendingUp, X, Edit2, Check,
+  CalendarClock, TrendingUp, X, Edit2, Check, Calendar, AlertCircle,
 } from "lucide-react";
+
+// ── Animated Circular Progress Ring ─────────────────────────────────────────────
+function CircularProgress({ value, size = 64, strokeWidth = 5, color }: {
+  value: number; size?: number; strokeWidth?: number; color: string;
+}) {
+  const r = (size - strokeWidth) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (value / 100) * circ;
+  return (
+    <svg width={size} height={size} className="-rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={strokeWidth}
+        className="stroke-muted" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={strokeWidth}
+        stroke={color} strokeLinecap="round"
+        strokeDasharray={circ} strokeDashoffset={offset}
+        style={{ transition: "stroke-dashoffset 0.6s ease" }}
+      />
+      <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle"
+        className="rotate-90 fill-foreground text-[11px] font-bold"
+        style={{ fontSize: 11, transform: `rotate(90deg)`, transformOrigin: "center" }}
+      >
+        {value}%
+      </text>
+    </svg>
+  );
+}
 
 const STATUS_CONFIG: Record<GoalStatus, { label: string; className: string }> = {
   active:    { label: "Active",    className: "bg-primary/10 text-primary" },
@@ -105,20 +130,26 @@ function CreateGoalDialog({ open, onClose }: { open: boolean; onClose: () => voi
 
 // ── Goal Card ─────────────────────────────────────────────────────────────────
 function GoalCard({ goal }: { goal: Goal }) {
-  const { getGoalProgress, addMilestone, toggleMilestone, removeMilestone, updateGoal, deleteGoal } = useGoals();
+  const { getGoalProgress, addMilestone, toggleMilestone, removeMilestone, updateGoal, updateMilestone, deleteGoal } = useGoals();
   const [expanded, setExpanded] = useState(false);
   const [newMilestone, setNewMilestone] = useState("");
+  const [newMilestoneDate, setNewMilestoneDate] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(goal.title);
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descDraft, setDescDraft] = useState(goal.description);
 
   const progress = getGoalProgress(goal);
   const cfg = LIFE_AREA_CONFIG[goal.life_area];
   const statusCfg = STATUS_CONFIG[goal.status];
+  // Pick a CSS color string from the goal's life area colour token
+  const ringColor = `hsl(var(${cfg.color}))`;
 
   const handleAddMilestone = () => {
     if (!newMilestone.trim()) return;
-    addMilestone(goal.id, newMilestone.trim());
+    addMilestone(goal.id, newMilestone.trim(), newMilestoneDate || null);
     setNewMilestone("");
+    setNewMilestoneDate("");
   };
 
   const handleSaveTitle = () => {
@@ -126,18 +157,36 @@ function GoalCard({ goal }: { goal: Goal }) {
     setEditingTitle(false);
   };
 
+  const handleSaveDesc = () => {
+    updateGoal(goal.id, { description: descDraft.trim() });
+    setEditingDesc(false);
+  };
+
   const pendingCount = goal.milestones.filter((m) => !m.is_completed).length;
   const doneCount = goal.milestones.filter((m) => m.is_completed).length;
+
+  // Overdue milestone check
+  const overdueCount = goal.milestones.filter(
+    (m) => !m.is_completed && m.target_date && isPast(parseISO(m.target_date))
+  ).length;
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden hover:shadow-sm transition-shadow">
       {/* Color band */}
-      <div className="h-1" style={{ background: `hsl(var(${cfg.color}))` }} />
+      <div className="h-1" style={{ background: ringColor }} />
 
       <div className="p-4 space-y-3">
-        {/* Header row */}
+        {/* Header row with circular progress */}
         <div className="flex items-start gap-3">
-          <span className="text-xl mt-0.5 shrink-0">{cfg.emoji}</span>
+          {/* Circular progress ring — only show when milestones exist */}
+          {goal.milestones.length > 0 ? (
+            <div className="shrink-0 mt-0.5">
+              <CircularProgress value={progress} size={52} strokeWidth={4} color={ringColor} />
+            </div>
+          ) : (
+            <span className="text-xl mt-1 shrink-0">{cfg.emoji}</span>
+          )}
+
           <div className="flex-1 min-w-0">
             {editingTitle ? (
               <div className="flex gap-1.5">
@@ -175,14 +224,20 @@ function GoalCard({ goal }: { goal: Goal }) {
                   {format(new Date(goal.target_date), "MMM d, yyyy")}
                 </span>
               )}
+              {overdueCount > 0 && (
+                <span className="flex items-center gap-0.5 text-[10px] text-[hsl(var(--brain-rose))] font-medium">
+                  <AlertCircle className="h-2.5 w-2.5" />
+                  {overdueCount} overdue
+                </span>
+              )}
+              {goal.milestones.length > 0 && (
+                <span className="text-[10px] text-muted-foreground ml-auto">{doneCount}/{goal.milestones.length}</span>
+              )}
             </div>
           </div>
+
           <div className="flex items-center gap-1 shrink-0">
-            {/* Status toggle */}
-            <Select
-              value={goal.status}
-              onValueChange={(v) => updateGoal(goal.id, { status: v as GoalStatus })}
-            >
+            <Select value={goal.status} onValueChange={(v) => updateGoal(goal.id, { status: v as GoalStatus })}>
               <SelectTrigger className="h-6 w-auto text-[10px] border-none shadow-none px-1.5 gap-0.5">
                 <SelectValue />
               </SelectTrigger>
@@ -192,30 +247,36 @@ function GoalCard({ goal }: { goal: Goal }) {
                 ))}
               </SelectContent>
             </Select>
-            <button
-              className="text-muted-foreground hover:text-destructive transition-colors p-1"
-              onClick={() => { deleteGoal(goal.id); toast.success("Goal archived"); }}
-              title="Archive goal"
-            >
+            <button className="text-muted-foreground hover:text-destructive transition-colors p-1"
+              onClick={() => { deleteGoal(goal.id); toast.success("Goal archived"); }} title="Archive goal">
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
 
-        {/* Progress bar */}
-        {goal.milestones.length > 0 && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span>{doneCount}/{goal.milestones.length} milestones</span>
-              <span className="font-medium">{progress}%</span>
+        {/* Description — inline editable */}
+        {editingDesc ? (
+          <div className="space-y-1.5">
+            <Textarea
+              className="text-xs resize-none"
+              rows={2}
+              value={descDraft}
+              onChange={(e) => setDescDraft(e.target.value)}
+              autoFocus
+              placeholder="Why does this goal matter?"
+            />
+            <div className="flex gap-1.5">
+              <Button size="sm" className="h-6 text-[10px] px-2" onClick={handleSaveDesc}><Check className="h-3 w-3 mr-1" />Save</Button>
+              <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => { setDescDraft(goal.description); setEditingDesc(false); }}><X className="h-3 w-3" /></Button>
             </div>
-            <Progress value={progress} className="h-1.5" />
           </div>
-        )}
-
-        {/* Description */}
-        {goal.description && (
-          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{goal.description}</p>
+        ) : (
+          <div className="group flex items-start gap-1 cursor-pointer" onClick={() => { setDescDraft(goal.description); setEditingDesc(true); }}>
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 flex-1">
+              {goal.description || <span className="italic opacity-50">Add a description…</span>}
+            </p>
+            <Edit2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+          </div>
         )}
 
         {/* Expand milestones */}
@@ -224,42 +285,63 @@ function GoalCard({ goal }: { goal: Goal }) {
           onClick={() => setExpanded((o) => !o)}
         >
           {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-          {pendingCount > 0 ? `${pendingCount} milestone${pendingCount !== 1 ? "s" : ""} remaining` : goal.milestones.length === 0 ? "Add milestones" : "All done!"}
+          {pendingCount > 0 ? `${pendingCount} milestone${pendingCount !== 1 ? "s" : ""} remaining` : goal.milestones.length === 0 ? "Add milestones" : "✓ All done!"}
         </button>
 
         {expanded && (
           <div className="space-y-2 pl-1">
-            {goal.milestones.map((m) => (
-              <div key={m.id} className="flex items-center gap-2 group">
-                <button onClick={() => toggleMilestone(goal.id, m.id)} className="shrink-0">
-                  {m.is_completed
-                    ? <CheckCircle2 className="h-4 w-4 text-[hsl(var(--brain-teal))]" />
-                    : <Circle className="h-4 w-4 text-muted-foreground/50 hover:text-primary transition-colors" />
-                  }
-                </button>
-                <span className={`text-xs flex-1 leading-snug ${m.is_completed ? "line-through text-muted-foreground" : ""}`}>
-                  {m.text}
-                </span>
-                <button
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                  onClick={() => removeMilestone(goal.id, m.id)}
-                >
-                  <X className="h-3 w-3" />
-                </button>
+            {goal.milestones.map((m) => {
+              const isOverdue = !m.is_completed && m.target_date && isPast(parseISO(m.target_date));
+              return (
+                <div key={m.id} className="flex items-start gap-2 group">
+                  <button onClick={() => toggleMilestone(goal.id, m.id)} className="shrink-0 mt-0.5">
+                    {m.is_completed
+                      ? <CheckCircle2 className="h-4 w-4 text-[hsl(var(--brain-teal))]" />
+                      : <Circle className="h-4 w-4 text-muted-foreground/50 hover:text-primary transition-colors" />
+                    }
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-xs leading-snug ${m.is_completed ? "line-through text-muted-foreground" : ""}`}>
+                      {m.text}
+                    </span>
+                    {m.target_date && (
+                      <span className={`flex items-center gap-0.5 text-[10px] mt-0.5 ${isOverdue ? "text-[hsl(var(--brain-rose))]" : "text-muted-foreground"}`}>
+                        <Calendar className="h-2.5 w-2.5" />
+                        {isOverdue ? "Overdue · " : "By "}{format(parseISO(m.target_date), "MMM d")}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0"
+                    onClick={() => removeMilestone(goal.id, m.id)}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+
+            {/* Add milestone input with optional date */}
+            <div className="space-y-1.5 mt-2 pt-2 border-t border-border/50">
+              <div className="flex gap-1.5">
+                <Input
+                  className="h-7 text-xs flex-1"
+                  placeholder="New milestone…"
+                  value={newMilestone}
+                  onChange={(e) => setNewMilestone(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddMilestone()}
+                />
+                <Button size="sm" className="h-7 px-2.5 text-xs shrink-0" onClick={handleAddMilestone} disabled={!newMilestone.trim()}>
+                  <Plus className="h-3 w-3" />
+                </Button>
               </div>
-            ))}
-            {/* Add milestone input */}
-            <div className="flex gap-1.5 mt-1">
               <Input
-                className="h-7 text-xs"
-                placeholder="Add a milestone…"
-                value={newMilestone}
-                onChange={(e) => setNewMilestone(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddMilestone()}
+                type="date"
+                className="h-6 text-[10px] w-36"
+                placeholder="Target date (optional)"
+                value={newMilestoneDate}
+                onChange={(e) => setNewMilestoneDate(e.target.value)}
               />
-              <Button size="sm" className="h-7 px-2.5 text-xs" onClick={handleAddMilestone} disabled={!newMilestone.trim()}>
-                <Plus className="h-3 w-3" />
-              </Button>
             </div>
           </div>
         )}
