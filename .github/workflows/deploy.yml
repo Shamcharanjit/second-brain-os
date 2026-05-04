@@ -29,23 +29,23 @@ jobs:
       - name: Build
         run: bun run build
         env:
-          # These are baked into config.ts as literals, but kept here for clarity
           VITE_SUPABASE_URL: https://qanoiqzanywjrcuhsmny.supabase.co
           VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
 
-      # 5. Deploy dist/ to Hostinger via FTP (retry up to 3× on failure)
+      # 5. Deploy dist/ to Hostinger via FTPS
       - name: Deploy to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
+          protocol: ftps          # Use FTPS (TLS) — required by most Hostinger plans
           port: 21
           local-dir: ./dist/
           server-dir: /public_html/
           dangerous-clean-slate: false
-          timeout: 120000
+          timeout: 180000          # 3 minutes per operation
+          log-level: minimal
           exclude: |
             **/.git*
             **/.git*/**

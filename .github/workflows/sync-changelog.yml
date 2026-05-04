@@ -18,15 +18,36 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build payload and call sync-changelog function
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          ENTRIES=$(cat public/changelog.json)
-          PAYLOAD=$(jq -n --argjson entries "$ENTRIES" '{"entries": $entries}')
+          # Use Python (always available) to safely build JSON payload
+          python3 - <<'PYEOF'
+          import json, os, subprocess, sys
+
+          with open("public/changelog.json") as f:
+              entries = json.load(f)
+
+          payload = json.dumps({"entries": entries})
+
+          with open("/tmp/payload.json", "w") as f:
+              f.write(payload)
+
+          print(f"Sending {len(entries)} entries to Supabase…")
+          PYEOF
+
+          SUPABASE_URL="${SUPABASE_URL}"
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "ERROR: SUPABASE_URL secret is not set in GitHub repo secrets."
+            exit 1
+          fi
 
           RESPONSE=$(curl -s -o /tmp/sync_response.json -w "%{http_code}" \
-            -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/sync-changelog" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -X POST "${SUPABASE_URL}/functions/v1/sync-changelog" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Content-Type: application/json" \
-            -d "$PAYLOAD")
+            -d @/tmp/payload.json)
 
           echo "HTTP status: $RESPONSE"
           cat /tmp/sync_response.json
@@ -35,3 +56,5 @@ jobs:
             echo "Error: sync-changelog returned $RESPONSE"
             exit 1
           fi
+
+          echo "Sync complete ✓"
