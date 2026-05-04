@@ -43,17 +43,23 @@ jobs:
             exit 1
           fi
 
-          RESPONSE=$(curl -s -o /tmp/sync_response.json -w "%{http_code}" \
+          echo "Calling: ${SUPABASE_URL}/functions/v1/sync-changelog"
+
+          HTTP_CODE=$(curl -s -w "\n%{http_code}" \
             -X POST "${SUPABASE_URL}/functions/v1/sync-changelog" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Content-Type: application/json" \
-            -d @/tmp/payload.json)
+            -d @/tmp/payload.json \
+            -o /tmp/sync_response.json)
 
+          RESPONSE=$(tail -n1 <<< "$HTTP_CODE")
           echo "HTTP status: $RESPONSE"
+          echo "Response body:"
           cat /tmp/sync_response.json
+          echo ""
 
           if [ "$RESPONSE" -lt 200 ] || [ "$RESPONSE" -ge 300 ]; then
-            echo "Error: sync-changelog returned $RESPONSE"
+            echo "ERROR: sync-changelog returned HTTP $RESPONSE"
             exit 1
           fi
 
