@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import { Search, TrendingUp, Users, CheckCircle2, Globe2 } from "lucide-react";
+import { Search, TrendingUp, Users, CheckCircle2, Globe2, ExternalLink } from "lucide-react";
 
 interface LandingRow { landing_page: string; visitors: number; signups: number; activations: number; conversion_rate: number; }
 interface CountryRow { country: string; search_visitors: number; signups: number; activations: number; }
@@ -38,27 +39,51 @@ export default function SeoPerformancePanel() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (authLoading) {
-      setLoading(true);
-      return;
-    }
+    if (authLoading) { setLoading(true); return; }
+    if (!user) { setLoading(false); return; }
 
-    // Temporarily disable this panel's RPC call until production REST
-    // exposure is verified everywhere. Keep the dashboard stable and quiet.
-    setData(null);
-    setLoading(false);
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: rpcData, error } = await (supabase as any).rpc("get_seo_performance_signals");
+        if (cancelled) return;
+        if (error) {
+          console.warn("[SeoPerformancePanel] RPC error:", error.message);
+          setData(null);
+        } else {
+          setData((rpcData ?? null) as SeoPerf | null);
+        }
+      } catch { /* ignore */ } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [authLoading, user]);
 
   if (!user) return null;
   if (loading) return null;
   if (!data || data.error) {
     return (
-      <div className="rounded-2xl border bg-card p-6 space-y-3">
+      <div className="rounded-2xl border bg-card p-6 space-y-4">
         <div className="flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">SEO Performance</h2>
         </div>
-        <p className="text-sm text-muted-foreground">No SEO performance data yet.</p>
+        <div className="rounded-xl border border-dashed p-5 text-center space-y-2">
+          <Globe2 className="h-8 w-8 text-muted-foreground mx-auto" />
+          <p className="text-sm font-medium">No SEO performance data yet</p>
+          <p className="text-xs text-muted-foreground">
+            Connect Google Search Console to see search visitors, conversion rates, and landing page performance.
+          </p>
+          <a
+            href="https://search.google.com/search-console"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-1"
+          >
+            Open Google Search Console <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
       </div>
     );
   }
