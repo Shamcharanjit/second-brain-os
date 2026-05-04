@@ -37,16 +37,19 @@ jobs:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
           FTP_PASS: ${{ secrets.FTP_PASSWORD }}
         run: |
-          # Write lftp commands to a script file to avoid shell quoting issues
-          cat > /tmp/deploy.lftp << LFTP_EOF
-          set ftp:ssl-allow yes
-          set ftp:passive-mode yes
-          set net:timeout 60
-          set net:max-retries 5
-          set net:reconnect-interval-base 10
-          open -u "$FTP_USER","$FTP_PASS" ftp://$FTP_HOST
-          mirror --reverse --parallel=4 ./dist/ /public_html/
-          quit
-          LFTP_EOF
+          # Use netrc so special characters in password are handled safely
+          printf 'machine %s\nlogin %s\npassword %s\n' \
+            "$FTP_HOST" "$FTP_USER" "$FTP_PASS" > ~/.netrc
+          chmod 600 ~/.netrc
 
-          lftp -f /tmp/deploy.lftp
+          lftp -e "
+            set ftp:passive-mode yes;
+            set ftp:ssl-allow yes;
+            set net:timeout 60;
+            set net:max-retries 5;
+            set net:reconnect-interval-base 10;
+            mirror --reverse --parallel=4 ./dist/ /public_html/;
+            quit
+          " ftp://$FTP_HOST
+
+          rm -f ~/.netrc

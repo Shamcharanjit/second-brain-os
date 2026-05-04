@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
     paths:
-      # Only re-sync when the changelog itself changes
       - "public/changelog.json"
   workflow_dispatch:
 
@@ -17,22 +16,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build payload
+      - name: Build JSON payload
+        # Simple bash concatenation — no Python/jq needed, no heredoc quoting issues
         run: |
-          # Python heredoc must have NO leading spaces or IndentationError occurs
-          python3 - << 'PYEOF'
-import json, sys
-
-with open("public/changelog.json") as f:
-    entries = json.load(f)
-
-payload = json.dumps({"entries": entries})
-
-with open("/tmp/payload.json", "w") as f:
-    f.write(payload)
-
-print(f"Built payload: {len(entries)} entries, {len(payload)} bytes")
-PYEOF
+          printf '{"entries":' > /tmp/payload.json
+          cat public/changelog.json >> /tmp/payload.json
+          printf '}' >> /tmp/payload.json
+          echo "Payload size: $(wc -c < /tmp/payload.json) bytes"
 
       - name: Call sync-changelog edge function
         env:
@@ -40,17 +30,16 @@ PYEOF
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           if [ -z "$SUPABASE_URL" ]; then
-            echo "ERROR: SUPABASE_URL secret not set"
-            exit 1
+            echo "ERROR: SUPABASE_URL secret not set"; exit 1
           fi
 
           echo "POST ${SUPABASE_URL}/functions/v1/sync-changelog"
 
-          curl -f -s \
+          curl -f \
             -X POST "${SUPABASE_URL}/functions/v1/sync-changelog" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Content-Type: application/json" \
-            -d @/tmp/payload.json \
-            | python3 -m json.tool
+            -d @/tmp/payload.json
 
+          echo ""
           echo "Sync complete ✓"
