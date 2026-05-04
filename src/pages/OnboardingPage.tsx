@@ -19,7 +19,7 @@ import { useNavigate } from "react-router-dom";
 import {
   BrainCircuit, Sparkles, CheckCircle2, ArrowRight, Loader2,
   Briefcase, User, BookOpen, Layers, Clock, Sun, Sunset, Moon,
-  Send, Mic, MicOff, Tag, FolderKanban, Calendar,
+  Send, Mic, MicOff, Tag, FolderKanban, Calendar, Bell, BellRing,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +30,7 @@ import { runAITriage, triageToAIData, type AITriageResult } from "@/lib/ai-triag
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { trackEvent } from "@/lib/analytics/ga4";
 import InsightHaloLogo from "@/components/branding/InsightHaloLogo";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import type { Capture } from "@/types/brain";
 
 /* ── Constants ── */
@@ -409,16 +410,109 @@ function StepReviewTime({
   );
 }
 
-/* ── Step 5: All set ── */
+/* ── Step 5: Enable notifications ── */
+function StepNotifications({ onNext }: { onNext: (enabled: boolean) => void }) {
+  const { state, subscribe } = usePushNotifications();
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const isUnsupported = state === "unsupported" || state === "denied";
+
+  const handleEnable = async () => {
+    setLoading(true);
+    const ok = await subscribe();
+    setLoading(false);
+    setDone(ok);
+    if (ok) setTimeout(() => onNext(true), 1200);
+  };
+
+  return (
+    <StepCard>
+      <div className="rounded-2xl border bg-card p-8 space-y-6 shadow-sm text-center">
+        <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl ${done ? "bg-primary/10" : "bg-muted"}`}>
+          {done ? (
+            <BellRing className="h-8 w-8 text-primary" />
+          ) : (
+            <Bell className="h-8 w-8 text-muted-foreground" />
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold tracking-tight">
+            {done ? "Notifications on! 🔔" : "Never miss a beat"}
+          </h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {done
+              ? "We'll remind you for reviews, streak alerts, and important tasks — right on time."
+              : "Get smart reminders: morning brief, streak alerts, review nudges. Only when it matters."}
+          </p>
+        </div>
+
+        {!done && (
+          <div className="grid grid-cols-3 gap-3 text-center">
+            {[
+              { emoji: "☀️", label: "Morning brief" },
+              { emoji: "🔥", label: "Streak alerts" },
+              { emoji: "✅", label: "Review nudges" },
+            ].map((f) => (
+              <div key={f.label} className="rounded-xl bg-muted/40 p-3 space-y-1">
+                <p className="text-xl">{f.emoji}</p>
+                <p className="text-[11px] font-medium text-muted-foreground">{f.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {isUnsupported ? (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {state === "denied"
+                ? "Notifications are blocked in your browser. You can enable them later in Settings."
+                : "Your browser doesn't support push notifications. Enable them later from Settings."}
+            </p>
+            <Button onClick={() => onNext(false)} className="w-full gap-2" variant="outline">
+              Continue anyway <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : done ? null : (
+          <div className="space-y-2">
+            <Button
+              onClick={handleEnable}
+              disabled={loading || state === "loading"}
+              className="w-full gap-2"
+              size="lg"
+            >
+              {loading ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Enabling…</>
+              ) : (
+                <><Bell className="h-4 w-4" /> Enable notifications</>
+              )}
+            </Button>
+            <button
+              onClick={() => onNext(false)}
+              className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center py-1"
+            >
+              Maybe later →
+            </button>
+          </div>
+        )}
+      </div>
+    </StepCard>
+  );
+}
+
+/* ── Step 6: All set ── */
 function StepAllSet({
   useCases,
   reviewTime,
   captureCompleted,
+  notificationsEnabled,
   onFinish,
 }: {
   useCases: Set<string>;
   reviewTime: string | null;
   captureCompleted: boolean;
+  notificationsEnabled: boolean;
   onFinish: () => void;
 }) {
   const ucLabels = USE_CASES.filter((u) => useCases.has(u.id)).map((u) => u.label);
@@ -459,6 +553,12 @@ function StepAllSet({
               Daily review time: <span className="font-medium">{rtLabel ? `${rtLabel} review` : "Not set — change in Settings"}</span>
             </p>
           </div>
+          <div className="flex items-start gap-2">
+            <CheckCircle2 className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${notificationsEnabled ? "text-primary" : "text-muted-foreground/40"}`} />
+            <p className="text-xs text-foreground">
+              Push notifications: <span className="font-medium">{notificationsEnabled ? "Enabled ✔" : "Off — enable in Settings"}</span>
+            </p>
+          </div>
         </div>
 
         <Button onClick={onFinish} className="w-full gap-2" size="lg">
@@ -472,7 +572,7 @@ function StepAllSet({
 /* ══════════════════════════════
    Main OnboardingPage component
    ══════════════════════════════ */
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -487,6 +587,7 @@ export default function OnboardingPage() {
   const [selectedUseCases, setSelectedUseCases] = useState<Set<string>>(new Set());
   const [reviewTime, setReviewTime] = useState<string | null>(null);
   const [captureCompleted, setCaptureCompleted] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   // Derive user's first name from email
   const firstName = user?.user_metadata?.full_name?.split(" ")[0]
@@ -507,6 +608,7 @@ export default function OnboardingPage() {
       useCases: [...selectedUseCases],
       reviewTime,
       captureCompleted,
+      notificationsEnabled,
       completedAt: new Date().toISOString(),
     };
     localStorage.setItem(ONBOARDING_KEY, JSON.stringify(payload));
@@ -514,6 +616,7 @@ export default function OnboardingPage() {
       use_cases: [...selectedUseCases].join(","),
       review_time: reviewTime ?? "skipped",
       capture_done: captureCompleted,
+      notifications_enabled: notificationsEnabled,
     });
     navigate("/app", { replace: true });
   }, [selectedUseCases, reviewTime, captureCompleted, navigate]);
@@ -559,10 +662,17 @@ export default function OnboardingPage() {
         )}
 
         {step === 5 && (
+          <StepNotifications
+            onNext={(enabled) => { setNotificationsEnabled(enabled); setStep(6); }}
+          />
+        )}
+
+        {step === 6 && (
           <StepAllSet
             useCases={selectedUseCases}
             reviewTime={reviewTime}
             captureCompleted={captureCompleted}
+            notificationsEnabled={notificationsEnabled}
             onFinish={finishOnboarding}
           />
         )}

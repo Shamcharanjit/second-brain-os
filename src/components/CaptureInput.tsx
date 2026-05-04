@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Mic, MicOff, Send, Sparkles, Check, Crown } from "lucide-react";
 import UploadPicker, { type PendingFile } from "@/components/capture/UploadPicker";
+import RecurrencePicker from "@/components/capture/RecurrencePicker";
+import type { RecurrenceType } from "@/types/brain";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useSubscription } from "@/context/SubscriptionContext";
@@ -51,6 +53,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   const { canUseAITriage, recordAITriageUse, shouldShowUpgradePrompt, aiTriageRemaining } = useSubscription();
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [recurrence, setRecurrence] = useState<RecurrenceType | null>(null);
   const { uploadFiles } = useUploadAttachments();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -139,9 +142,10 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
     await new Promise((r) => setTimeout(r, 400));
 
     const captureText = buildCaptureText(trimmed, pendingFiles);
-    const capture = addCapture(captureText, captureInputType);
+    const capture = addCapture(captureText, captureInputType, recurrence);
     setText("");
     setCaptureInputType("text");
+    setRecurrence(null);
     setLastResult(capture);
 
     // Upload files in background
@@ -201,9 +205,10 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
       setTriageResult({ triage: result.triage, source: result.source });
       setPhase("triage_result");
     } catch {
-      const capture = addCapture(trimmed, captureInputType);
+      const capture = addCapture(trimmed, captureInputType, recurrence);
       setText("");
       setCaptureInputType("text");
+      setRecurrence(null);
       setPendingFiles([]);
       setLastResult(capture);
       setPhase("done");
@@ -218,9 +223,10 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
 
     const aiData = triageToAIData(triageResult.triage, capturedText);
     const reviewStatus = triageResult.triage.confidence >= 0.8 ? "auto_approved" as const : "needs_review" as const;
-    const capture = addCaptureWithAI(capturedText, captureInputType, aiData, reviewStatus);
+    const capture = addCaptureWithAI(capturedText, captureInputType, aiData, reviewStatus, recurrence);
     setText("");
     setCaptureInputType("text");
+    setRecurrence(null);
 
     const filesToUpload = [...pendingFiles];
     setPendingFiles([]);
@@ -406,6 +412,11 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
             <UploadPicker
               files={pendingFiles}
               onChange={setPendingFiles}
+              disabled={isBusy || phase === "done"}
+            />
+            <RecurrencePicker
+              value={recurrence}
+              onChange={setRecurrence}
               disabled={isBusy || phase === "done"}
             />
           </div>

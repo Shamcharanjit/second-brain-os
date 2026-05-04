@@ -2,18 +2,29 @@ name: Daily Push Notifications
 
 on:
   schedule:
-    # 14:05 UTC daily — just after the 2pm threshold the app uses for review reminders
+    # Morning:  07:05 UTC — morning brief + due-today reminders
+    - cron: "5 7 * * *"
+    # Midday:   14:05 UTC — daily review nudge (existing behaviour)
     - cron: "5 14 * * *"
-  workflow_dispatch: # allow manual trigger
+    # Evening:  20:05 UTC — streak alert + inbox overflow
+    - cron: "5 20 * * *"
+  workflow_dispatch:
+    inputs:
+      type:
+        description: "Notification type (morning | review | evening | all)"
+        required: false
+        default: "all"
 
 jobs:
-  send-push-notifications:
+  send-morning:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.event.schedule == '5 7 * * *')
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger send-push-notifications Edge Function
+      - name: Morning brief + due-today
         run: |
+          TYPE="${{ github.event.inputs.type || 'morning' }}"
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            "https://qanoiqzanywjrcuhsmny.supabase.co/functions/v1/send-push-notifications" \
+            "https://qanoiqzanywjrcuhsmny.supabase.co/functions/v1/send-push-notifications?type=${TYPE}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Content-Type: application/json")
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
@@ -22,4 +33,37 @@ jobs:
           if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 500 ]; then
             echo "Edge function returned error $HTTP_CODE" && exit 1
           fi
-          echo "Done."
+
+  send-review:
+    if: github.event_name == 'schedule' && github.event.schedule == '5 14 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Daily review nudge
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://qanoiqzanywjrcuhsmny.supabase.co/functions/v1/send-push-notifications?type=review" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+          echo "HTTP $HTTP_CODE: $BODY"
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 500 ]; then
+            echo "Edge function returned error $HTTP_CODE" && exit 1
+          fi
+
+  send-evening:
+    if: github.event_name == 'schedule' && github.event.schedule == '5 20 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Streak alert + inbox overflow
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://qanoiqzanywjrcuhsmny.supabase.co/functions/v1/send-push-notifications?type=evening" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+          echo "HTTP $HTTP_CODE: $BODY"
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 500 ]; then
+            echo "Edge function returned error $HTTP_CODE" && exit 1
+          fi

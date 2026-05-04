@@ -21,7 +21,7 @@ import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useMemory } from "@/context/MemoryContext";
 import { ReferralCenter } from "@/components/settings/ReferralCenter";
-import { PushNotificationToggle } from "@/components/settings/PushNotificationToggle";
+import { NotificationPreferencesSection } from "@/components/settings/NotificationPreferencesSection";
 import WhatsNewTimeline from "@/components/WhatsNewTimeline";
 
 /* ── Access-level label logic ── */
@@ -413,7 +413,7 @@ export default function SettingsPage() {
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
           <Bell className="h-4 w-4 text-primary" /> Notifications
         </h2>
-        <PushNotificationToggle />
+        <NotificationPreferencesSection />
       </section>
 
       {/* Referral Center */}

@@ -1,12 +1,16 @@
 {
+  "id": "com.insighthalo.app",
   "name": "InsightHalo",
   "short_name": "InsightHalo",
   "description": "Your AI Second Brain — capture thoughts, AI organises everything.",
   "start_url": "/app",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#0b0f19",
   "theme_color": "#10b981",
   "orientation": "portrait-primary",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192.png",
@@ -49,14 +53,21 @@
       "short_name": "Capture",
       "description": "Capture a new thought instantly",
       "url": "/app",
-      "icons": [{ "src": "/favicon-v2.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Today",
       "short_name": "Today",
       "description": "View your focus list for today",
       "url": "/app/today",
-      "icons": [{ "src": "/favicon-v2.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Inbox",
+      "short_name": "Inbox",
+      "description": "Review AI-organised captures",
+      "url": "/app/inbox",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ],
   "categories": ["productivity", "utilities"],

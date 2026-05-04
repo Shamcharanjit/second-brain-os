@@ -29,6 +29,8 @@ export interface AIProcessedData {
   review_reason: string | null;
 }
 
+export type RecurrenceType = "daily" | "weekdays" | "weekly" | "monthly";
+
 export interface Capture {
   id: string;
   cloud_id?: string | null;
@@ -48,4 +50,6 @@ export interface Capture {
   converted_to_project_at: string | null;
   source_project_id: string | null;
   source_action_id: string | null;
+  recurrence: RecurrenceType | null;
+  recurrence_parent_id: string | null;
 }

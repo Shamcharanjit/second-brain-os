@@ -59,7 +59,7 @@ const FEATURES = [
     icon: Zap,
     title: "Quick Capture",
     body: "Press the green + button anytime. Type or speak. Don't worry about categories — AI handles that.",
-    tip: "Keyboard shortcut coming soon: Cmd+K",
+    tip: "Keyboard shortcut: Cmd+K",
   },
   {
     icon: Mic,
@@ -154,10 +154,11 @@ const FEATURES = [
 
 // ── SHORTCUTS ────────────────────────────────────────────────────────────────
 const SHORTCUTS = [
-  { keys: ["Cmd", "K"], action: "Quick Capture (coming soon)" },
+  { keys: ["Cmd", "K"], action: "Quick Capture" },
+  { keys: ["Cmd", "/"], action: "Search memory" },
   { keys: ["Cmd", "Enter"], action: "Submit capture / Save" },
   { keys: ["Esc"], action: "Close modal or overlay" },
-  { keys: ["Enter"], action: "Confirm / Select" },
+  { keys: ["?"], action: "Show all keyboard shortcuts" },
 ];
 
 // ── SUB-COMPONENTS ────────────────────────────────────────────────────────────

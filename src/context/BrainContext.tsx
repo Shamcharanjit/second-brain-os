@@ -1,17 +1,40 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
-import { Capture, CaptureStatus, ReviewStatus, AIProcessedData, IdeaStatus } from "@/types/brain";
+import { Capture, CaptureStatus, ReviewStatus, AIProcessedData, IdeaStatus, RecurrenceType } from "@/types/brain";
 import { mockAIProcess } from "@/lib/mock-ai";
 import { saveState, loadState } from "@/lib/persistence";
 import { fetchCaptures, upsertCaptures, syncCaptures } from "@/lib/supabase/data-layer";
 import { useCloudSync, useCloudHydration } from "@/hooks/useCloudSync";
 import { trackEvent } from "@/lib/analytics/ga4";
 
+/** Returns the Date of the next occurrence for a given recurrence type, starting from now. */
+function nextRecurrenceDate(recurrence: RecurrenceType): Date {
+  const d = new Date();
+  switch (recurrence) {
+    case "daily":
+      d.setDate(d.getDate() + 1);
+      break;
+    case "weekdays": {
+      // Skip to next weekday (Mon–Fri)
+      do { d.setDate(d.getDate() + 1); } while (d.getDay() === 0 || d.getDay() === 6);
+      break;
+    }
+    case "weekly":
+      d.setDate(d.getDate() + 7);
+      break;
+    case "monthly":
+      d.setMonth(d.getMonth() + 1);
+      break;
+  }
+  d.setHours(7, 0, 0, 0); // surface at 7am on the target day
+  return d;
+}
+
 const STORAGE_KEY = "insighthalo_brain";
 
 interface BrainContextType {
   captures: Capture[];
-  addCapture: (text: string, type: "text" | "voice") => Capture;
-  addCaptureWithAI: (text: string, type: "text" | "voice", aiData: AIProcessedData, reviewStatus: ReviewStatus) => Capture;
+  addCapture: (text: string, type: "text" | "voice", recurrence?: RecurrenceType | null) => Capture;
+  addCaptureWithAI: (text: string, type: "text" | "voice", aiData: AIProcessedData, reviewStatus: ReviewStatus, recurrence?: RecurrenceType | null) => Capture;
   addCaptureFromAction: (data: { text: string; projectId?: string; projectName?: string; actionId?: string }) => Capture;
   updateCaptureStatus: (id: string, status: CaptureStatus) => void;
   updateReviewStatus: (id: string, reviewStatus: ReviewStatus) => void;
@@ -86,7 +109,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
   );
   useCloudSync(captures, syncCaptures);
 
-  const addCapture = useCallback((text: string, type: "text" | "voice"): Capture => {
+  const addCapture = useCallback((text: string, type: "text" | "voice", recurrence?: import("@/types/brain").RecurrenceType | null): Capture => {
     const { aiData, reviewStatus } = mockAIProcess(text);
     const status = reviewStatus === "needs_review" ? "unprocessed" : autoRouteStatus(aiData.destination_suggestion);
     const newCapture: Capture = {
@@ -99,6 +122,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       is_completed: false, completed_at: null, is_pinned_today: false,
       idea_status: "new", converted_to_project_at: null,
       source_project_id: null, source_action_id: null,
+      recurrence: recurrence ?? null, recurrence_parent_id: null,
     };
     setCaptures((prev) => {
       if (prev.length === 0) trackEvent("first_capture", { input_type: type, source: "manual" });
@@ -109,7 +133,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
     return newCapture;
   }, []);
 
-  const addCaptureWithAI = useCallback((text: string, type: "text" | "voice", preAiData: AIProcessedData, preReviewStatus: ReviewStatus): Capture => {
+  const addCaptureWithAI = useCallback((text: string, type: "text" | "voice", preAiData: AIProcessedData, preReviewStatus: ReviewStatus, recurrence?: import("@/types/brain").RecurrenceType | null): Capture => {
     const status = preReviewStatus === "needs_review" ? "unprocessed" : autoRouteStatus(preAiData.destination_suggestion);
     const newCapture: Capture = {
       id: `local-${crypto.randomUUID()}`,
@@ -121,6 +145,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       is_completed: false, completed_at: null, is_pinned_today: false,
       idea_status: "new", converted_to_project_at: null,
       source_project_id: null, source_action_id: null,
+      recurrence: recurrence ?? null, recurrence_parent_id: null,
     };
     setCaptures((prev) => {
       if (prev.length === 0) trackEvent("first_capture", { input_type: type, source: "ai" });
@@ -145,6 +170,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       idea_status: "new", converted_to_project_at: null,
       source_project_id: data.projectId ?? null,
       source_action_id: data.actionId ?? null,
+      recurrence: null, recurrence_parent_id: null,
     };
     setCaptures((prev) => [newCapture, ...prev]);
     return newCapture;
@@ -182,7 +208,32 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const completeCapture = useCallback((id: string) => {
-    setCaptures((prev) => prev.map((c) => (c.id === id ? { ...c, is_completed: true, completed_at: new Date().toISOString() } : c)));
+    setCaptures((prev) => {
+      const target = prev.find((c) => c.id === id);
+      if (!target) return prev;
+
+      const completed = prev.map((c) =>
+        c.id === id ? { ...c, is_completed: true, completed_at: new Date().toISOString() } : c,
+      );
+
+      // Auto-regenerate recurring capture for next occurrence
+      if (target.recurrence) {
+        const next = nextRecurrenceDate(target.recurrence);
+        const clone: Capture = {
+          ...target,
+          id: `local-${crypto.randomUUID()}`,
+          cloud_id: null,
+          is_completed: false,
+          completed_at: null,
+          created_at: next.toISOString(),
+          recurrence_parent_id: target.recurrence_parent_id ?? target.id,
+        };
+        trackEvent("recurring_capture_regenerated", { recurrence: target.recurrence });
+        return [clone, ...completed];
+      }
+
+      return completed;
+    });
   }, []);
 
   const uncompleteCapture = useCallback((id: string) => {

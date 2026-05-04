@@ -119,13 +119,19 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   // Global keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Cmd+K / Ctrl+K → search
+      // Cmd+K / Ctrl+K → quick capture
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCaptureOpen((o) => !o);
+        return;
+      }
+      // Cmd+/ / Ctrl+/ → search
+      if ((e.metaKey || e.ctrlKey) && e.key === "/") {
         e.preventDefault();
         setSearchOpen((o) => !o);
         return;
       }
-      // Cmd+J / Ctrl+J → quick capture
+      // Cmd+J / Ctrl+J → quick capture (legacy alias)
       if ((e.metaKey || e.ctrlKey) && e.key === "j") {
         e.preventDefault();
         setCaptureOpen((o) => !o);
@@ -165,7 +171,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
           >
             <Search className="h-3.5 w-3.5 shrink-0" />
             <span className="flex-1 text-left">Search…</span>
-            <kbd className="rounded border border-sidebar-border px-1 py-0.5 font-mono text-[9px] opacity-60">⌘K</kbd>
+            <kbd className="rounded border border-sidebar-border px-1 py-0.5 font-mono text-[9px] opacity-60">⌘/</kbd>
           </button>
         </div>
 

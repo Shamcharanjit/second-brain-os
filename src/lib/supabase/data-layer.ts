@@ -176,6 +176,8 @@ function dbCaptureToCapture(row: any): Capture {
     converted_to_project_at: row.converted_to_project_at,
     source_project_id: row.source_project_id,
     source_action_id: row.source_action_id,
+    recurrence: row.recurrence ?? null,
+    recurrence_parent_id: row.recurrence_parent_id ?? null,
   };
 }
 
@@ -204,6 +206,8 @@ function captureInsertRow(userId: string, c: Capture) {
     converted_to_project_at: c.converted_to_project_at,
     source_project_id: c.source_project_id,
     source_action_id: c.source_action_id,
+    recurrence: c.recurrence ?? null,
+    recurrence_parent_id: c.recurrence_parent_id ?? null,
   };
 }
 
@@ -227,6 +231,8 @@ function captureUpdateRow(userId: string, c: Capture) {
     converted_to_project_at: c.converted_to_project_at,
     source_project_id: c.source_project_id,
     source_action_id: c.source_action_id,
+    recurrence: c.recurrence ?? null,
+    recurrence_parent_id: c.recurrence_parent_id ?? null,
   };
 }
 
