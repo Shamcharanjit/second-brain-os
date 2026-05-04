@@ -18,6 +18,165 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const VAPID_PUBLIC_KEY = "BLJ7Mswr3ZkWm8n1OmQYB_rAfOIy_LnH94M0p5StHH3jzX1SUt7Ij3UOhxLevPEqcek27ZfBIlMv2j9LAF7hUKM";
+
+// ─── SMTP Email ───────────────────────────────────────────────────────────────
+
+const SMTP_HOST    = "smtp.hostinger.com";
+const SMTP_PORT    = 465;
+const SENDER_EMAIL = "earlyaccess@insighthalo.com";
+const SENDER_NAME  = "InsightHalo";
+
+function buildWeeklyHtml(params: {
+  firstName: string;
+  total: number;
+  completed: number;
+  topCategory: string;
+  streak: number;
+  insight: string;
+}): string {
+  const { firstName, total, completed, topCategory, streak, insight } = params;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#0b0f19;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0b0f19;">
+    <tr><td align="center" style="padding:48px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#111827;border-radius:16px;overflow:hidden;">
+        <tr><td style="height:4px;background:linear-gradient(90deg,#10b981,#14b8a6);font-size:0;">&nbsp;</td></tr>
+        <tr><td align="center" style="padding:32px 32px 0;">
+          <span style="font-size:22px;font-weight:700;color:#f9fafb;letter-spacing:-0.02em;">InsightHalo</span>
+          <p style="margin:8px 0 0;font-size:13px;color:#6b7280;">Your weekly brain recap</p>
+        </td></tr>
+        <tr><td style="padding:28px 32px 0;">
+          <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#d1d5db;">Hey ${firstName},</p>
+          <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#d1d5db;font-style:italic;">"${insight}"</p>
+        </td></tr>
+
+        <!-- Stats row -->
+        <tr><td style="padding:0 32px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td width="33%" align="center" style="padding:16px 8px;background-color:#0f172a;border-radius:10px;border:1px solid #1f2937;">
+                <p style="margin:0;font-size:28px;font-weight:700;color:#10b981;">${total}</p>
+                <p style="margin:4px 0 0;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Captures</p>
+              </td>
+              <td width="2%"></td>
+              <td width="33%" align="center" style="padding:16px 8px;background-color:#0f172a;border-radius:10px;border:1px solid #1f2937;">
+                <p style="margin:0;font-size:28px;font-weight:700;color:#10b981;">${completed}</p>
+                <p style="margin:4px 0 0;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Done</p>
+              </td>
+              <td width="2%"></td>
+              <td width="30%" align="center" style="padding:16px 8px;background-color:#0f172a;border-radius:10px;border:1px solid #1f2937;">
+                <p style="margin:0;font-size:28px;font-weight:700;color:#10b981;">${streak}d</p>
+                <p style="margin:4px 0 0;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Streak</p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:12px 0 0;text-align:center;font-size:12px;color:#6b7280;">Top category this week: <strong style="color:#d1d5db;">${topCategory}</strong></p>
+        </td></tr>
+
+        <tr><td align="center" style="padding:0 32px 32px;">
+          <table role="presentation" cellpadding="0" cellspacing="0">
+            <tr><td style="background-color:#10b981;border-radius:8px;">
+              <a href="https://insighthalo.com/analytics" target="_blank" style="display:inline-block;padding:14px 36px;font-size:15px;font-weight:600;color:#fff;text-decoration:none;">View my analytics →</a>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="padding:0 32px 24px;">
+          <div style="border-top:1px solid #1f2937;padding-top:20px;">
+            <p style="margin:0 0 4px;font-size:13px;color:#6b7280;">&mdash; Shamcharan, InsightHalo</p>
+            <p style="margin:0;font-size:13px;color:#6b7280;"><a href="mailto:support@insighthalo.com" style="color:#6b7280;text-decoration:underline;">support@insighthalo.com</a></p>
+          </div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildWeeklyText(params: {
+  firstName: string; total: number; completed: number;
+  topCategory: string; streak: number; insight: string;
+}): string {
+  const { firstName, total, completed, topCategory, streak, insight } = params;
+  return `Hey ${firstName},
+
+"${insight}"
+
+YOUR WEEK IN REVIEW
+• ${total} captures this week
+• ${completed} tasks completed
+• ${streak}-day streak
+• Top category: ${topCategory}
+
+View your full analytics: https://insighthalo.com/analytics
+
+— Shamcharan, InsightHalo
+support@insighthalo.com`;
+}
+
+async function sendWeeklySummaryEmail(
+  email: string,
+  firstName: string,
+  stats: { total: number; completed: number; topCategory: string; streak: number; insight: string },
+): Promise<boolean> {
+  const smtpUser = Deno.env.get("SMTP_USER");
+  const smtpPass = Deno.env.get("SMTP_PASS");
+  if (!smtpUser || !smtpPass) return false;
+
+  try {
+    const conn = await Deno.connectTls({ hostname: SMTP_HOST, port: SMTP_PORT });
+    const enc = new TextEncoder();
+    const dec = new TextDecoder();
+    const read = async () => {
+      const b = new Uint8Array(8192);
+      const n = await conn.read(b);
+      return n ? dec.decode(b.subarray(0, n)) : "";
+    };
+    const send = async (cmd: string) => { await conn.write(enc.encode(cmd + "\r\n")); return read(); };
+
+    const boundary = `b_${crypto.randomUUID().replace(/-/g, "")}`;
+    const subject = `Your week: ${stats.total} captures, ${stats.streak}-day streak`;
+    const mime = [
+      `From: "${SENDER_NAME}" <${SENDER_EMAIL}>`,
+      `To: ${email}`,
+      `Subject: ${subject}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      ``,
+      `--${boundary}`,
+      `Content-Type: text/plain; charset=UTF-8`,
+      ``,
+      buildWeeklyText({ firstName, ...stats }),
+      `--${boundary}`,
+      `Content-Type: text/html; charset=UTF-8`,
+      ``,
+      buildWeeklyHtml({ firstName, ...stats }),
+      `--${boundary}--`,
+    ].join("\r\n");
+
+    await read(); // greeting
+    await send(`EHLO insighthalo.com`);
+    await send(`AUTH LOGIN`);
+    await send(btoa(smtpUser));
+    const authResp = await send(btoa(smtpPass));
+    if (!authResp.startsWith("235")) { conn.close(); return false; }
+
+    await send(`MAIL FROM:<${SENDER_EMAIL}>`);
+    await send(`RCPT TO:<${email}>`);
+    await send(`DATA`);
+    const dataResp = await send(mime + "\r\n.");
+    await send(`QUIT`);
+    conn.close();
+
+    return dataResp.startsWith("250");
+  } catch (err) {
+    console.error(`[weekly-email] failed for ${email}:`, err);
+    return false;
+  }
+}
 const VAPID_SUBJECT    = "mailto:support@insighthalo.com";
 
 // ─── base64url + VAPID (reused pattern) ──────────────────────────────────────
@@ -167,8 +326,17 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Get user emails for SMTP delivery
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id, email, full_name")
+    .in("id", userIds);
+  const profileMap = new Map<string, { email: string; full_name: string }>();
+  for (const p of (profiles ?? [])) profileMap.set(p.id, p);
+
   let sent = 0;
   let skipped = 0;
+  let emailsSent = 0;
 
   for (const [userId, caps] of userMap) {
     if (caps.length < 3) { skipped++; continue; } // skip very new users
@@ -218,10 +386,22 @@ Deno.serve(async (req) => {
     } else {
       skipped++;
     }
+
+    // Send SMTP email
+    const profile = profileMap.get(userId);
+    if (profile?.email) {
+      const rawName = profile.full_name || profile.email.split("@")[0] || "there";
+      const firstName = rawName.replace(/[._-]+/g, " ").trim().split(/\s+/)[0];
+      const capitalised = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+      const ok = await sendWeeklySummaryEmail(profile.email, capitalised, {
+        total, completed, topCategory, streak, insight,
+      });
+      if (ok) emailsSent++;
+    }
   }
 
-  console.log(`[send-weekly-summary] sent=${sent} skipped=${skipped}`);
-  return new Response(JSON.stringify({ sent, skipped }), {
+  console.log(`[send-weekly-summary] push_sent=${sent} skipped=${skipped} emails=${emailsSent}`);
+  return new Response(JSON.stringify({ sent, skipped, emailsSent }), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });

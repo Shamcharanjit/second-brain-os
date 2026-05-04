@@ -230,7 +230,7 @@ export default function WaitlistPage() {
                   <div className="flex items-center gap-2">
                     <input
                       readOnly
-                      value={`https://insighthalo.com/waitlist?ref=${referralCode}`}
+                      value={`https://insighthalo.com/join?ref=${referralCode}`}
                       className="flex-1 text-xs bg-muted/50 border border-border rounded-lg px-3 py-2 text-muted-foreground truncate"
                     />
                     <Button
@@ -238,7 +238,7 @@ export default function WaitlistPage() {
                       variant="outline"
                       className="gap-1.5 shrink-0"
                       onClick={() => {
-                        navigator.clipboard.writeText(`https://insighthalo.com/waitlist?ref=${referralCode}`);
+                        navigator.clipboard.writeText(`https://insighthalo.com/join?ref=${referralCode}`);
                         toast.success("Referral link copied!");
                       }}
                     >

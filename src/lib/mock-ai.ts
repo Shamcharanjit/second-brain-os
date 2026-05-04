@@ -220,17 +220,35 @@ function inferProject(text: string, category: CaptureCategory): string | null {
 
 /* ── Tags ── */
 function generateTags(text: string, category: CaptureCategory, urgency: UrgencyLevel): string[] {
-  const tags: string[] = [category.replace("_", " ")];
+  const tags: string[] = [];
   const lower = text.toLowerCase();
-  if (lower.includes("work") || lower.includes("client") || lower.includes("meeting") || lower.includes("office")) tags.push("work");
-  if (lower.includes("personal") || lower.includes("home") || lower.includes("family")) tags.push("personal");
-  if (lower.includes("money") || lower.includes("budget") || lower.includes("pay") || lower.includes("invoice")) tags.push("finance");
-  if (lower.includes("health") || lower.includes("gym") || lower.includes("doctor") || lower.includes("dentist")) tags.push("health");
+
+  // ── Domain / context tags ─────────────────────────────────────────────────
+  if (lower.includes("client") || lower.includes("proposal") || lower.includes("contract") || lower.includes("customer")) tags.push("client");
+  if (lower.includes("investor") || lower.includes("fundrais") || lower.includes("pitch") || lower.includes("series")) tags.push("fundraising");
+  if (lower.includes("meeting") || lower.includes("call") || lower.includes("standup") || lower.includes("sync")) tags.push("meeting");
+  if (lower.includes("email") || lower.includes("reply") || lower.includes("inbox") || lower.includes("message")) tags.push("email");
+  if (lower.includes("budget") || lower.includes("invoice") || lower.includes("pay") || lower.includes("tax") || lower.includes("money") || lower.includes("gst")) tags.push("finance");
+  if (lower.includes("health") || lower.includes("gym") || lower.includes("doctor") || lower.includes("dentist") || lower.includes("workout") || lower.includes("run")) tags.push("health");
+  if (lower.includes("travel") || lower.includes("flight") || lower.includes("hotel") || lower.includes("trip") || lower.includes("visa")) tags.push("travel");
+  if (lower.includes("learn") || lower.includes("course") || lower.includes("study") || lower.includes("book") || lower.includes("read")) tags.push("learning");
+  if (lower.includes("product") || lower.includes("feature") || lower.includes("launch") || lower.includes("release") || lower.includes("ship")) tags.push("product");
+  if (lower.includes("marketing") || lower.includes("content") || lower.includes("social") || lower.includes("campaign") || lower.includes("seo")) tags.push("marketing");
+  if (lower.includes("hire") || lower.includes("interview") || lower.includes("recruit") || lower.includes("team")) tags.push("hiring");
+  if (lower.includes("design") || lower.includes("ui") || lower.includes("ux") || lower.includes("figma") || lower.includes("brand")) tags.push("design");
+  if (lower.includes("code") || lower.includes("bug") || lower.includes("deploy") || lower.includes("api") || lower.includes("database")) tags.push("engineering");
+  if (lower.includes("automat") || lower.includes("workflow") || lower.includes("script") || lower.includes("zapier")) tags.push("automation");
+  if (lower.includes("home") || lower.includes("family") || lower.includes("personal")) tags.push("personal");
+
+  // ── Urgency / timing tags ─────────────────────────────────────────────────
   if (urgency === "high") tags.push("urgent");
-  if (lower.includes("creative") || lower.includes("design") || lower.includes("idea")) tags.push("creative");
-  if (lower.includes("travel") || lower.includes("trip") || lower.includes("flight")) tags.push("travel");
-  if (lower.includes("learn") || lower.includes("course") || lower.includes("study")) tags.push("learning");
-  return [...new Set(tags)].slice(0, 5);
+  if (lower.includes("today") || lower.includes("eod") || lower.includes("asap")) tags.push("today");
+  if (lower.includes("this week") || lower.includes("by friday") || lower.includes("by monday")) tags.push("this-week");
+
+  // ── Fallback: category name only if no specific tags found ─────────────────
+  if (tags.length === 0) tags.push(category.replace("_", " "));
+
+  return [...new Set(tags)].slice(0, 4);
 }
 
 /* ── Review reason ── */

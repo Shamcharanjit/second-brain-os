@@ -64,11 +64,11 @@ function SecondaryCTA({ children, onClick, className }: { children: React.ReactN
 
 /* ── Data ── */
 const VALUES = [
-  { icon: Zap, title: "Capture instantly", desc: "Save thoughts, voice notes, screenshots, and files in seconds — before they disappear." },
-  { icon: Sparkles, title: "AI adds clarity", desc: "Extracts meaning, identifies signals, and enriches messy input into organized knowledge." },
-  { icon: Inbox, title: "Organize without effort", desc: "Inbox, Today, Projects, Memory, and Ideas Vault create structure without friction." },
-  { icon: Search, title: "Find it later", desc: "Search across original captures, files, and AI-enriched context whenever you need it." },
-  { icon: Shield, title: "Built for real life", desc: "Fast enough for everyday thinking, powerful enough for serious work. Your data stays yours." },
+  { icon: Zap, title: "10-second capture", desc: "Text, voice, file, or URL — dump it instantly without worrying about where it goes. The AI handles that." },
+  { icon: Sparkles, title: "AI that actually organises", desc: "Every capture is triaged, tagged, prioritised, and routed to the right place automatically — no setup needed." },
+  { icon: Inbox, title: "A place for everything", desc: "Today, Projects, Ideas Vault, Memory, Someday — each surface built for a different mode of thinking." },
+  { icon: Search, title: "Find anything later", desc: "Full-text search across every capture, file, and AI-enriched note. That thing from 3 months ago? Found in seconds." },
+  { icon: Shield, title: "Your data, your control", desc: "Private by design. We never train AI on your personal data. Export everything at any time." },
 ];
 
 const STEPS = [
@@ -163,33 +163,34 @@ export default function LandingPage() {
           <div className="max-w-3xl mx-auto text-center">
             <Reveal>
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
-                <Brain className="h-3.5 w-3.5" />
-                Your AI second brain
+                <Sparkles className="h-3.5 w-3.5" />
+                AI-powered · Free to start · 140+ early adopters
               </div>
             </Reveal>
 
             <Reveal delay={100}>
               <h1 className="mt-4 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1]">
-                Capture what matters.
-                <br />
-                <span className="text-primary">Let AI make it useful.</span>
+                Stop losing ideas.<br />
+                <span className="text-primary">Start building momentum.</span>
               </h1>
             </Reveal>
 
             <Reveal delay={200}>
               <p className="mt-4 text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                Text, voice, screenshots, files, fleeting ideas — capture everything fast.
-                AI enriches, organizes, and makes it searchable so you never lose a valuable thought again.
+                Capture thoughts, voice notes, and files in seconds. AI automatically organizes, tags, and routes everything — so you always know what to work on next.
               </p>
             </Reveal>
 
             <Reveal delay={300}>
               <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Button size="lg" onClick={() => navigate("/waitlist")} className="gap-2 text-base px-7 h-11 shadow-lg shadow-primary/20 w-full sm:w-auto">
-                  Join the Waitlist <ArrowRight className="h-4 w-4" />
+                  Get Early Access — It's Free <ArrowRight className="h-4 w-4" />
                 </Button>
                 <SecondaryCTA onClick={() => scrollTo("how")}>See How It Works</SecondaryCTA>
               </div>
+              <p className="mt-3 text-xs text-muted-foreground">
+                No credit card · Invite a friend, move up the waitlist faster
+              </p>
             </Reveal>
 
             {/* Hero visual — product mockup */}
@@ -404,17 +405,17 @@ export default function LandingPage() {
           <div className="max-w-3xl mx-auto">
             <Reveal>
               <div className="space-y-4">
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Most tools help you store information.<br /><span className="text-primary">InsightHalo helps you think.</span></h2>
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Notion is for documents.<br />Obsidian is for notes.<br /><span className="text-primary">InsightHalo is for your mind.</span></h2>
                 <div className="space-y-3 text-muted-foreground leading-relaxed text-sm md:text-base">
-                  <p>Traditional note apps force you into their structure. Screenshot folders become graveyards. Bookmarks disappear into the void. Voice memos never get reviewed.</p>
-                  <p>InsightHalo is different. It captures how you actually think — fast, messy, multi-format — then uses AI to extract meaning, add context, and organize everything into surfaces designed for action.</p>
+                  <p>Great ideas are lost every day — in your camera roll, forgotten voice memos, browser tabs you meant to revisit, and half-formed thoughts that vanished before you could write them down.</p>
+                  <p>InsightHalo captures how you actually think — fast, messy, multi-format — then uses AI to instantly extract meaning, prioritize, and route everything into surfaces built for action. You review in 2 minutes. You never lose anything again.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   {[
-                    { label: "Speed of capture", desc: "Seconds, not minutes" },
-                    { label: "Less friction", desc: "No formatting required" },
-                    { label: "Better retrieval", desc: "AI-enriched search" },
-                    { label: "Human-first AI", desc: "Assists, never takes over" },
+                    { label: "No system to build", desc: "AI creates structure for you" },
+                    { label: "No friction to capture", desc: "10 seconds, any format" },
+                    { label: "Daily review in 2 min", desc: "Not an hour-long ritual" },
+                    { label: "AI that knows context", desc: "Connects dots across ideas" },
                   ].map((d) => (
                     <div key={d.label} className="space-y-0.5">
                       <p className="text-sm font-semibold text-foreground">{d.label}</p>
@@ -520,14 +521,15 @@ export default function LandingPage() {
             <div className="relative max-w-2xl mx-auto text-center space-y-5">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-primary/[0.03] rounded-full blur-3xl pointer-events-none" />
               <div className="relative space-y-4">
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">Don't let your best ideas disappear.</h2>
-                <p className="text-base md:text-lg text-muted-foreground">Request early access to InsightHalo — your AI-powered second brain.</p>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">Your next great idea deserves to be remembered.</h2>
+                <p className="text-base md:text-lg text-muted-foreground">Join 140+ early adopters building their second brain with InsightHalo. Free forever, no card needed.</p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
                   <Button size="lg" onClick={() => navigate("/waitlist")} className="gap-2 text-base px-7 h-11 shadow-lg shadow-primary/20 w-full sm:w-auto">
-                    Join the Waitlist <ArrowRight className="h-4 w-4" />
+                    Get Early Access — Free <ArrowRight className="h-4 w-4" />
                   </Button>
                   <SecondaryCTA onClick={() => navigate("/auth")}>Sign In</SecondaryCTA>
                 </div>
+                <p className="text-xs text-muted-foreground pt-1">Refer friends → skip the queue → get Pro free</p>
               </div>
             </div>
           </Reveal>

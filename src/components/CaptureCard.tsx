@@ -6,6 +6,7 @@ import {
   Clock, CalendarCheck, Lightbulb, Brain, FolderKanban, Pin, Archive, Pencil, Repeat,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 
 const categoryConfig: Record<CaptureCategory, { label: string; color: string }> = {
   task: { label: "Task", color: "bg-[hsl(var(--brain-teal))]/15 text-[hsl(var(--brain-teal))]" },
@@ -40,8 +41,42 @@ export default function CaptureCard({
   const cat = categoryConfig[ai.category];
   const hasActions = onEdit || onConvertToProject || onConvertToMemory || onPin || onArchive;
 
+  // Swipe gestures — only active when quick-action handlers are provided
+  const { bind, translateX, swipeState } = useSwipeGesture({
+    onSwipeLeft:  onArchive  ? () => onArchive(capture.id)  : undefined,
+    onSwipeRight: onPin      ? () => onPin(capture.id)      : undefined,
+    disabled: !onArchive && !onPin,
+  });
+
   return (
-    <div className="rounded-xl border bg-card p-4 space-y-3 transition-all hover:shadow-sm group">
+    <div className="relative overflow-hidden rounded-xl">
+      {/* Swipe action backgrounds */}
+      {(onPin || onArchive) && (
+        <>
+          {/* Pin hint — revealed on right-swipe */}
+          <div
+            className="absolute inset-0 flex items-center pl-4 rounded-xl transition-opacity"
+            style={{ background: "hsl(var(--brain-teal))", opacity: swipeState === "right" ? 0.9 : 0 }}
+          >
+            <Pin className="h-5 w-5 text-white mr-1.5" />
+            <span className="text-sm font-semibold text-white">Pin to Today</span>
+          </div>
+          {/* Archive hint — revealed on left-swipe */}
+          <div
+            className="absolute inset-0 flex items-center justify-end pr-4 rounded-xl transition-opacity"
+            style={{ background: "hsl(var(--brain-rose))", opacity: swipeState === "left" ? 0.9 : 0 }}
+          >
+            <span className="text-sm font-semibold text-white mr-1.5">Archive</span>
+            <Archive className="h-5 w-5 text-white" />
+          </div>
+        </>
+      )}
+
+    <div
+      {...bind}
+      style={{ transform: `translateX(${translateX}px)`, transition: translateX === 0 ? "transform 0.2s ease" : "none" }}
+      className="rounded-xl border bg-card p-4 space-y-3 transition-shadow hover:shadow-sm group touch-pan-y select-none"
+    >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-3 min-w-0">
@@ -163,6 +198,7 @@ export default function CaptureCard({
           )}
         </div>
       )}
+    </div>
     </div>
   );
 }

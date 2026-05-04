@@ -18,6 +18,9 @@ import CreateProjectDialog from "@/components/projects/CreateProjectDialog";
 import { runAITriage, isAITriageAvailable, triageToAIData, type AITriageResult } from "@/lib/ai-triage";
 import { useUploadAttachments, type UploadResult } from "@/hooks/useUploadAttachments";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
+import { useDuplicateCheck } from "@/hooks/useDuplicateCheck";
+import { useAllTags } from "@/hooks/useAllTags";
+import { AlertTriangle, Tag } from "lucide-react";
 
 
 const PLACEHOLDERS = [
@@ -56,6 +59,14 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
   const [recurrence, setRecurrence] = useState<RecurrenceType | null>(null);
   const { uploadFiles } = useUploadAttachments();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Duplicate detection — debounced via useMemo inside the hook
+  const duplicate = useDuplicateCheck(text);
+
+  // Tag auto-suggest — top 8 most-used tags from existing captures
+  const allTags = useAllTags();
+  const suggestedTags = allTags.slice(0, 8).map((t) => t.tag);
+  const [showTagSuggest, setShowTagSuggest] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
 
@@ -371,6 +382,40 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
           className={`w-full resize-none border-0 bg-transparent px-1 py-1 text-sm outline-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 disabled:cursor-not-allowed ${isModal ? "min-h-[120px]" : "min-h-[60px]"}`}
         />
 
+        {/* Duplicate warning */}
+        {duplicate && phase === "idle" && (
+          <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 mt-2">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400">Possible duplicate</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+                Similar capture: "{duplicate.capture.ai_data?.title ?? duplicate.capture.raw_input.slice(0, 60)}"
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Tag auto-suggest chips */}
+        {showTagSuggest && suggestedTags.length > 0 && phase === "idle" && (
+          <div className="flex items-center gap-1.5 flex-wrap pt-2">
+            {suggestedTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => {
+                  setText((prev) => prev ? `${prev.trim()} #${tag}` : `#${tag}`);
+                  setShowTagSuggest(false);
+                  textareaRef.current?.focus();
+                }}
+                className="inline-flex items-center gap-1 rounded-full border bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
+              >
+                <Tag className="h-2.5 w-2.5" />
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Pending file chips */}
         {pendingFiles.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-2">
@@ -419,6 +464,19 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
               onChange={setRecurrence}
               disabled={isBusy || phase === "done"}
             />
+            {suggestedTags.length > 0 && (
+              <Button
+                size="sm"
+                variant={showTagSuggest ? "secondary" : "ghost"}
+                onClick={() => setShowTagSuggest((v) => !v)}
+                disabled={isBusy || phase === "done"}
+                className="gap-1 text-xs px-2 h-7"
+                title="Tag suggestions"
+              >
+                <Tag className="h-3 w-3" />
+                <span className="hidden sm:inline">Tags</span>
+              </Button>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">

@@ -132,6 +132,8 @@ const App = () => (
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/share/:token" element={<SharedCapturePage />} />
                 <Route path="/waitlist" element={<WaitlistPage />} />
+                {/* /join?ref=CODE — friendly referral URL that forwards to waitlist */}
+                <Route path="/join" element={<WaitlistPage />} />
                 <Route path="/invite" element={<InvitePage />} />
                 <Route path="/share-target" element={<ShareTargetPage />} />
                 <Route path="/terms" element={<TermsPage />} />
