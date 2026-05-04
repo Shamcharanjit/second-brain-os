@@ -15,6 +15,7 @@ import GlobalSearch from "@/components/GlobalSearch";
 import NotificationCentre from "@/components/NotificationCentre";
 import KeyboardShortcutsOverlay from "@/components/KeyboardShortcutsOverlay";
 import CommandPalette from "@/components/CommandPalette";
+import WorkspaceSwitcher from "@/components/workspace/WorkspaceSwitcher";
 
 // Users below this capture count see a simplified sidebar — fewer choices
 // = lower cognitive load = higher activation conversion.
@@ -179,6 +180,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
         <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
           <p className="px-3 pt-2 pb-1 text-[9px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">Workspace</p>
+          <WorkspaceSwitcher />
           {navPrimary.map((l) => (
             <NavLink key={l.to} to={l.to} className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}`}>

@@ -185,3 +185,150 @@ export function exportCSV(captures: Capture[]) {
   const csv = [headers.join(","), ...rows].join("\n");
   downloadFile(csv, `insighthalo-captures-${today()}.csv`, "text/csv");
 }
+
+// ── Notion-compatible JSON export ────────────────────────────────────────────
+// Produces a JSON array of page objects that match the Notion API page schema.
+// Each capture becomes a Notion "page" with properties you can import.
+export function exportNotion(captures: Capture[], projects: Project[], memories: Memory[]) {
+  const toNotionDate = (iso: string) => ({ start: iso.slice(0, 10) });
+
+  const capturePages = captures
+    .filter((c) => c.status !== "archived")
+    .map((c) => {
+      const ai = c.ai_data as AIData | null;
+      return {
+        object: "page",
+        properties: {
+          Name:       { title:    [{ text: { content: ai?.title ?? c.raw_input.slice(0, 100) } }] },
+          Content:    { rich_text:[{ text: { content: c.raw_input } }] },
+          Category:   { select:   { name: ai?.category ?? "note" } },
+          Status:     { select:   { name: c.status } },
+          Priority:   { number:   ai?.priority_score ?? 50 },
+          Urgency:    { select:   { name: ai?.urgency ?? "low" } },
+          Tags:       { multi_select: (ai?.tags ?? []).map((t) => ({ name: t })) },
+          "Next Action": { rich_text: [{ text: { content: ai?.next_action ?? "" } }] },
+          "Due Date": ai?.due_date ? { date: toNotionDate(ai.due_date) } : { date: null },
+          "Captured At": { date: toNotionDate(c.created_at) },
+          Source:     { select: { name: c.input_type === "voice" ? "Voice" : "Text" } },
+        },
+      };
+    });
+
+  const projectPages = projects
+    .filter((p) => p.status !== "archived")
+    .map((p) => ({
+      object: "page",
+      properties: {
+        Name:     { title: [{ text: { content: p.name } }] },
+        Content:  { rich_text: [{ text: { content: p.description ?? "" } }] },
+        Status:   { select: { name: p.status } },
+        Priority: { select: { name: p.priority } },
+        Progress: { number: p.progress },
+        "Due Date": p.due_date ? { date: toNotionDate(p.due_date) } : { date: null },
+        "Next Actions": { rich_text: [{ text: { content: p.next_actions.filter((a) => !a.is_completed).map((a) => `• ${a.text}`).join("\n") } }] },
+      },
+    }));
+
+  const memoryPages = memories
+    .filter((m) => !m.is_archived)
+    .map((m) => ({
+      object: "page",
+      properties: {
+        Name:       { title: [{ text: { content: m.title } }] },
+        Content:    { rich_text: [{ text: { content: m.raw_text } }] },
+        Summary:    { rich_text: [{ text: { content: m.summary ?? "" } }] },
+        Type:       { select: { name: m.memory_type } },
+        Importance: { number: m.importance_score },
+        Tags:       { multi_select: (m.tags ?? []).map((t: string) => ({ name: t })) },
+      },
+    }));
+
+  const payload = {
+    exported_at: new Date().toISOString(),
+    format: "notion-compatible",
+    version: "1.0",
+    databases: {
+      captures: capturePages,
+      projects: projectPages,
+      memories: memoryPages,
+    },
+  };
+
+  downloadFile(
+    JSON.stringify(payload, null, 2),
+    `insighthalo-notion-${today()}.json`,
+    "application/json",
+  );
+}
+
+// ── Google Calendar / iCalendar (.ics) export ────────────────────────────────
+// Exports tasks and reminders with due dates as VEVENT entries.
+function icsDate(iso: string): string {
+  // Convert YYYY-MM-DD to YYYYMMDD (all-day event format)
+  return iso.replace(/-/g, "");
+}
+
+function icsDateTime(iso: string): string {
+  // Convert ISO datetime to YYYYMMDDTHHMMSSZ
+  return iso.replace(/[-:]/g, "").replace(/\.\d{3}/, "").replace(" ", "T");
+}
+
+function escapeIcs(s: string): string {
+  return s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+}
+
+export function exportCalendar(captures: Capture[]) {
+  const lines: string[] = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//InsightHalo//Export//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    `X-WR-CALNAME:InsightHalo Tasks`,
+    `X-WR-TIMEZONE:UTC`,
+  ];
+
+  const taskCaptures = captures.filter((c) => {
+    if (c.status === "archived" || c.is_completed) return false;
+    const ai = c.ai_data as AIData | null;
+    // Only include captures that have a due date OR are tasks/reminders
+    return ai?.due_date || ai?.category === "task" || ai?.category === "reminder";
+  });
+
+  for (const c of taskCaptures) {
+    const ai = c.ai_data as AIData | null;
+    const uid = `${c.id}@insighthalo.com`;
+    const summary = escapeIcs(ai?.title ?? c.raw_input.slice(0, 100));
+    const description = escapeIcs([
+      c.raw_input,
+      ai?.next_action ? `Next: ${ai.next_action}` : "",
+      ai?.tags?.length ? `Tags: ${ai.tags.join(", ")}` : "",
+    ].filter(Boolean).join("\\n\\n"));
+
+    const dtstamp = icsDateTime(c.created_at);
+    const dtstart = ai?.due_date ? `DTSTART;VALUE=DATE:${icsDate(ai.due_date)}` : `DTSTART;VALUE=DATE:${icsDate(c.created_at)}`;
+    const dtend   = ai?.due_date ? `DTEND;VALUE=DATE:${icsDate(ai.due_date)}` : `DTEND;VALUE=DATE:${icsDate(c.created_at)}`;
+
+    const priority = ai?.urgency === "high" ? "1" : ai?.urgency === "medium" ? "5" : "9";
+
+    lines.push("BEGIN:VEVENT");
+    lines.push(`UID:${uid}`);
+    lines.push(`DTSTAMP:${dtstamp}`);
+    lines.push(dtstart);
+    lines.push(dtend);
+    lines.push(`SUMMARY:${summary}`);
+    lines.push(`DESCRIPTION:${description}`);
+    lines.push(`PRIORITY:${priority}`);
+    lines.push(`STATUS:NEEDS-ACTION`);
+    if (ai?.category) lines.push(`CATEGORIES:${ai.category.toUpperCase()}`);
+    lines.push("END:VEVENT");
+  }
+
+  lines.push("END:VCALENDAR");
+
+  downloadFile(
+    lines.join("\r\n"),
+    `insighthalo-tasks-${today()}.ics`,
+    "text/calendar",
+  );
+}

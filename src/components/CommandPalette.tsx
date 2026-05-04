@@ -19,7 +19,7 @@ import {
   Search, ArrowRight, CalendarDays, Inbox, FolderKanban, Lightbulb,
   Brain, Target, BarChart2, FileText, RotateCcw, Settings, HelpCircle,
   Sparkles, MessageSquare, Zap, Timer, Rocket, BookOpen, Home,
-  BrainCircuit, X,
+  BrainCircuit, X, Users,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
@@ -96,6 +96,12 @@ const COMMANDS: Command[] = [
     label: "Analytics", desc: "Capture streaks and activity charts",
     action: (nav, { closeCommandPalette }) => { nav("/analytics"); closeCommandPalette(); },
     keywords: ["analytics", "stats", "charts", "streak"],
+  },
+  {
+    id: "go-workspace", group: "navigate", icon: Users,
+    label: "Team Workspace", desc: "Shared feed and team captures",
+    action: (nav, { closeCommandPalette }) => { nav("/workspace"); closeCommandPalette(); },
+    keywords: ["workspace", "team", "shared", "collaborate", "members"],
   },
   {
     id: "go-scratchpad", group: "navigate", icon: FileText,

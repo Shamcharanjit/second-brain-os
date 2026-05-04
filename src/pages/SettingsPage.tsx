@@ -16,7 +16,7 @@ import { supabase } from "@/lib/supabase/client";
 import { createPortalSession } from "@/lib/stripe/billing";
 import { downloadBackup, readFileAsJSON, validateBackup, restoreBackup, clearLocalData } from "@/lib/data-export";
 import type { InsightHaloBackup } from "@/lib/data-export";
-import { exportMarkdown, exportCSV } from "@/lib/export";
+import { exportMarkdown, exportCSV, exportNotion, exportCalendar } from "@/lib/export";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
 import { useMemory } from "@/context/MemoryContext";
@@ -514,6 +514,12 @@ export default function SettingsPage() {
             </Button>
             <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { exportCSV(captures); toast.success("CSV export downloaded"); }}>
               <Download className="h-3.5 w-3.5" /> CSV (captures)
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { exportNotion(captures, projects, memories); toast.success("Notion JSON downloaded — import via Notion API or CSV importer"); }}>
+              <Download className="h-3.5 w-3.5" /> Notion JSON
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { exportCalendar(captures); toast.success("Calendar file downloaded — open or import into Google Calendar / iCal"); }}>
+              <Download className="h-3.5 w-3.5" /> Google Calendar (.ics)
             </Button>
           </div>
         </div>

@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search, Brain, Plus, Pin, Clock, FolderKanban, Lightbulb,
-  BookOpen, Archive, Sparkles, Star, CheckCircle2, Tag,
+  BookOpen, Archive, Sparkles, Star, CheckCircle2, Tag, Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { MemoryEntry, MemoryType } from "@/types/memory";
 import { toast } from "sonner";
 import MemoryDetailPanel from "@/components/memory/MemoryDetailPanel";
 import CreateMemoryDialog from "@/components/memory/CreateMemoryDialog";
+import { useSemanticSearch } from "@/hooks/useSemanticSearch";
 
 const TYPE_LABELS: Record<MemoryType, string> = {
   note: "Note", insight: "Insight", decision: "Decision", reference: "Reference",
@@ -48,6 +49,18 @@ export default function MemoryPage() {
   const [filter, setFilter] = useState<FilterTab>("all");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<MemoryType | "all">("all");
+  const [aiSearchMode, setAiSearchMode] = useState(false);
+
+  // Semantic / AI search
+  const { results: semanticResults, loading: semanticLoading, search: semanticSearch, clear: clearSemantic } = useSemanticSearch();
+
+  // Debounce AI search as user types
+  useEffect(() => {
+    if (!aiSearchMode) { clearSemantic(); return; }
+    if (!search.trim()) { clearSemantic(); return; }
+    const timer = setTimeout(() => { semanticSearch(search); }, 500);
+    return () => clearTimeout(timer);
+  }, [search, aiSearchMode, semanticSearch, clearSemantic]);
 
   const active = useMemo(() => memories.filter((m) => !m.is_archived), [memories]);
 
@@ -144,11 +157,67 @@ export default function MemoryPage() {
             </button>
           ))}
         </div>
-        <div className="relative sm:ml-auto">
-          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search memories..." className="pl-8 h-8 text-xs w-full sm:w-48" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <div className="flex items-center gap-1.5 sm:ml-auto">
+          {/* AI search toggle */}
+          <button
+            onClick={() => { setAiSearchMode((v) => !v); clearSemantic(); }}
+            title={aiSearchMode ? "Switch to keyword search" : "Switch to AI semantic search"}
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all shrink-0 ${
+              aiSearchMode
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-card text-muted-foreground hover:bg-muted/50"
+            }`}
+          >
+            <Zap className="h-3 w-3" />
+            {aiSearchMode ? "AI" : "AI"}
+          </button>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder={aiSearchMode ? "Ask anything…" : "Search memories..."}
+              className="pl-8 h-8 text-xs w-full sm:w-52"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
         </div>
       </div>
+
+      {/* AI Search Results */}
+      {aiSearchMode && search.trim() && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold">AI Search Results</h2>
+            {semanticLoading && (
+              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            )}
+            {!semanticLoading && semanticResults.length > 0 && (
+              <span className="text-xs text-muted-foreground">{semanticResults.length} found by meaning</span>
+            )}
+          </div>
+          {!semanticLoading && semanticResults.length === 0 && search.trim().length >= 3 && (
+            <p className="text-xs text-muted-foreground py-2">
+              No semantically similar memories found. Try different wording, or switch off AI search for keyword matching.
+            </p>
+          )}
+          {semanticResults.map((r) => {
+            const mem = memories.find((m) => m.id === r.id);
+            if (!mem) return null;
+            return (
+              <div key={r.id} className="relative">
+                <div className="absolute -top-1.5 right-3 z-10">
+                  <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[9px] text-primary font-medium">
+                    {Math.round(r.similarity * 100)}% match
+                  </span>
+                </div>
+                <MemoryCard memory={mem} projects={projects} onOpen={() => setSelectedId(mem.id)}
+                  onPin={() => { togglePin(mem.id); toast(mem.is_pinned ? "Unpinned" : "Pinned"); }} />
+              </div>
+            );
+          })}
+        </section>
+      )}
 
       {/* Type filter */}
       <div className="flex flex-wrap gap-1.5">
@@ -179,8 +248,8 @@ export default function MemoryPage() {
         </section>
       )}
 
-      {/* Results */}
-      <section className="space-y-3">
+      {/* Results — hidden when AI search is active */}
+      {aiSearchMode && search.trim() ? null : <section className="space-y-3">
         <p className="text-xs text-muted-foreground">{filtered.length} memor{filtered.length !== 1 ? "ies" : "y"}</p>
         {filtered.length === 0 ? (
           <div className="rounded-xl border bg-card p-10 text-center space-y-4">
@@ -203,7 +272,7 @@ export default function MemoryPage() {
             ))}
           </div>
         )}
-      </section>
+      </section>}
 
       {selectedId && <MemoryDetailPanel memoryId={selectedId} onClose={() => setSelectedId(null)} />}
       <CreateMemoryDialog open={showCreate} onClose={() => setShowCreate(false)} />

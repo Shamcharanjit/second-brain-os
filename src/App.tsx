@@ -16,6 +16,7 @@ import { PomodoroProvider } from "@/components/PomodoroOverlay";
 import PomodoroOverlay from "@/components/PomodoroOverlay";
 import { ReviewMetaProvider } from "@/context/ReviewMetaContext";
 import { SubscriptionProvider } from "@/context/SubscriptionContext";
+import { WorkspaceProvider } from "@/context/WorkspaceContext";
 import AppLayout from "@/components/AppLayout";
 import AppErrorBoundary from "@/components/system/AppErrorBoundary";
 import PageErrorBoundary from "@/components/system/PageErrorBoundary";
@@ -61,6 +62,7 @@ const AIChatPage           = lazy(() => import("@/pages/AIChatPage"));
 const ScratchpadPage       = lazy(() => import("@/pages/ScratchpadPage"));
 const GoalsPage            = lazy(() => import("@/pages/GoalsPage"));
 const AnalyticsPage        = lazy(() => import("@/pages/AnalyticsPage"));
+const WorkspacePage        = lazy(() => import("@/pages/WorkspacePage"));
 
 function PageLoader() {
   return (
@@ -81,12 +83,14 @@ function AppProvidersShell() {
           <ReviewMetaProvider>
             <HabitProvider>
               <GoalProvider>
-                <PomodoroProvider>
-                  <AppLayout>
-                    <Outlet />
-                  </AppLayout>
-                  <PomodoroOverlay />
-                </PomodoroProvider>
+                <WorkspaceProvider>
+                  <PomodoroProvider>
+                    <AppLayout>
+                      <Outlet />
+                    </AppLayout>
+                    <PomodoroOverlay />
+                  </PomodoroProvider>
+                </WorkspaceProvider>
               </GoalProvider>
             </HabitProvider>
           </ReviewMetaProvider>
@@ -171,6 +175,7 @@ const App = () => (
                   <Route path="/scratchpad" element={<PageErrorBoundary section="Scratchpad"><ScratchpadPage /></PageErrorBoundary>} />
                   <Route path="/goals" element={<PageErrorBoundary section="Goals"><GoalsPage /></PageErrorBoundary>} />
                   <Route path="/analytics" element={<PageErrorBoundary section="Analytics"><AnalyticsPage /></PageErrorBoundary>} />
+                  <Route path="/workspace" element={<PageErrorBoundary section="Workspace"><WorkspacePage /></PageErrorBoundary>} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/help" element={<PageErrorBoundary section="Help"><HelpPage /></PageErrorBoundary>} />
                   <Route path="/whats-new" element={<PageErrorBoundary section="What's New"><WhatsNewPage /></PageErrorBoundary>} />

@@ -1,0 +1,26 @@
+name: Daily Day-3 Re-engagement Emails
+
+on:
+  schedule:
+    # Runs daily at 08:30 UTC — catches users in their morning
+    - cron: "30 8 * * *"
+  workflow_dispatch:
+
+jobs:
+  send-day3-emails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Invoke send-day3-emails edge function
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/send-day3-emails" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          echo "Response status: $RESPONSE"
+          if [ "$RESPONSE" -lt 200 ] || [ "$RESPONSE" -ge 300 ]; then
+            echo "Error: unexpected status $RESPONSE"
+            exit 1
+          fi
