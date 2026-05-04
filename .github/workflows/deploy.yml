@@ -37,16 +37,16 @@ jobs:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
           FTP_PASS: ${{ secrets.FTP_PASSWORD }}
         run: |
-          lftp -c "
-            set ftp:ssl-allow yes;
-            set ftp:passive-mode yes;
-            set net:timeout 60;
-            set net:max-retries 5;
-            set net:reconnect-interval-base 5;
-            open -u \"$FTP_USER\",\"$FTP_PASS\" ftp://$FTP_HOST;
-            mirror --reverse --parallel=4 --delete \
-              --exclude=^\.git \
-              --exclude=^node_modules/ \
-              ./dist/ /public_html/;
-            quit
-          "
+          # Write lftp commands to a script file to avoid shell quoting issues
+          cat > /tmp/deploy.lftp << LFTP_EOF
+          set ftp:ssl-allow yes
+          set ftp:passive-mode yes
+          set net:timeout 60
+          set net:max-retries 5
+          set net:reconnect-interval-base 10
+          open -u "$FTP_USER","$FTP_PASS" ftp://$FTP_HOST
+          mirror --reverse --parallel=4 ./dist/ /public_html/
+          quit
+          LFTP_EOF
+
+          lftp -f /tmp/deploy.lftp

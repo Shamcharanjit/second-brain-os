@@ -2,7 +2,7 @@
   {
     "id": "team-workspace-v1",
     "title": "Team Workspaces",
-    "message": "Create or join a team workspace and share captures with your team. A shared live feed shows what everyone has shared, with optional notes. Invite anyone with an 8-character code — no account setup required from them.",
+    "message": "Create or join a team workspace and share captures with your team. A shared live feed shows what everyone has shared, with optional notes. Invite anyone with an 8-character code \u2014 no account setup required from them.",
     "version_tag": "v2.1",
     "cta_label": "Open Workspace",
     "cta_link": "/workspace",
@@ -12,7 +12,7 @@
   {
     "id": "semantic-memory-search-v1",
     "title": "AI Semantic Memory Search",
-    "message": "Memory search now understands meaning, not just keywords. Toggle the ⚡ AI button on the Memory page and type naturally — \"what did I decide about pricing last month\" — and it finds relevant memories even if the words don't match exactly.",
+    "message": "Memory search now understands meaning, not just keywords. Toggle the \u26a1 AI button on the Memory page and type naturally \u2014 \"what did I decide about pricing last month\" \u2014 and it finds relevant memories even if the words don't match exactly.",
     "version_tag": "v2.1",
     "cta_label": "Try it in Memory",
     "cta_link": "/memory",
@@ -22,7 +22,7 @@
   {
     "id": "referral-dashboard-v1",
     "title": "Referral Dashboard",
-    "message": "A full in-app referral hub. See your signups, activation count, reward tier, and animated progress toward the next milestone (1 → 3 → 5 → 10 referrals). Unlock Pro access by inviting friends.",
+    "message": "A full in-app referral hub. See your signups, activation count, reward tier, and animated progress toward the next milestone (1 \u2192 3 \u2192 5 \u2192 10 referrals). Unlock Pro access by inviting friends.",
     "version_tag": "v2.1",
     "cta_label": "View Referral Dashboard",
     "cta_link": "/referral",
@@ -32,7 +32,7 @@
   {
     "id": "goals-progress-ring-v1",
     "title": "Goals: Circular Progress Ring + Milestone Dates",
-    "message": "Goal cards now show an animated circular progress ring coloured by life area. Each milestone can have a target date — overdue milestones are flagged in red. Descriptions are now inline-editable with a single click.",
+    "message": "Goal cards now show an animated circular progress ring coloured by life area. Each milestone can have a target date \u2014 overdue milestones are flagged in red. Descriptions are now inline-editable with a single click.",
     "version_tag": "v2.1",
     "cta_label": "Open Goals",
     "cta_link": "/goals",
@@ -52,7 +52,7 @@
   {
     "id": "notion-calendar-export-v1",
     "title": "Notion & Google Calendar Export",
-    "message": "Export your entire second brain to Notion-compatible JSON (imports directly into Notion databases) or as a .ics calendar file for Google Calendar, Apple Calendar, and Outlook. Find both in Settings → Data Ownership.",
+    "message": "Export your entire second brain to Notion-compatible JSON (imports directly into Notion databases) or as a .ics calendar file for Google Calendar, Apple Calendar, and Outlook. Find both in Settings \u2192 Data Ownership.",
     "version_tag": "v2.0",
     "cta_label": "Go to Settings",
     "cta_link": "/settings",
@@ -62,7 +62,7 @@
   {
     "id": "swipe-gestures-v1",
     "title": "Swipe Gestures on Mobile",
-    "message": "Swipe right on any capture card to pin it to Today. Swipe left to archive it. Native touch events — no tap targets needed. Works everywhere captures appear: Inbox, Today, Ideas Vault.",
+    "message": "Swipe right on any capture card to pin it to Today. Swipe left to archive it. Native touch events \u2014 no tap targets needed. Works everywhere captures appear: Inbox, Today, Ideas Vault.",
     "version_tag": "v2.0",
     "cta_label": "Try in Inbox",
     "cta_link": "/inbox",
@@ -101,8 +101,8 @@
   },
   {
     "id": "command-palette-v1",
-    "title": "Command Palette (⌘K)",
-    "message": "Press Cmd+K (or Ctrl+K) anywhere in the app to open the command palette. Navigate to any page, open Quick Capture, start a Pomodoro, or ask AI — all without touching your mouse.",
+    "title": "Command Palette (\u2318K)",
+    "message": "Press Cmd+K (or Ctrl+K) anywhere in the app to open the command palette. Navigate to any page, open Quick Capture, start a Pomodoro, or ask AI \u2014 all without touching your mouse.",
     "version_tag": "v1.9",
     "cta_label": "Try it now",
     "cta_link": "/app",
@@ -112,7 +112,7 @@
   {
     "id": "weekly-review-v1",
     "title": "Weekly Review Ritual",
-    "message": "A guided 10-minute end-of-week review. Clear your inbox, review completed projects, capture loose ends, and set next week's focus — all in one structured flow.",
+    "message": "A guided 10-minute end-of-week review. Clear your inbox, review completed projects, capture loose ends, and set next week's focus \u2014 all in one structured flow.",
     "version_tag": "v1.9",
     "cta_label": "Start Weekly Review",
     "cta_link": "/review/weekly",
@@ -122,7 +122,7 @@
   {
     "id": "push-notifications-v1",
     "title": "Push Notifications",
-    "message": "Enable browser push notifications in Settings to get notified about reminders, review nudges, and new feature announcements — even when InsightHalo isn't open.",
+    "message": "Enable browser push notifications in Settings to get notified about reminders, review nudges, and new feature announcements \u2014 even when InsightHalo isn't open.",
     "version_tag": "v1.8",
     "cta_label": "Enable in Settings",
     "cta_link": "/settings",
