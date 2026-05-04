@@ -93,7 +93,7 @@ serve(async (req) => {
     const AI_ENDPOINT = GEMINI_API_KEY
       ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
       : "https://ai.gateway.lovable.dev/v1/chat/completions";
-    const AI_MODEL = GEMINI_API_KEY ? "gemini-2.0-flash" : "google/gemini-3-flash-preview";
+    const AI_MODEL = GEMINI_API_KEY ? "gemini-flash-latest" : "google/gemini-3-flash-preview";
 
     // Build user message: use enriched context if available, otherwise raw input
     const hasEnrichment = enrichedContext && typeof enrichedContext === "string" && enrichedContext !== rawInput;

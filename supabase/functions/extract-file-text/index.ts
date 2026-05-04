@@ -63,7 +63,7 @@ async function extractWithGemini(
   const endpoint = isGeminiDirect
     ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
     : "https://ai.gateway.lovable.dev/v1/chat/completions";
-  const model = isGeminiDirect ? "gemini-2.0-flash" : "google/gemini-2.5-flash";
+  const model = isGeminiDirect ? "gemini-flash-latest" : "google/gemini-2.5-flash";
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {

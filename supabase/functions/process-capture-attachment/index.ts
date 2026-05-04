@@ -17,7 +17,7 @@ function getAiConfig(apiKey: string): { endpoint: string; model: string } {
   const isLovable = apiKey.startsWith("lv_") || apiKey.startsWith("sk-lovable");
   return isLovable
     ? { endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions", model: "google/gemini-2.5-flash" }
-    : { endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", model: "gemini-2.0-flash" };
+    : { endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", model: "gemini-flash-latest" };
 }
 
 // ── Helpers ──
@@ -410,7 +410,7 @@ serve(async (req) => {
     // 5. Route extraction by kind
     let result: { extracted_text: string; summary: string; structured_json: Record<string, unknown> };
     let provider = GEMINI_API_KEY ? "gemini-direct" : "lovable-ai";
-    let model = GEMINI_API_KEY ? "gemini-2.0-flash" : "google/gemini-2.5-flash";
+    let model = GEMINI_API_KEY ? "gemini-flash-latest" : "google/gemini-2.5-flash";
 
     try {
       switch (kind) {
