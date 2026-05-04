@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Mic, Type, ArrowRight, FolderOpen, Gauge, ShieldCheck, ShieldQuestion,
-  Clock, CalendarCheck, Lightbulb, Brain, FolderKanban, Pin, Archive, Pencil,
+  Clock, CalendarCheck, Lightbulb, Brain, FolderKanban, Pin, Archive, Pencil, Repeat,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -105,6 +105,14 @@ export default function CaptureCard({
           <ArrowRight className="h-3 w-3" />
           {ai.next_action}
         </div>
+      )}
+
+      {/* Recurrence badge */}
+      {capture.recurrence && (
+        <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 text-primary w-fit">
+          <Repeat className="h-2.5 w-2.5" />
+          {capture.recurrence === "weekdays" ? "Weekdays" : capture.recurrence.charAt(0).toUpperCase() + capture.recurrence.slice(1)}
+        </span>
       )}
 
       {/* Routing status */}

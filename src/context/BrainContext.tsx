@@ -50,6 +50,7 @@ interface BrainContextType {
   convertIdeaToProject: (id: string) => void;
   /** Replace AI data on an existing capture (used by re-analyze with enrichment) */
   replaceCaptureAI: (id: string, aiData: AIProcessedData, reviewStatus: ReviewStatus) => void;
+  setRecurrence: (id: string, recurrence: RecurrenceType | null) => void;
 }
 
 const BrainContext = createContext<BrainContextType | null>(null);
@@ -280,12 +281,16 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const setRecurrence = useCallback((id: string, recurrence: RecurrenceType | null) => {
+    setCaptures((prev) => prev.map((c) => (c.id === id ? { ...c, recurrence } : c)));
+  }, []);
+
   return (
     <BrainContext.Provider value={{
       captures, addCapture, addCaptureWithAI, addCaptureFromAction, updateCaptureStatus, updateReviewStatus,
       approveCapture, editAndApproveCapture, archiveCapture, routeCapture,
       completeCapture, uncompleteCapture, togglePinToday, editCaptureAI,
-      updateIdeaStatus, convertIdeaToProject, replaceCaptureAI,
+      updateIdeaStatus, convertIdeaToProject, replaceCaptureAI, setRecurrence,
     }}>
       {children}
     </BrainContext.Provider>

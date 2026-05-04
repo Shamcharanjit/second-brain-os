@@ -14,6 +14,7 @@ import ReviewReminderBanner from "@/components/ReviewReminderBanner";
 import GlobalSearch from "@/components/GlobalSearch";
 import NotificationCentre from "@/components/NotificationCentre";
 import KeyboardShortcutsOverlay from "@/components/KeyboardShortcutsOverlay";
+import CommandPalette from "@/components/CommandPalette";
 
 // Users below this capture count see a simplified sidebar — fewer choices
 // = lower cognitive load = higher activation conversion.
@@ -99,6 +100,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const [captureOpen, setCaptureOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut, cloudAvailable } = useAuth();
@@ -119,10 +121,10 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   // Global keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Cmd+K / Ctrl+K → quick capture
+      // Cmd+K / Ctrl+K → command palette
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setCaptureOpen((o) => !o);
+        setCommandOpen((o) => !o);
         return;
       }
       // Cmd+/ / Ctrl+/ → search
@@ -164,14 +166,14 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
           >
             <Plus className="h-3.5 w-3.5" /> Quick Capture
           </Button>
-          {/* Search trigger */}
+          {/* Command palette trigger */}
           <button
-            onClick={() => setSearchOpen(true)}
+            onClick={() => setCommandOpen(true)}
             className="w-full flex items-center gap-2 rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-3 py-2 text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors"
           >
             <Search className="h-3.5 w-3.5 shrink-0" />
-            <span className="flex-1 text-left">Search…</span>
-            <kbd className="rounded border border-sidebar-border px-1 py-0.5 font-mono text-[9px] opacity-60">⌘/</kbd>
+            <span className="flex-1 text-left">Commands & search…</span>
+            <kbd className="rounded border border-sidebar-border px-1 py-0.5 font-mono text-[9px] opacity-60">⌘K</kbd>
           </button>
         </div>
 
@@ -370,7 +372,14 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
       {/* Quick Capture Modal */}
       <QuickCaptureModal open={captureOpen} onOpenChange={setCaptureOpen} />
 
-      {/* Global Search / Command Palette */}
+      {/* Command Palette — Cmd+K */}
+      <CommandPalette
+        open={commandOpen}
+        onOpenChange={setCommandOpen}
+        onOpenCapture={() => { setCommandOpen(false); setCaptureOpen(true); }}
+      />
+
+      {/* Global Search */}
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Keyboard Shortcuts Overlay */}

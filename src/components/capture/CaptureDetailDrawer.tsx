@@ -30,8 +30,9 @@ import {
 } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import {
-  Mic, Type, Sparkles, Clock, ArrowRight, ChevronDown, ChevronRight, Brain, RefreshCw, Loader2, Share2,
+  Mic, Type, Sparkles, Clock, ArrowRight, ChevronDown, ChevronRight, Brain, RefreshCw, Loader2, Share2, Repeat,
 } from "lucide-react";
+import RecurrencePicker from "@/components/capture/RecurrencePicker";
 
 interface Props {
   capture: Capture | null;
@@ -47,7 +48,7 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
     open && capture ? capture.id : null
   );
   const enrichment = useCaptureEnrichedContext({ capture, attachments, extractions });
-  const { replaceCaptureAI } = useBrain();
+  const { replaceCaptureAI, setRecurrence } = useBrain();
   const [ctxOpen, setCtxOpen] = useState(false);
   const [reanalyzing, setReanalyzing] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -206,6 +207,24 @@ export default function CaptureDetailDrawer({ capture, open, onOpenChange }: Pro
             onDeleted={() => { refetch(); refetchExtractions(); }}
             onRetryTriggered={() => { setTimeout(refetchExtractions, 2000); }}
           />
+
+          {/* Recurrence */}
+          <div className="rounded-lg border px-4 py-3 space-y-2">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+              <Repeat className="h-3 w-3" /> Repeat
+            </p>
+            <div className="flex items-center gap-2">
+              <RecurrencePicker
+                value={capture.recurrence ?? null}
+                onChange={(v) => setRecurrence(capture.id, v)}
+              />
+              {capture.recurrence && (
+                <p className="text-xs text-muted-foreground">
+                  Auto-regenerates after completion
+                </p>
+              )}
+            </div>
+          </div>
 
           {/* Enrichment context preview */}
           {enrichment.hasEnrichment && (

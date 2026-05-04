@@ -154,8 +154,9 @@ const FEATURES = [
 
 // ── SHORTCUTS ────────────────────────────────────────────────────────────────
 const SHORTCUTS = [
-  { keys: ["Cmd", "K"], action: "Quick Capture" },
-  { keys: ["Cmd", "/"], action: "Search memory" },
+  { keys: ["Cmd", "K"], action: "Command palette — navigate, capture, search, ask AI" },
+  { keys: ["Cmd", "J"], action: "Quick Capture (shortcut)" },
+  { keys: ["Cmd", "/"], action: "Memory search" },
   { keys: ["Cmd", "Enter"], action: "Submit capture / Save" },
   { keys: ["Esc"], action: "Close modal or overlay" },
   { keys: ["?"], action: "Show all keyboard shortcuts" },
