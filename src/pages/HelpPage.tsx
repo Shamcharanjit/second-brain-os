@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Sparkles, Inbox, CalendarDays, FolderKanban, Lightbulb,
@@ -8,6 +8,7 @@ import {
   Zap, Brain, Play, Users, Gift, Download,
 } from "lucide-react";
 import InsightHaloIcon from "@/components/branding/InsightHaloIcon";
+import { fetchFeatureUpdates, type FeatureUpdate } from "@/lib/whats-new";
 
 // ── FAQ ──────────────────────────────────────────────────────────────────────
 const FAQS = [
@@ -69,122 +70,46 @@ const FAQS = [
   },
 ];
 
-// ── FEATURES ─────────────────────────────────────────────────────────────────
-const FEATURES = [
-  {
-    icon: Zap,
-    title: "Quick Capture",
-    body: "Press the green + button anytime. Type or speak. Don't worry about categories — AI handles that.",
-    tip: "Keyboard shortcut: Cmd+K",
-  },
-  {
-    icon: Mic,
-    title: "Voice Capture",
-    body: "Tap the microphone icon for hands-free capture. Great for driving, walking, or when your hands are busy.",
-    to: "/voice",
-  },
-  {
-    icon: Inbox,
-    title: "Inbox",
-    body: "Review AI-organised captures. Approve, edit, or reassign to the right place. Aim for Inbox Zero daily.",
-    to: "/inbox",
-  },
-  {
-    icon: CalendarDays,
-    title: "Today",
-    body: "Your daily priority list. AI surfaces your most urgent items. Start a Pomodoro focus session from here.",
-    to: "/today",
-  },
-  {
-    icon: FolderKanban,
-    title: "Projects",
-    body: "Track active work with next actions, milestones, and progress. Everything related to a project in one place.",
-    to: "/projects",
-  },
-  {
-    icon: Lightbulb,
-    title: "Ideas Vault",
-    body: "Business ideas, opportunities, 'what if' thoughts. Captured before they slip away, surfaced when relevant.",
-    to: "/ideas",
-  },
-  {
-    icon: Brain,
-    title: "Memory",
-    body: "Long-term reference notes, decisions, SOPs. Your permanent knowledge base — fully searchable.",
-    to: "/memory",
-  },
-  {
-    icon: Target,
-    title: "Goals",
-    body: "Set goals by life area, add milestones, track progress. Your second brain keeps your goals front of mind.",
-    to: "/goals",
-  },
-  {
-    icon: MessageSquare,
-    title: "AI Chat",
-    body: "Ask your second brain anything. It reads your actual captures and memories to give you real answers.",
-    to: "/ai-chat",
-  },
-  {
-    icon: BarChart2,
-    title: "Analytics",
-    body: "See your capture streak, weekly rhythm, top categories, and Pomodoro history visualised in charts.",
-    to: "/analytics",
-  },
-  {
-    icon: FileText,
-    title: "Scratchpad",
-    body: "A private freeform writing space. Draft, think out loud, or brainstorm without any AI organisation.",
-    to: "/scratchpad",
-  },
-  {
-    icon: RotateCcw,
-    title: "Review Rituals",
-    body: "Daily Reset and Weekly Review keep your second brain calm, current, and trusted.",
-    to: "/review",
-  },
-  {
-    icon: Search,
-    title: "AI Semantic Search",
-    body: "Toggle ⚡ AI on the Memory page. Finds memories by meaning — not just keywords. Ask anything in plain English.",
-    to: "/memory",
-  },
-  {
-    icon: Users,
-    title: "Team Workspace",
-    body: "Create or join a shared workspace. Share any capture to your team's live feed with an optional note. Invite anyone with an 8-character code.",
-    to: "/workspace",
-  },
-  {
-    icon: Gift,
-    title: "Refer & Earn",
-    body: "Share your referral link. Earn badges, AI credits, and up to 3 months Pro free by inviting friends.",
-    to: "/referral",
-  },
-  {
-    icon: Download,
-    title: "Export",
-    body: "Export everything as JSON, Markdown, CSV, Notion-compatible JSON, or Google Calendar .ics. Find it in Settings → Data Ownership.",
-    to: "/settings",
-  },
-  {
-    icon: Mail,
-    title: "Email Capture",
-    body: "Forward anything to your personal InsightHalo email address. It lands in your Inbox automatically.",
-    to: "/settings",
-  },
-  {
-    icon: Bookmark,
-    title: "Bookmarklet",
-    body: "Save any webpage to your second brain with one click from any browser.",
-    to: "/settings",
-  },
-  {
-    icon: Paperclip,
-    title: "File Capture",
-    body: "Attach images, PDFs, or audio. AI extracts the text and adds it to your knowledge base.",
-  },
+// ── FEATURE ICON MAP ─────────────────────────────────────────────────────────
+// Maps slug substrings → Lucide icon. New changelog entries with unknown slugs
+// automatically fall back to Sparkles — no code change needed.
+const SLUG_ICON_MAP: Array<[string, React.ComponentType<any>]> = [
+  ["voice",           Mic],
+  ["ai-chat",         MessageSquare],
+  ["semantic-memory", Brain],
+  ["memory",          Brain],
+  ["goals",           Target],
+  ["referral",        Gift],
+  ["workspace",       Users],
+  ["team",            Users],
+  ["export",          Download],
+  ["notion",          Download],
+  ["calendar",        CalendarDays],
+  ["review",          RotateCcw],
+  ["weekly",          RotateCcw],
+  ["command-palette", Keyboard],
+  ["search",          Search],
+  ["duplicate",       Search],
+  ["tag",             Lightbulb],
+  ["ideas",           Lightbulb],
+  ["push-notif",      Bell],
+  ["notification",    Bell],
+  ["swipe",           Zap],
+  ["analytics",       BarChart2],
+  ["scratchpad",      FileText],
+  ["projects",        FolderKanban],
+  ["inbox",           Inbox],
+  ["capture",         Zap],
+  ["today",           CalendarDays],
 ];
+
+function iconForSlug(slug: string): React.ComponentType<any> {
+  const lower = slug.toLowerCase();
+  for (const [key, Icon] of SLUG_ICON_MAP) {
+    if (lower.includes(key)) return Icon;
+  }
+  return Sparkles;
+}
 
 // ── SHORTCUTS ────────────────────────────────────────────────────────────────
 const SHORTCUTS = [
@@ -247,6 +172,14 @@ function FeatureCard({ icon: Icon, title, body, to, tip }: {
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 export default function HelpPage() {
   const [faqSearch, setFaqSearch] = useState("");
+  const [features, setFeatures] = useState<FeatureUpdate[]>([]);
+  const [featuresLoading, setFeaturesLoading] = useState(true);
+
+  useEffect(() => {
+    fetchFeatureUpdates()
+      .then(setFeatures)
+      .finally(() => setFeaturesLoading(false));
+  }, []);
   const filteredFaqs = FAQS.filter(
     (f) =>
       f.q.toLowerCase().includes(faqSearch.toLowerCase()) ||
@@ -293,16 +226,30 @@ export default function HelpPage() {
         </div>
       </section>
 
-      {/* Features grid */}
+      {/* Features grid — auto-populated from changelog.json via Supabase */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           All features
         </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
-            <FeatureCard key={f.title} {...f} />
-          ))}
-        </div>
+        {featuresLoading ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-24 rounded-xl border bg-muted/40 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {features.map((f) => (
+              <FeatureCard
+                key={f.id}
+                icon={iconForSlug(f.id)}
+                title={f.title}
+                body={f.message}
+                to={f.cta_link ?? undefined}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Capture channels */}
