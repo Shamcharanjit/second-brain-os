@@ -28,54 +28,25 @@ jobs:
           VITE_SUPABASE_URL: https://qanoiqzanywjrcuhsmny.supabase.co
           VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
 
-      # Attempt 1 — plain FTP (what worked on run #34)
-      - name: Deploy to Hostinger (attempt 1)
-        id: deploy1
-        continue-on-error: true
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
-          port: 21
-          local-dir: ./dist/
-          server-dir: /public_html/
-          dangerous-clean-slate: false
-          timeout: 120000
-          log-level: minimal
+      - name: Deploy to Hostinger via SSH/rsync
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: 147.93.17.221
+          SSH_PORT: 65002
+          SSH_USER: u655326214
+        run: |
+          # Write private key
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
 
-      # Attempt 2 — retry if attempt 1 timed out (different runner IP)
-      - name: Deploy to Hostinger (attempt 2)
-        id: deploy2
-        continue-on-error: true
-        if: steps.deploy1.outcome == 'failure'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
-          port: 21
-          local-dir: ./dist/
-          server-dir: /public_html/
-          dangerous-clean-slate: false
-          timeout: 120000
-          log-level: minimal
+          # Trust host fingerprint without interactive prompt
+          ssh-keyscan -p $SSH_PORT $SSH_HOST >> ~/.ssh/known_hosts 2>/dev/null
 
-      # Attempt 3 — final retry with FTPS
-      - name: Deploy to Hostinger (attempt 3 — FTPS)
-        id: deploy3
-        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: 21
-          local-dir: ./dist/
-          server-dir: /public_html/
-          dangerous-clean-slate: false
-          timeout: 120000
-          log-level: minimal
+          # Sync dist/ to public_html/ — fast, reliable, no FTP firewall issues
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=no" \
+            ./dist/ \
+            $SSH_USER@$SSH_HOST:/home/$SSH_USER/domains/insighthalo.com/public_html/
+
+          echo "Deploy complete ✓"
