@@ -1,18 +1,18 @@
 -- ────────────────────────────────────────────────────────────────────────────
 -- Memory Embeddings (pgvector)
--- Adds a vector column to user_memory for semantic similarity search.
+-- Adds a vector column to user_memory_entries for semantic similarity search.
 -- ────────────────────────────────────────────────────────────────────────────
 
 -- Enable pgvector extension (idempotent)
 create extension if not exists vector with schema extensions;
 
 -- Add embedding column (text-embedding-004 produces 768-dim vectors)
-alter table public.user_memory
+alter table public.user_memory_entries
   add column if not exists embedding extensions.vector(768);
 
 -- HNSW index for fast cosine similarity queries
-create index if not exists idx_user_memory_embedding
-  on public.user_memory
+create index if not exists idx_user_memory_entries_embedding
+  on public.user_memory_entries
   using hnsw (embedding extensions.vector_cosine_ops)
   with (m = 16, ef_construction = 64);
 
@@ -50,7 +50,7 @@ begin
     m.is_archived,
     m.created_at,
     1 - (m.embedding <=> query_embedding) as similarity
-  from public.user_memory m
+  from public.user_memory_entries m
   where
     m.user_id = auth.uid()
     and m.embedding is not null

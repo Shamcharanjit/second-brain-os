@@ -2,7 +2,7 @@
  * generate-embedding
  *
  * Generates a text embedding for a given string using the Gemini
- * text-embedding-004 model (768 dimensions) and stores it in user_memory.
+ * text-embedding-004 model (768 dimensions) and stores it in user_memory_entries.
  *
  * POST body: { memory_id: string, text: string }
  * Returns:   { success: boolean, dims?: number }
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
 
     // Verify the memory belongs to this user
     const { data: mem, error: memError } = await supabase
-      .from("user_memory")
+      .from("user_memory_entries")
       .select("id")
       .eq("id", memory_id)
       .eq("user_id", user.id)
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     );
 
     const { error: updateError } = await serviceClient
-      .from("user_memory")
+      .from("user_memory_entries")
       .update({ embedding: `[${embedding.join(",")}]` })
       .eq("id", memory_id);
 
