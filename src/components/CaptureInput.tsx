@@ -439,19 +439,19 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-2 border-t border-border/50 mt-2">
-          <div className="flex items-center gap-1.5">
+        <div className="flex flex-col gap-2 pt-2 border-t border-border/50 mt-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <Button
               size="sm"
               variant={phase === "recording" ? "destructive" : "outline"}
               onClick={handleVoice}
               disabled={isBusy || phase === "done"}
-              className="gap-1.5 text-xs"
+              className="gap-1.5 text-xs h-8 px-2.5"
             >
               {phase === "recording" ? (
-                <><MicOff className="h-3.5 w-3.5" /> Stop</>
+                <><MicOff className="h-3.5 w-3.5" /><span className="hidden xs:inline">Stop</span></>
               ) : (
-                <><Mic className="h-3.5 w-3.5" /> Voice</>
+                <><Mic className="h-3.5 w-3.5" /><span className="hidden xs:inline">Voice</span></>
               )}
             </Button>
             <UploadPicker
@@ -470,26 +470,26 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
                 variant={showTagSuggest ? "secondary" : "ghost"}
                 onClick={() => setShowTagSuggest((v) => !v)}
                 disabled={isBusy || phase === "done"}
-                className="gap-1 text-xs px-2 h-7"
+                className="gap-1 text-xs px-2 h-8"
                 title="Tag suggestions"
               >
                 <Tag className="h-3 w-3" />
-                <span className="hidden sm:inline">Tags</span>
               </Button>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 self-end sm:self-auto">
             {showAIButton && (
               <Button
                 size="sm"
                 variant="outline"
                 onClick={handleAITriage}
                 disabled={!text.trim() || isBusy}
-                className={`gap-1.5 text-xs ${!canUseAITriage ? "opacity-60" : ""}`}
+                className={`gap-1.5 text-xs h-8 ${!canUseAITriage ? "opacity-60" : ""}`}
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                AI Organize
+                <span className="hidden xs:inline">AI Organize</span>
+                <span className="xs:hidden">AI</span>
                 {!canUseAITriage && <Crown className="h-3 w-3 text-primary" />}
                 {canUseAITriage && aiTriageRemaining <= 3 && (
                   <span className="text-[9px] text-muted-foreground">({aiTriageRemaining})</span>
@@ -500,7 +500,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
               size="sm"
               onClick={handleSubmit}
               disabled={(!text.trim() && pendingFiles.length === 0) || isBusy || phase === "done"}
-              className="gap-1.5 text-xs"
+              className="gap-1.5 text-xs h-8"
             >
               <Send className="h-3.5 w-3.5" /> Capture
             </Button>

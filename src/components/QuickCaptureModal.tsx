@@ -10,7 +10,7 @@ interface QuickCaptureModalProps {
 export default function QuickCaptureModal({ open, onOpenChange }: QuickCaptureModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-lg sm:w-full">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />

@@ -72,12 +72,12 @@ const NAV_PRIMARY: NavItem[] = [
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/ideas", label: "Ideas Vault", icon: Lightbulb },
   { to: "/someday", label: "Someday", icon: Hourglass },
-  { to: "/memory", label: "Memory", icon: Search },
+  { to: "/memory", label: "Memory", icon: Search, essential: true },
 ];
 
 const NAV_SECONDARY: NavItem[] = [
-  { to: "/ai-chat", label: "AI Chat", icon: MessageSquare },
-  { to: "/goals", label: "Goals", icon: Target },
+  { to: "/ai-chat", label: "AI Chat", icon: MessageSquare, essential: true },
+  { to: "/goals", label: "Goals", icon: Target, essential: true },
   { to: "/scratchpad", label: "Scratchpad", icon: FileText },
   { to: "/analytics", label: "Analytics", icon: BarChart2 },
   { to: "/ai-review", label: "AI Review", icon: BrainCircuit },
@@ -89,10 +89,10 @@ const NAV_SECONDARY: NavItem[] = [
 
 const NAV_ACCOUNT: NavItem[] = [
   { to: "/whats-new", label: "What's New", icon: Sparkles },
-  { to: "/referral", label: "Refer & Earn", icon: Gift },
+  { to: "/referral", label: "Refer & Earn", icon: Gift, essential: true },
   { to: "/help", label: "How to Use", icon: HelpCircle, essential: true },
   { to: "/settings", label: "Settings", icon: Settings, essential: true },
-  { to: "/upgrade", label: "Upgrade", icon: Crown },
+  { to: "/upgrade", label: "Upgrade", icon: Crown, essential: true },
 ];
 
 const NAV_LINKS = [...NAV_PRIMARY, ...NAV_SECONDARY, ...NAV_ACCOUNT];
