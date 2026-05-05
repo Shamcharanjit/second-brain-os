@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback } from "react";
 import HabitsSection from "@/components/HabitsSection";
+import MorningBriefingCard from "@/components/MorningBriefingCard";
 import { usePomodoroContext } from "@/components/PomodoroOverlay";
 import { useNavigate } from "react-router-dom";
 import { useBrain } from "@/context/BrainContext";
@@ -183,6 +184,9 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-8">
+      {/* Morning Briefing */}
+      <MorningBriefingCard />
+
       {/* Header */}
       <div className="flex items-end justify-between">
         <div>

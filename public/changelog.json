@@ -1,5 +1,33 @@
 [
   {
+    "id": "morning-briefing-v1",
+    "title": "AI Morning Briefing",
+    "message": "A fresh card at the top of Today each morning — shows overdue items, today's task count, your capture streak, and top goal progress. All computed locally, no API call needed. Dismisses with one tap and resets the next day.",
+    "version_tag": "v1.6",
+    "date": "2026-05-05",
+    "cta_label": "Open Today",
+    "cta_link": "/today",
+    "audience": "user"
+  },
+  {
+    "id": "capture-templates-v1",
+    "title": "Capture Templates",
+    "message": "Six pre-built templates in the capture toolbar — Meeting Notes, Book Summary, Daily Reflection, Project Idea, Bug/Issue, and Weekly Plan. One tap pre-fills the capture box with a structured prompt so AI triage gets better context and you capture faster.",
+    "version_tag": "v1.6",
+    "date": "2026-05-05",
+    "cta_label": "Try capturing",
+    "cta_link": "/",
+    "audience": "user"
+  },
+  {
+    "id": "due-date-alerts-v1",
+    "title": "Due-Date Push Alerts",
+    "message": "Morning push notifications now name the specific captures due today — \"Due today: Send proposal\" instead of a generic count. Multiple items show the first two titles plus a count. Powered by the existing 7am cron with no new setup needed.",
+    "version_tag": "v1.6",
+    "date": "2026-05-05",
+    "audience": "user"
+  },
+  {
     "id": "team-workspace-v1",
     "title": "Team Workspaces",
     "message": "Create or join a team workspace and share captures with your team. A shared live feed shows what everyone has shared, with optional notes. Invite anyone with an 8-character code \u2014 no account setup required from them.",

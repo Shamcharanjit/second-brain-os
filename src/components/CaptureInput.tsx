@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Mic, MicOff, Send, Sparkles, Check, Crown } from "lucide-react";
 import UploadPicker, { type PendingFile } from "@/components/capture/UploadPicker";
 import RecurrencePicker from "@/components/capture/RecurrencePicker";
+import TemplatePicker from "@/components/capture/TemplatePicker";
 import type { RecurrenceType } from "@/types/brain";
 import { useBrain } from "@/context/BrainContext";
 import { useProjects } from "@/context/ProjectContext";
@@ -462,6 +463,13 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
             <RecurrencePicker
               value={recurrence}
               onChange={setRecurrence}
+              disabled={isBusy || phase === "done"}
+            />
+            <TemplatePicker
+              onSelect={(prompt) => {
+                setText(prompt);
+                setTimeout(() => textareaRef.current?.focus(), 50);
+              }}
               disabled={isBusy || phase === "done"}
             />
             {suggestedTags.length > 0 && (

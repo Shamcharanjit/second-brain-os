@@ -203,16 +203,36 @@ Deno.serve(async (req) => {
     inboxCount.set(r.user_id, (inboxCount.get(r.user_id) ?? 0) + 1);
   }
 
-  // 3. Today's tasks (due_date = today or pinned to today)
+  // 3. Tasks pinned to today
   const { data: todayTasks } = await admin
     .from("user_captures")
     .select("user_id")
-    .eq("category", "today")
+    .eq("is_pinned_today", true)
     .eq("status", "active")
     .in("user_id", userIds);
   const todayTaskCount = new Map<string, number>();
   for (const r of (todayTasks ?? [])) {
     todayTaskCount.set(r.user_id, (todayTaskCount.get(r.user_id) ?? 0) + 1);
+  }
+
+  // 3b. Captures with due_date = today (from ai_data JSONB field)
+  const todayDate = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+  const { data: dueTodayRows } = await admin
+    .from("user_captures")
+    .select("user_id, title, ai_data")
+    .eq("status", "active")
+    .eq("is_completed", false)
+    .in("user_id", userIds);
+
+  // Group captures due today per user (ai_data.due_date matches today)
+  const dueTodayMap = new Map<string, string[]>(); // user_id → [title, ...]
+  for (const r of (dueTodayRows ?? [])) {
+    const dueDate = (r.ai_data as any)?.due_date;
+    if (dueDate === todayDate) {
+      const list = dueTodayMap.get(r.user_id) ?? [];
+      list.push(r.title ?? "Untitled");
+      dueTodayMap.set(r.user_id, list);
+    }
   }
 
   // 4. Streak: last capture timestamp per user
@@ -273,18 +293,41 @@ Deno.serve(async (req) => {
         });
       }
 
-      // due_today
+      // due_today — named alerts for captures with due_date = today
       if (p.due_today) {
-        const tasks = todayTaskCount.get(user_id) ?? 0;
-        if (tasks > 0) {
+        const dueTitles = dueTodayMap.get(user_id) ?? [];
+        if (dueTitles.length === 1) {
+          // Single item — mention it by name
           notifications.push({
             payload: {
-              title: `You have ${tasks} task${tasks > 1 ? "s" : ""} due today`,
-              body:  "Tap to open Today and start your first focus session.",
+              title: `Due today: ${dueTitles[0]}`,
+              body:  "Tap to open Today and get it done.",
               url:   "/today",
               tag:   "due-today",
             },
           });
+        } else if (dueTitles.length > 1) {
+          notifications.push({
+            payload: {
+              title: `${dueTitles.length} items due today`,
+              body:  dueTitles.slice(0, 2).join(", ") + (dueTitles.length > 2 ? ` + ${dueTitles.length - 2} more` : ""),
+              url:   "/today",
+              tag:   "due-today",
+            },
+          });
+        } else {
+          // Fallback to pinned-today count
+          const tasks = todayTaskCount.get(user_id) ?? 0;
+          if (tasks > 0) {
+            notifications.push({
+              payload: {
+                title: `${tasks} task${tasks > 1 ? "s" : ""} on your Today list`,
+                body:  "Tap to open Today and start your first focus session.",
+                url:   "/today",
+                tag:   "due-today",
+              },
+            });
+          }
         }
       }
     }
