@@ -122,7 +122,7 @@ export default function MorningBriefingCard() {
         {/* Overdue */}
         {stats.overdue > 0 ? (
           <button
-            onClick={() => navigate("/inbox")}
+            onClick={() => navigate("/inbox?filter=overdue")}
             className="flex items-center gap-2 rounded-lg bg-rose-500/10 border border-rose-500/20 px-3 py-2 text-left hover:border-rose-500/40 transition-colors"
           >
             <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0" />

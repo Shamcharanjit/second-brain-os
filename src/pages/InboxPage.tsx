@@ -6,8 +6,9 @@ import { useCaptureSearchIndex } from "@/hooks/useCaptureSearchIndex";
 import { useAllTags } from "@/hooks/useAllTags";
 import { CaptureCategory, Capture } from "@/types/brain";
 import type { CaptureSearchMatchResult } from "@/lib/capture-search-match";
-import { useState, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { isPast, isToday, parseISO } from "date-fns";
 import {
   Inbox, AlertTriangle, Lightbulb, Clock, Search,
   ArrowUpDown, CheckCircle2, BrainCircuit, Sparkles, Zap,
@@ -18,11 +19,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-type FilterValue = CaptureCategory | "all" | "pending_review" | "reviewed_filter" | "high_priority";
+type FilterValue = CaptureCategory | "all" | "pending_review" | "reviewed_filter" | "high_priority" | "overdue";
 type SortValue = "newest" | "priority" | "needs_decision";
 
 const filters: { label: string; value: FilterValue }[] = [
   { label: "All", value: "all" },
+  { label: "Overdue", value: "overdue" },
   { label: "Pending Review", value: "pending_review" },
   { label: "Tasks", value: "task" },
   { label: "Reminders", value: "reminder" },
@@ -43,8 +45,18 @@ const sortOptions: { label: string; value: SortValue }[] = [
 
 export default function InboxPage() {
   const { captures, routeCapture, archiveCapture } = useBrain();
-  const [filter, setFilter] = useState<FilterValue>("all");
+  const [searchParams] = useSearchParams();
+  const [filter, setFilter] = useState<FilterValue>(() => {
+    const p = searchParams.get("filter") as FilterValue | null;
+    return (p && filters.some((f) => f.value === p)) ? p : "all";
+  });
   const [sort, setSort] = useState<SortValue>("needs_decision");
+
+  // Keep filter in sync if the URL param changes (e.g. back-navigation)
+  useEffect(() => {
+    const p = searchParams.get("filter") as FilterValue | null;
+    if (p && filters.some((f) => f.value === p)) setFilter(p);
+  }, [searchParams]);
   const [search, setSearch] = useState("");
   const [detailCapture, setDetailCapture] = useState<Capture | null>(null);
   const [selectMode, setSelectMode] = useState(false);
@@ -97,6 +109,14 @@ export default function InboxPage() {
     }
     switch (filter) {
       case "all": break;
+      case "overdue":
+        list = list.filter((c) => {
+          if (c.is_completed || c.status === "archived") return false;
+          const dd = c.ai_data?.due_date;
+          if (!dd) return false;
+          try { return isPast(parseISO(dd)) && !isToday(parseISO(dd)); } catch { return false; }
+        });
+        break;
       case "pending_review":
         list = list.filter((c) => c.review_status !== "reviewed");
         break;
