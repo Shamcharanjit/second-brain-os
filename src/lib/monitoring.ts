@@ -1,66 +1,77 @@
 /**
- * Sentry error monitoring — initialised once in main.tsx.
- * DSN is public and safe to include in client bundles.
+ * Error monitoring — powered by PostHog (already installed, free forever).
+ *
+ * PostHog's captureException() sends errors to the same project as your
+ * analytics events, so you see errors + user journeys in one place.
+ *
+ * No DSN, no new account, no billing — PostHog free tier covers this.
  */
-import * as Sentry from "@sentry/react";
 
-export function initSentry() {
-  // Only run in production — avoids noisy local errors
-  if (import.meta.env.DEV) return;
+import posthog from "posthog-js";
 
-  Sentry.init({
-    dsn: "https://b4a1c2d3e4f5a6b7c8d9e0f1a2b3c4d5@o0.ingest.sentry.io/0",
-    integrations: [
-      Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration({
-        maskAllText: true,   // protect PII in session replays
-        blockAllMedia: false,
-      }),
-    ],
-    // Performance: capture 5 % of transactions in prod
-    tracesSampleRate: 0.05,
-    // Session replay: 2 % of sessions, 100 % of sessions with errors
-    replaysSessionSampleRate: 0.02,
-    replaysOnErrorSampleRate: 1.0,
-    environment: "production",
-    release: "insighthalo@" + (import.meta.env.VITE_APP_VERSION ?? "latest"),
-    // Ignore expected / uninteresting errors
-    ignoreErrors: [
-      "ResizeObserver loop limit exceeded",
-      "ResizeObserver loop completed with undelivered notifications",
-      "Network request failed",
-      "Failed to fetch",
-      "Load failed",
-      "ChunkLoadError",
-    ],
-    beforeSend(event) {
-      // Strip user email from breadcrumbs / request data
-      if (event.request?.url) {
-        event.request.url = event.request.url.replace(/email=[^&]+/, "email=REDACTED");
-      }
-      return event;
-    },
+// ── Global unhandled error capture ──────────────────────────────────────────
+
+export function initErrorMonitoring() {
+  if (typeof window === "undefined") return;
+
+  // Unhandled JS exceptions
+  window.addEventListener("error", (event) => {
+    if (shouldIgnore(event.message)) return;
+    captureError(event.error ?? new Error(event.message), {
+      source: event.filename,
+      line: event.lineno,
+      col: event.colno,
+    });
+  });
+
+  // Unhandled promise rejections
+  window.addEventListener("unhandledrejection", (event) => {
+    const err = event.reason instanceof Error
+      ? event.reason
+      : new Error(String(event.reason));
+    if (shouldIgnore(err.message)) return;
+    captureError(err, { type: "unhandledrejection" });
   });
 }
 
-/** Set the authenticated user context on Sentry events. */
+// ── User context ─────────────────────────────────────────────────────────────
+
+/** Call this whenever auth state changes so errors are linked to users. */
 export function setSentryUser(userId: string | null) {
-  if (import.meta.env.DEV) return;
-  if (userId) {
-    Sentry.setUser({ id: userId });
-  } else {
-    Sentry.setUser(null);
-  }
+  // PostHog identify is already handled in AuthContext via phIdentify —
+  // this is a no-op kept for API compatibility with any future swap.
+  void userId;
 }
 
-/** Manually capture an exception with optional extra context. */
+// ── Manual capture ───────────────────────────────────────────────────────────
+
+/** Capture an exception manually with optional extra context. */
 export function captureError(err: unknown, context?: Record<string, unknown>) {
   if (import.meta.env.DEV) {
-    console.error("[Sentry capture]", err, context);
+    console.error("[monitoring]", err, context);
     return;
   }
-  Sentry.withScope((scope) => {
-    if (context) scope.setExtras(context);
-    Sentry.captureException(err);
-  });
+  try {
+    const exception = err instanceof Error ? err : new Error(String(err));
+    // PostHog captureException attaches stack trace + current person automatically
+    posthog.captureException(exception, context ? { extra: context } : undefined);
+  } catch {
+    // Never let monitoring crash the app
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const IGNORED_PATTERNS = [
+  "ResizeObserver loop",
+  "Non-Error promise rejection",
+  "Failed to fetch",
+  "Load failed",
+  "NetworkError",
+  "ChunkLoadError",
+  "Loading chunk",
+];
+
+function shouldIgnore(message: string): boolean {
+  return IGNORED_PATTERNS.some((p) => message?.includes(p));
 }

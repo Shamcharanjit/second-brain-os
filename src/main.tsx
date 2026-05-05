@@ -3,10 +3,10 @@ import App from "./App.tsx";
 import "./index.css";
 import { captureAttributionOnce } from "@/lib/attribution";
 import { initPostHog } from "@/lib/analytics/posthog";
-import { initSentry } from "@/lib/monitoring";
+import { initErrorMonitoring } from "@/lib/monitoring";
 
-initSentry();
 initPostHog();
+initErrorMonitoring(); // must run after PostHog is initialised
 
 createRoot(document.getElementById("root")!).render(<App />);
 
