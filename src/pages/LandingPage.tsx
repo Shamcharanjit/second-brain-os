@@ -92,6 +92,24 @@ const TRUST_SIGNALS = [
   "Works offline-first",
 ];
 
+const TESTIMONIALS = [
+  {
+    name: "Priya M.",
+    role: "Product Manager",
+    quote: "I used to lose half my meeting notes in different apps. InsightHalo captures everything in seconds and the AI just figures out where it goes. My inbox actually stays empty now.",
+  },
+  {
+    name: "James T.",
+    role: "Indie Founder",
+    quote: "I've tried Notion, Roam, Obsidian — none of them got out of my way fast enough. InsightHalo is the first tool that feels like thinking, not filing. The daily review alone is worth it.",
+  },
+  {
+    name: "Sara K.",
+    role: "PhD Researcher",
+    quote: "The semantic memory search is genuinely magic. I asked 'what did I think about the pricing model last month' and it found a voice note I'd forgotten I recorded. Nothing else does that.",
+  },
+];
+
 export default function LandingPage() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -451,6 +469,42 @@ export default function LandingPage() {
               </div>
             </div>
           </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ TESTIMONIALS ═══ */}
+      <section className={S_PY_SM}>
+        <div className={CTR}>
+          <Reveal>
+            <div className={cn("text-center", "mb-8", HEAD_GAP)}>
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary">What early users say</p>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Real people. Real second brains.</h2>
+            </div>
+          </Reveal>
+          <div className="grid gap-4 md:grid-cols-3">
+            {TESTIMONIALS.map((t, i) => (
+              <Reveal key={t.name} delay={i * 80}>
+                <div className="h-full rounded-2xl border bg-card p-5 space-y-4 flex flex-col">
+                  {/* Stars */}
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 5 }).map((_, s) => (
+                      <Star key={s} className="h-3.5 w-3.5 fill-[hsl(var(--brain-amber))] text-[hsl(var(--brain-amber))]" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">"{t.quote}"</p>
+                  <div className="flex items-center gap-3 pt-1 border-t border-border/50">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
+                      {t.name[0]}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">{t.name}</p>
+                      <p className="text-[11px] text-muted-foreground">{t.role}</p>
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 

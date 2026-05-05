@@ -20,6 +20,7 @@ import { WorkspaceProvider } from "@/context/WorkspaceContext";
 import AppLayout from "@/components/AppLayout";
 import AppErrorBoundary from "@/components/system/AppErrorBoundary";
 import PageErrorBoundary from "@/components/system/PageErrorBoundary";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 // Route-level code splitting — each page loads only when first visited.
 // Core app routes (Dashboard, Inbox, Today) still load fast; heavy pages
@@ -126,6 +127,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <PWAInstallPrompt />
         <AuthProvider>
           <SubscriptionProvider>
             <BrowserRouter>

@@ -3,7 +3,9 @@ import App from "./App.tsx";
 import "./index.css";
 import { captureAttributionOnce } from "@/lib/attribution";
 import { initPostHog } from "@/lib/analytics/posthog";
+import { initSentry } from "@/lib/monitoring";
 
+initSentry();
 initPostHog();
 
 createRoot(document.getElementById("root")!).render(<App />);

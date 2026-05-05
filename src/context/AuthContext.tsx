@@ -6,6 +6,7 @@ import { linkAttributionToUser, markAttributionActivated } from "@/lib/attributi
 import type { User, Session } from "@supabase/supabase-js";
 import { trackEvent } from "@/lib/analytics/ga4";
 import { phIdentify, phReset } from "@/lib/analytics/posthog";
+import { setSentryUser } from "@/lib/monitoring";
 
 interface AuthContextType {
   user: User | null;
@@ -53,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(sess);
       setUser(sess?.user ?? null);
       setLoading(false);
+      setSentryUser(newUserId);
 
       // Fire-and-forget: capture country metadata + link visitor attribution
       if (newUserId) {
