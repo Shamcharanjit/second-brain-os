@@ -16,7 +16,7 @@ jobs:
         run: |
           response=$(curl -s -o /tmp/resp.json -w "%{http_code}" \
             -X POST \
-            "https://qanoiqzanywjrcuhsmny.supabase.co/functions/v1/send-day7-emails" \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/send-day7-emails" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{}')

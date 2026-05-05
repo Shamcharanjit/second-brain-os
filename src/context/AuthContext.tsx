@@ -63,6 +63,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => { linkAttributionToUser(newUserId, userEmail).catch(() => {}); }, 0);
         setTimeout(() => { markAttributionActivated(newUserId).catch(() => {}); }, 0);
         phIdentify(newUserId, { email: userEmail ?? undefined });
+
+        // Detect first-time Google/OAuth signup: user created within last 30 s
+        if (_event === "SIGNED_IN" && sess?.user?.app_metadata?.provider === "google") {
+          const createdAt = sess.user.created_at ? new Date(sess.user.created_at).getTime() : 0;
+          const isNew = Date.now() - createdAt < 30_000;
+          if (isNew) trackEvent("signup_completed", { method: "google" });
+        }
       } else if (_event === "SIGNED_OUT") {
         phReset();
       }

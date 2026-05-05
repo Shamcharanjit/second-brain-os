@@ -153,6 +153,13 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       return [newCapture, ...prev];
     });
     trackEvent("capture_created", { input_type: type, source: "ai" });
+    trackEvent("ai_triage_complete", {
+      category: preAiData.category,
+      priority_score: preAiData.priority_score,
+      destination: preAiData.destination_suggestion,
+      confidence: preAiData.confidence,
+      input_type: type,
+    });
     if (type === "voice") trackEvent("voice_capture", { source: "ai" });
     return newCapture;
   }, []);

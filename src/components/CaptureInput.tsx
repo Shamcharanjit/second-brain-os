@@ -440,8 +440,8 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
           </div>
         )}
 
-        <div className="flex flex-col gap-2 pt-2 border-t border-border/50 mt-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex flex-col gap-1.5 pt-2 border-t border-border/50 mt-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-1 flex-wrap">
             <Button
               size="sm"
               variant={phase === "recording" ? "destructive" : "outline"}
@@ -486,7 +486,7 @@ export default function CaptureInput({ variant = "inline", onComplete }: Capture
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 self-end sm:self-auto">
+          <div className="flex items-center gap-1 self-end sm:self-auto">
             {showAIButton && (
               <Button
                 size="sm"
