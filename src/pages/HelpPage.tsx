@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import InsightHaloIcon from "@/components/branding/InsightHaloIcon";
 import { fetchFeatureUpdates, type FeatureUpdate } from "@/lib/whats-new";
+import SeoHead from "@/components/seo/SeoHead";
+import { faqPageSchema } from "@/lib/seo/schema";
 
 // ── FAQ ──────────────────────────────────────────────────────────────────────
 const FAQS = [
@@ -188,6 +190,10 @@ export default function HelpPage() {
 
   return (
     <div className="space-y-10 max-w-4xl">
+      <SeoHead
+        slug="/help"
+        jsonLd={[faqPageSchema(FAQS.map((f) => ({ q: f.q, a: f.a })))]}
+      />
 
       {/* Hero */}
       <header className="space-y-3">

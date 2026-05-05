@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import SeoHead from "@/components/seo/SeoHead";
-import { softwareApplicationSchema, webApplicationSchema } from "@/lib/seo/schema";
+import { softwareApplicationSchema, webApplicationSchema, howToSchema } from "@/lib/seo/schema";
 
 /* ── Spacing tokens ── */
 const S_PY      = "py-16 md:py-20";          // standard section
@@ -118,7 +118,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <SeoHead slug="/" jsonLd={[softwareApplicationSchema(), webApplicationSchema()]} />
+      <SeoHead slug="/" jsonLd={[softwareApplicationSchema(), webApplicationSchema(), howToSchema()]} />
       {/* ═══ HEADER ═══ */}
       <header className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",

@@ -5,6 +5,7 @@ import {
   breadcrumbSchema,
   faqPageSchema,
   softwareApplicationSchema,
+  articleSchema,
 } from "@/lib/seo/schema";
 import { ArrowRight, CheckCircle2, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,9 @@ export default function LearnDetailPage() {
 
   const url = `${SITE_URL}/learn/${page.slug}`;
 
+  // Related topics: up to 3 other learn pages
+  const related = LEARN_PAGES.filter((p) => p.slug !== slug).slice(0, 3);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SeoHead
@@ -23,11 +27,18 @@ export default function LearnDetailPage() {
         config={{
           title: page.title,
           description: page.hero.subheading,
-          keywords: [page.keyword],
+          keywords: [page.keyword, "InsightHalo", "second brain", "AI productivity"],
           canonical: url,
+          ogType: "article",
         }}
         jsonLd={[
           softwareApplicationSchema(),
+          articleSchema({
+            title: page.title,
+            description: page.hero.subheading,
+            url,
+            keywords: [page.keyword, "second brain", "InsightHalo"],
+          }),
           faqPageSchema(page.faq),
           breadcrumbSchema([
             { name: "Home", url: SITE_URL },
@@ -92,6 +103,25 @@ export default function LearnDetailPage() {
               <h3 className="font-medium">{f.q}</h3>
               <p className="text-muted-foreground mt-2 text-sm">{f.a}</p>
             </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Related topics — internal linking for SEO */}
+      <section className="max-w-4xl mx-auto px-6 py-12 border-t">
+        <h2 className="text-xl font-semibold mb-4">Related topics</h2>
+        <div className="grid sm:grid-cols-3 gap-3">
+          {related.map((r) => (
+            <Link
+              key={r.slug}
+              to={`/learn/${r.slug}`}
+              className="group rounded-lg border bg-card p-4 hover:border-primary/40 transition-colors"
+            >
+              <p className="text-xs text-primary uppercase tracking-wide">{r.keyword}</p>
+              <p className="text-sm font-medium mt-1 group-hover:text-primary transition-colors leading-snug">
+                {r.hero.heading}
+              </p>
+            </Link>
           ))}
         </div>
       </section>
