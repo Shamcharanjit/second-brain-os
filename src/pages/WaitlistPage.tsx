@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, ArrowRight, CheckCircle2, Sparkles, Loader2, Copy, Share2, Trophy } from "lucide-react";
+import {
+  Brain, ArrowRight, CheckCircle2, Sparkles, Loader2, Copy, Share2, Trophy,
+  Zap, Users, Search, Bell, CalendarCheck, MessageSquare,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,8 +25,41 @@ const USE_CASES = [
 const TRUST = [
   "No credit card required",
   "Early access priority",
-  "Premium features included",
+  "Full premium features",
   "Your data stays private",
+];
+
+const FEATURES = [
+  {
+    icon: Zap,
+    title: "AI Capture & Triage",
+    desc: "Speak or type anything. AI categorises, prioritises and routes it instantly.",
+  },
+  {
+    icon: Search,
+    title: "Semantic Memory Search",
+    desc: "Find anything by meaning — not just keywords. Ask in plain English.",
+  },
+  {
+    icon: Users,
+    title: "Team Workspaces",
+    desc: "Share captures with your team in a live shared feed with optional notes.",
+  },
+  {
+    icon: CalendarCheck,
+    title: "Goals & Progress Rings",
+    desc: "Circular progress rings per goal, milestone dates, and inline editing.",
+  },
+  {
+    icon: Bell,
+    title: "Smart Push Alerts",
+    desc: "Morning push notifications name the exact captures due today.",
+  },
+  {
+    icon: MessageSquare,
+    title: "AI Chat with Context",
+    desc: "Chat with your full second brain — captures, projects, memory, all wired in.",
+  },
 ];
 
 export default function WaitlistPage() {
@@ -64,7 +100,6 @@ export default function WaitlistPage() {
 
       if (error) {
         if (error.code === "23505") {
-          // Unique constraint on email
           toast.info("You're already on the list! We'll be in touch soon.");
           setSubmitted(true);
         } else {
@@ -76,10 +111,8 @@ export default function WaitlistPage() {
         setReferralCode(result?.referral_code ?? null);
         setReferralCount(result?.referral_count ?? 0);
         setSubmitted(true);
-        // Log funnel event
         logFunnelEvent("waitlist_signed_up", { email: email.trim().toLowerCase(), source: "waitlist_page" });
         trackEvent("waitlist_signup", { source: "waitlist_page", has_referrer: !!refParam });
-        // Fire-and-forget: send confirmation email (don't block UI)
         supabase.functions
           .invoke("send-waitlist-confirmation-email", {
             body: { email: email.trim().toLowerCase(), name: name.trim() },
@@ -110,25 +143,53 @@ export default function WaitlistPage() {
         </div>
       </header>
 
-      <div className="pt-14 flex items-center justify-center min-h-screen px-5">
-        <div className="w-full max-w-md py-16 md:py-20">
-          {!submitted ? (
-            <div className="space-y-8">
-              {/* Hero */}
-              <div className="text-center space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Early Access
+      <div className="pt-14 px-5">
+        {!submitted ? (
+          <div className="mx-auto max-w-2xl py-16 md:py-20 space-y-14">
+
+            {/* ── Hero ── */}
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
+                <Sparkles className="h-3.5 w-3.5" />
+                Early Access · Limited Spots
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight">
+                Your AI second brain,<br className="hidden sm:block" /> ready when you are
+              </h1>
+              <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-md mx-auto">
+                InsightHalo captures everything you think, learns how you work, and surfaces the right idea at the right moment — all powered by AI.
+              </p>
+              {/* Social proof */}
+              <p className="text-xs text-muted-foreground/70 font-medium tracking-wide uppercase">
+                500+ people already on the list
+              </p>
+            </div>
+
+            {/* ── Feature grid ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {FEATURES.map((f) => (
+                <div
+                  key={f.title}
+                  className="rounded-xl border border-border/60 bg-card/50 p-4 space-y-2 hover:border-primary/30 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <f.icon className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <p className="text-sm font-semibold">{f.title}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
                 </div>
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight">
-                  Join the waitlist
-                </h1>
-                <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-sm mx-auto">
-                  InsightHalo is rolling out in controlled early access. Request your spot and be among the first to experience your AI second brain.
-                </p>
+              ))}
+            </div>
+
+            {/* ── Form ── */}
+            <div className="max-w-md mx-auto space-y-6">
+              <div className="text-center">
+                <h2 className="text-lg font-semibold">Request early access</h2>
+                <p className="text-sm text-muted-foreground mt-1">We invite people in batches — the sooner you sign up, the sooner you're in.</p>
               </div>
 
-              {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-3">
                   <Input
@@ -206,8 +267,10 @@ export default function WaitlistPage() {
                 ))}
               </div>
             </div>
-          ) : (
-            /* ── Success state ── */
+          </div>
+        ) : (
+          /* ── Success state ── */
+          <div className="mx-auto max-w-md py-16 md:py-20">
             <div className="text-center space-y-6">
               <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
                 <CheckCircle2 className="h-8 w-8 text-primary" />
@@ -333,22 +396,30 @@ export default function WaitlistPage() {
                 ← Back to InsightHalo
               </Button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-border/50 bg-muted/20 dark:bg-muted/10">
-        <div className="mx-auto max-w-6xl px-5 md:px-8 py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+      <footer className="border-t border-border/50 bg-muted/20 dark:bg-muted/10 mt-8">
+        <div className="mx-auto max-w-6xl px-5 md:px-8 py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            {/* Brand */}
+            <button onClick={() => navigate("/")} className="flex items-center gap-2 group">
               <Brain className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold">InsightHalo</span>
-            </div>
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            </button>
+
+            {/* Links */}
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+              <button onClick={() => navigate("/")} className="hover:text-foreground transition-colors">Home</button>
+              <button onClick={() => navigate("/help")} className="hover:text-foreground transition-colors">Help</button>
+              <button onClick={() => navigate("/learn")} className="hover:text-foreground transition-colors">Learn</button>
+              <button onClick={() => navigate("/auth")} className="hover:text-foreground transition-colors">Sign In</button>
               <button onClick={() => navigate("/privacy")} className="hover:text-foreground transition-colors">Privacy</button>
               <button onClick={() => navigate("/terms")} className="hover:text-foreground transition-colors">Terms</button>
             </div>
+
             <p className="text-xs text-muted-foreground/60">© {new Date().getFullYear()} InsightHalo</p>
           </div>
         </div>

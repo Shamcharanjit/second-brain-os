@@ -22,6 +22,15 @@
   RewriteRule ^ index.html [QSA,L]
 </IfModule>
 
+# Correct MIME types — prevents 'text/html is not a valid JavaScript MIME type'
+<IfModule mod_mime.c>
+  AddType application/javascript .js .mjs
+  AddType text/css               .css
+  AddType image/svg+xml          .svg
+  AddType font/woff2             .woff2
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
 # Security headers
 <IfModule mod_headers.c>
   Header set X-Content-Type-Options "nosniff"
